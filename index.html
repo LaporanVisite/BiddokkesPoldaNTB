@@ -380,20 +380,20 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height
       <div class="field">
         <label>Foto 1 <span class="req">*</span></label>
         <div class="upload-area" onclick="document.getElementById('fileDoc1').click()">
-          <input type="file" id="fileDoc1" accept="image/*" capture="environment" onchange="previewImg(this,'prev1')">
+          <input type="file" id="fileDoc1" accept="image/*" onchange="previewImg(this,'prev1')">
           <div class="u-icon">📷</div>
           <div class="u-text">Tap untuk foto / pilih gambar</div>
-          <div class="u-sub">Kamera langsung atau dari galeri</div>
+          <div class="u-sub">Kamera atau dari galeri</div>
         </div>
         <div class="preview-imgs" id="prev1"></div>
       </div>
       <div class="field">
         <label>Foto 2 <span class="req">*</span></label>
         <div class="upload-area" onclick="document.getElementById('fileDoc2').click()">
-          <input type="file" id="fileDoc2" accept="image/*" capture="environment" onchange="previewImg(this,'prev2')">
+          <input type="file" id="fileDoc2" accept="image/*" onchange="previewImg(this,'prev2')">
           <div class="u-icon">📷</div>
           <div class="u-text">Tap untuk foto / pilih gambar</div>
-          <div class="u-sub">Kamera langsung atau dari galeri</div>
+          <div class="u-sub">Kamera atau dari galeri</div>
         </div>
         <div class="preview-imgs" id="prev2"></div>
       </div>
@@ -940,9 +940,10 @@ ${tindakanArr.map(t => p(b, '- <i>' + t + '</i>')).join('')}
 // Fix URL ImgBB agar bisa tampil di semua browser/HP
 function fixImgBBUrl(url) {
   if (!url) return url;
-  // Ganti i.ibb.co ke ibb.co/... format display langsung
-  // URL format ImgBB: https://i.ibb.co/XXXXX/nama.jpg → tetap pakai tapi tambah https
-  if (url.startsWith('http://')) return url.replace('http://', 'https://');
+  // Pastikan https
+  if (url.startsWith('http://')) url = url.replace('http://', 'https://');
+  // i.ibb.co → ibb.co (SSL issue di browser HP)
+  url = url.replace('https://i.ibb.co/', 'https://ibb.co/');
   return url;
 }
 
