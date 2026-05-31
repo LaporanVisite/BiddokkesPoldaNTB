@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laporan Biddokkes Polda NTB</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#1a7a3c;--green2:#22a050;--green3:#e8f5ee;--green4:#d0ead9;
+  --white:#ffffff;--bg:#f4f7f5;--border:#e0e8e3;
+  --text:#1a2e22;--text2:#4a6557;--text3:#8aa898;
+  --shadow:0 2px 12px rgba(26,122,60,0.08);--shadow2:0 4px 24px rgba(26,122,60,0.13);
+  --radius:14px;--radius2:10px;
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height:100vh;color:var(--text)}
+
+/* ── HEADER ── */
+.header{background:linear-gradient(135deg,var(--green) 0%,var(--green2) 100%);color:white;padding:0;position:sticky;top:0;z-index:200;box-shadow:0 2px 16px rgba(26,122,60,0.18)}
+.header-inner{max-width:720px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.header-logo{display:flex;align-items:center;gap:10px}
+.header-logo .icon{width:38px;height:38px;background:rgba(255,255,255,0.18);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.header-logo h1{font-size:14px;font-weight:700;line-height:1.4}
+.header-logo p{font-size:11px;opacity:0.8;margin-top:1px}
+.btn-rekam{background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.3);color:white;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s}
+.btn-rekam:hover{background:rgba(255,255,255,0.28)}
+
+/* ── NAV TABS ── */
+.nav-tabs{background:white;border-bottom:1px solid var(--border);position:sticky;top:66px;z-index:190}
+.nav-tabs-inner{max-width:720px;margin:0 auto;display:flex}
+.nav-tab{flex:1;padding:12px;text-align:center;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s}
+.nav-tab.active{color:var(--green);border-bottom-color:var(--green)}
+
+/* ── CONTAINER ── */
+.container{max-width:720px;margin:0 auto;padding:20px 16px}
+
+/* ── CARD ── */
+.card{background:white;border-radius:var(--radius);padding:20px;margin-bottom:16px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.card-title{font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:16px;display:flex;align-items:center;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--green3)}
+.card-title .ct-icon{width:26px;height:26px;background:var(--green3);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px}
+
+/* ── FIELDS ── */
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px;letter-spacing:0.01em}
+.field label .req{color:#e53935;margin-left:2px}
+.field input,.field select,.field textarea{
+  width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:var(--radius2);
+  font-size:14px;color:var(--text);background:#fafcfb;transition:all 0.2s;font-family:inherit}
+.field input:focus,.field select:focus,.field textarea:focus{
+  outline:none;border-color:var(--green2);box-shadow:0 0 0 3px rgba(34,160,80,0.1);background:white}
+.field textarea{resize:vertical;min-height:76px}
+.field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234a6557' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:34px;background-color:#fafcfb}
+
+/* ── GRID ── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+@media(max-width:500px){.grid2{grid-template-columns:1fr 1fr}.grid3{grid-template-columns:1fr 1fr}}
+
+/* ── JENIS PILLS ── */
+.jenis-pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{padding:9px 18px;border-radius:99px;border:2px solid var(--border);font-size:13px;font-weight:600;cursor:pointer;color:var(--text2);background:white;transition:all 0.2s;display:flex;align-items:center;gap:6px}
+.pill:hover{border-color:var(--green2);color:var(--green2);background:var(--green3)}
+.pill.active{background:var(--green);border-color:var(--green);color:white;box-shadow:0 2px 10px rgba(26,122,60,0.25)}
+
+/* ── SEARCH ── */
+.search-wrap{position:relative}
+.search-icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:16px;pointer-events:none}
+.dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:white;border:1.5px solid var(--border);border-radius:var(--radius2);z-index:50;overflow:hidden;box-shadow:var(--shadow2);max-height:240px;overflow-y:auto}
+.dropdown-item{padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--green3);display:flex;align-items:center;gap:10px;transition:background 0.15s}
+.dropdown-item:last-child{border-bottom:none}
+.dropdown-item:hover{background:var(--green3)}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--green3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--green);flex-shrink:0;border:2px solid var(--green4)}
+.d-name{font-size:13px;font-weight:600;color:var(--text)}
+.d-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.d-badge{font-size:10px;background:var(--green3);color:var(--green);padding:3px 8px;border-radius:99px;white-space:nowrap;font-weight:600}
+.no-result{padding:14px;text-align:center;font-size:13px;color:var(--text3)}
+
+/* ── LOADED BANNER ── */
+.loaded-banner{background:linear-gradient(135deg,#e8f5ee,#d0ead9);border:1.5px solid var(--green4);border-radius:var(--radius2);padding:11px 15px;margin-bottom:14px;font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px;font-weight:500}
+.loaded-banner .check{width:22px;height:22px;background:var(--green);border-radius:50%;color:white;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+
+/* ── VITALS GRID ── */
+.vitals-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:420px){.vitals-grid{grid-template-columns:1fr 1fr}}
+
+/* ── UPLOAD ── */
+.upload-area{border:2px dashed var(--green4);border-radius:var(--radius2);padding:22px 16px;text-align:center;cursor:pointer;transition:all 0.2s;background:#fafcfb}
+.upload-area:hover{border-color:var(--green2);background:var(--green3)}
+.upload-area input{display:none}
+.upload-area .u-icon{font-size:28px;margin-bottom:6px}
+.upload-area .u-text{font-size:13px;font-weight:600;color:var(--text2)}
+.upload-area .u-sub{font-size:11px;color:var(--text3);margin-top:3px}
+.preview-imgs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.preview-imgs img{width:80px;height:80px;object-fit:cover;border-radius:8px;border:2px solid var(--green4)}
+
+/* ── BUTTONS ── */
+.btn-row{display:flex;gap:10px;margin-top:8px}
+.btn{flex:1;padding:14px;border-radius:var(--radius2);font-size:15px;font-weight:700;cursor:pointer;border:none;transition:all 0.2s;font-family:inherit;letter-spacing:0.01em}
+.btn-reset{background:white;color:var(--text2);border:1.5px solid var(--border)}
+.btn-reset:hover{background:var(--bg);border-color:var(--green4)}
+.btn-save{background:linear-gradient(135deg,var(--green),var(--green2));color:white;box-shadow:0 4px 14px rgba(26,122,60,0.28)}
+.btn-save:hover{box-shadow:0 6px 20px rgba(26,122,60,0.35);transform:translateY(-1px)}
+.btn-save:active{transform:translateY(0)}
+.btn-save:disabled{opacity:0.55;cursor:not-allowed;transform:none}
+
+/* ── LOADING ── */
+.loading-overlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,0.88);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:14px;backdrop-filter:blur(4px)}
+.loading-overlay.show{display:flex}
+.spinner{width:44px;height:44px;border:4px solid var(--green3);border-top-color:var(--green);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-overlay p{font-size:14px;color:var(--green);font-weight:600}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);padding:13px 24px;border-radius:99px;font-size:14px;font-weight:600;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:9999;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.15)}
+.toast.success{background:var(--green);color:white}
+.toast.error{background:#c62828;color:white}
+.toast.show{opacity:1}
+
+/* ── PAGE ── */
+.page{display:none}
+.page.active{display:block}
+
+/* ── REKAM MEDIS ── */
+.rm-search-bar{display:flex;gap:10px;margin-bottom:20px}
+.rm-search-bar input{flex:1;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--radius2);font-size:14px;background:white;font-family:inherit}
+.rm-search-bar input:focus{outline:none;border-color:var(--green2);box-shadow:0 0 0 3px rgba(34,160,80,0.1)}
+.rm-search-bar button{padding:11px 18px;background:var(--green);color:white;border:none;border-radius:var(--radius2);font-size:13px;font-weight:600;cursor:pointer}
+.pasien-card{background:white;border-radius:var(--radius);border:1.5px solid var(--border);margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow);cursor:pointer;transition:all 0.2s}
+.pasien-card:hover{border-color:var(--green2);box-shadow:var(--shadow2)}
+.pasien-card-header{padding:14px 16px;display:flex;align-items:center;gap:12px}
+.pasien-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--green3),var(--green4));display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--green);flex-shrink:0;border:2px solid var(--green4)}
+.pasien-info{flex:1}
+.pasien-name{font-size:15px;font-weight:700;color:var(--text)}
+.pasien-meta{font-size:12px;color:var(--text3);margin-top:3px}
+.pasien-count{background:var(--green3);color:var(--green);font-size:12px;font-weight:700;padding:4px 10px;border-radius:99px}
+.kunjungan-list{border-top:1px solid var(--green3);display:none}
+.kunjungan-list.open{display:block}
+.kunjungan-item{padding:14px 16px;border-bottom:1px solid var(--green3);cursor:pointer;transition:background 0.15s}
+.kunjungan-item:last-child{border-bottom:none}
+.kunjungan-item:hover{background:var(--green3)}
+.kv-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.kv-tanggal{font-size:13px;font-weight:700;color:var(--green)}
+.kv-jenis{font-size:11px;background:var(--green3);color:var(--green);padding:3px 10px;border-radius:99px;font-weight:600}
+.kv-detail{font-size:12px;color:var(--text2)}
+
+/* ── MODAL REKAM MEDIS ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:500;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)}
+.modal-overlay.show{display:flex}
+.modal{background:white;border-radius:var(--radius);width:100%;max-width:640px;max-height:88vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.2)}
+.modal-header{background:linear-gradient(135deg,var(--green),var(--green2));color:white;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.modal-header h3{font-size:15px;font-weight:700}
+.modal-close{background:rgba(255,255,255,0.2);border:none;color:white;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
+.modal-body{padding:20px}
+.rm-section{margin-bottom:16px}
+.rm-section-title{font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--green3)}
+.rm-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:400px){.rm-grid{grid-template-columns:1fr}}
+.rm-field{background:var(--bg);border-radius:8px;padding:9px 12px}
+.rm-field .rm-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px}
+.rm-field .rm-value{font-size:13px;font-weight:500;color:var(--text)}
+.rm-field.full{grid-column:1/-1}
+.rm-vitals{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.vital-box{background:linear-gradient(135deg,var(--green3),var(--green4));border-radius:10px;padding:10px;text-align:center}
+.vital-box .vb-val{font-size:16px;font-weight:700;color:var(--green)}
+.vital-box .vb-label{font-size:10px;color:var(--text2);margin-top:3px;font-weight:600}
+.rm-list{display:flex;flex-wrap:wrap;gap:6px}
+.rm-tag{background:var(--green3);color:var(--green);font-size:12px;padding:4px 10px;border-radius:99px;font-weight:500}
+.rm-photos{display:flex;gap:10px;flex-wrap:wrap}
+.rm-photos img{width:100px;height:100px;object-fit:cover;border-radius:10px;border:2px solid var(--green4);cursor:pointer}
+
+/* ── PASSWORD MODAL ── */
+.pw-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:600;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.pw-modal.show{display:flex}
+.pw-box{background:white;border-radius:var(--radius);padding:28px 24px;width:100%;max-width:340px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.2)}
+.pw-box .pw-icon{font-size:40px;margin-bottom:12px}
+.pw-box h3{font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px}
+.pw-box p{font-size:13px;color:var(--text3);margin-bottom:18px}
+.pw-box input{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--radius2);font-size:15px;text-align:center;letter-spacing:0.1em;font-family:inherit;margin-bottom:12px}
+.pw-box input:focus{outline:none;border-color:var(--green2)}
+.pw-btn-row{display:flex;gap:8px}
+.pw-btn{flex:1;padding:11px;border-radius:var(--radius2);font-size:14px;font-weight:600;cursor:pointer;border:none;font-family:inherit}
+.pw-btn.confirm{background:var(--green);color:white}
+.pw-btn.cancel{background:var(--bg);color:var(--text2);border:1.5px solid var(--border)}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text3)}
+.empty-state .es-icon{font-size:48px;margin-bottom:12px}
+.empty-state p{font-size:14px}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <p id="loadingText">Menyimpan laporan...</p>
+</div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-inner">
+    <div class="header-logo">
+      <div class="icon">🏥</div>
+      <div>
+        <h1>Laporan Home Visit, Pendampingan & Monitoring</h1>
+        <p>Biddokkes Polda NTB</p>
+      </div>
+    </div>
+    <button class="btn-rekam" onclick="bukaRekamMedis()">📋 Rekam Medis</button>
+  </div>
+</div>
+
+<!-- NAV TABS -->
+<div class="nav-tabs">
+  <div class="nav-tabs-inner">
+    <div class="nav-tab active" id="tab-form" onclick="ganti('form')">📝 Input Laporan</div>
+    <div class="nav-tab" id="tab-rekam" onclick="ganti('rekam')" style="display:none">📋 Rekam Medis</div>
+  </div>
+</div>
+
+<!-- ═══════════════ PAGE: FORM ═══════════════ -->
+<div class="page active" id="page-form">
+<div class="container">
+
+  <!-- JENIS PELAYANAN -->
+  <div class="card">
+    <div class="card-title"><div class="ct-icon">🏥</div> Jenis Pelayanan</div>
+    <div class="jenis-pills">
+      <div class="pill" onclick="pilihJenis('Home Visit')">🏠 Home Visit</div>
+      <div class="pill" onclick="pilihJenis('Pendampingan')">🤝 Pendampingan</div>
+      <div class="pill" onclick="pilihJenis('Monitoring')">🔍 Monitoring</div>
+    </div>
+    <input type="hidden" id="JenisPelayanan">
+  </div>
+
+  <!-- DATA PASIEN -->
+  <div class="card">
+    <div class="card-title"><div class="ct-icon">👤</div> Data Pasien</div>
+    <div id="loadedBanner" class="loaded-banner" style="display:none">
+      <div class="check">✓</div>
+      Data <strong id="loadedNama" style="margin:0 4px"></strong> dimuat — silakan edit yang perlu diubah
+    </div>
+    <div class="field">
+      <label>Nama Pasien <span class="req">*</span></label>
+      <div class="search-wrap">
+        <input type="text" id="NamaPasien" placeholder="Ketik nama pasien..." autocomplete="off" oninput="cariPasien(this.value)">
+        <span class="search-icon">🔍</span>
+        <div class="dropdown" id="dropdown" style="display:none"></div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Pangkat <span class="req">*</span></label><input type="text" id="Pangkat" placeholder="Misal: Brigadir"></div>
+      <div class="field"><label>NIP / NRP <span class="req">*</span></label><input type="text" id="NIPNRP" placeholder="Nomor induk"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Jabatan <span class="req">*</span></label><input type="text" id="Jabatan" placeholder="Jabatan pasien"></div>
+      <div class="field"><label>Kesatuan <span class="req">*</span></label>
+        <select id="Kesatuan" onchange="pilihFKTP(this.value)">
+          <option value="">— Pilih Kesatuan —</option>
+          <option>Polda NTB</option><option>Brimob Polda NTB</option><option>SPN Polda NTB</option>
+          <option>Polresta Mataram</option><option>Polres Lombok Barat</option><option>Polres Lombok Tengah</option>
+          <option>Polres Lombok Timur</option><option>Polres Lombok Utara</option><option>Polres Sumbawa</option>
+          <option>Polres Sumbawa Barat</option><option>Polres Dompu</option><option>Polres Bima</option><option>Polres Bima Kota</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- DATA PETUGAS -->
+  <div class="card">
+    <div class="card-title"><div class="ct-icon">👮</div> Data Petugas</div>
+    <div class="field"><label>No HP <span class="req">*</span></label><input type="text" id="NoHP" placeholder="08xxxxxxxxxx"></div>
+    <div class="field"><label>FKTP Yang Melaksanakan <span class="req">*</span></label>
+      <select id="FKTP">
+        <option value="">— Pilih FKTP —</option>
+        <option>Polda NTB</option><option>Brimob Polda NTB</option><option>SPN Polda NTB</option>
+        <option>Polresta Mataram</option><option>Polres Lombok Barat</option><option>Polres Lombok Tengah</option>
+        <option>Polres Lombok Timur</option><option>Polres Lombok Utara</option><option>Polres Sumbawa</option>
+        <option>Polres Sumbawa Barat</option><option>Polres Dompu</option><option>Polres Bima</option><option>Polres Bima Kota</option>
+      </select>
+    </div>
+    <div class="field"><label>Personel Yang Terlibat</label><textarea id="PersonelTerlibat" placeholder="Nama-nama personel yang terlibat..."></textarea></div>
+  </div>
+
+  <!-- HIDDEN FIELDS -->
+  <input type="hidden" id="Kepada">
+  <input type="hidden" id="MohonIjin">
+  <input type="hidden" id="Dari">
+  <input type="hidden" id="Tembusan">
+
+  <!-- DETAIL LAPORAN -->
+  <div class="card">
+    <div class="card-title"><div class="ct-icon">📋</div> Detail Laporan</div>
+    <div class="grid2">
+      <div class="field"><label>Hari <span class="req">*</span></label>
+        <select id="Hari">
+          <option value="">— Pilih Hari —</option>
+          <option>Senin</option><option>Selasa</option><option>Rabu</option>
+          <option>Kamis</option><option>Jumat</option><option>Sabtu</option><option>Minggu</option>
+        </select>
+      </div>
+      <div class="field"><label>Tanggal <span class="req">*</span></label><input type="date" id="Tanggal"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Waktu <span class="req">*</span></label><input type="time" id="Waktu"></div>
+      <div class="field"><label>Tempat <span class="req">*</span></label><input type="text" id="Tempat" placeholder="Lokasi pelaksanaan"></div>
+    </div>
+  </div>
+
+  <!-- KONDISI & VITAL SIGN -->
+  <div class="card">
+    <div class="card-title"><div class="ct-icon">💊</div> Kondisi & Vital Sign</div>
+    <div class="field"><label>Kondisi Umum <span class="req">*</span></label><input type="text" id="KondisiUmum" placeholder="Baik / Sedang / Buruk"></div>
+    <div class="vitals-grid">
+      <div class="field"><label>Tensi <span class="req">*</span></label><input type="text" id="Tensi" placeholder="120/80"></div>
+      <div class="field"><label>Nadi <span class="req">*</span></label><input type="text" id="Nadi" placeholder="80x/mnt"></div>
+      <div class="field"><label>RR <span class="req">*</span></label><input type="text" id="RR" placeholder="20x/mnt"></div>
+      <div class="field"><label>SpO2 <span class="req">*</span></label><input type="text" id="SpO2" placeholder="98%"></div>
+      <div class="field"><label>Keterangan</label><input type="text" id="Keterangan" placeholder="Catatan tambahan"></div>
+    </div>
+  </div>
+
+  <!-- KELUHAN -->
+  <div class="card">
+    <div class="card-title"><div class="ct-icon">🩺</div> Keluhan</div>
+    <div class="grid2">
+      <div class="field"><label>Keluhan 1 <span class="req">*</span></label><input type="text" id="Keluhan1" placeholder="Keluhan pertama"></div>
+      <div class="field"><label>Keluhan 2</label><input type="text" id="Keluhan2" placeholder="Keluhan kedua"></div>
+      <div class="field"><label>Keluhan 3</label><input type="text" id="Keluhan3" placeholder="Keluhan ketiga"></div>
+      <div class="field"><label>Keluhan 4</label><input type="text" id="Keluhan4" placeholder="Keluhan keempat"></div>
+    </div>
+  </div>
+
+  <!-- DIAGNOSA -->
+  <div class="card">
+    <div class="card-title"><div class="ct-icon">🔬</div> Diagnosa</div>
+    <div class="grid2">
+      <div class="field"><label>Diagnosa 1 <span class="req">*</span></label><input type="text" id="Diagnosa1" placeholder="Diagnosa pertama"></div>
+      <div class="field"><label>Diagnosa 2</label><input type="text" id="Diagnosa2" placeholder="Diagnosa kedua"></div>
+      <div class="field"><label>Diagnosa 3</label><input type="text" id="Diagnosa3" placeholder="Diagnosa ketiga"></div>
+      <div class="field"><label>Diagnosa 4</label><input type="text" id="Diagnosa4" placeholder="Diagnosa keempat"></div>
+    </div>
+  </div>
+
+  <!-- TINDAKAN -->
+  <div class="card">
+    <div class="card-title"><div class="ct-icon">💉</div> Tindakan</div>
+    <div class="grid2">
+      <div class="field"><label>Tindakan 1 <span class="req">*</span></label><input type="text" id="Tindakan1" placeholder="Tindakan pertama"></div>
+      <div class="field"><label>Tindakan 2</label><input type="text" id="Tindakan2" placeholder="Tindakan kedua"></div>
+      <div class="field"><label>Tindakan 3</label><input type="text" id="Tindakan3" placeholder="Tindakan ketiga"></div>
+      <div class="field"><label>Tindakan 4</label><input type="text" id="Tindakan4" placeholder="Tindakan keempat"></div>
+    </div>
+  </div>
+
+  <!-- RENCANA -->
+  <div class="card">
+    <div class="card-title"><div class="ct-icon">📅</div> Rencana Tindak Lanjut</div>
+    <div class="grid2">
+      <div class="field"><label>Rencana 1 <span class="req">*</span></label><input type="text" id="Rencana1" placeholder="Rencana pertama"></div>
+      <div class="field"><label>Rencana 2</label><input type="text" id="Rencana2" placeholder="Rencana kedua"></div>
+      <div class="field"><label>Rencana 3</label><input type="text" id="Rencana3" placeholder="Rencana ketiga"></div>
+      <div class="field"><label>Rencana 4</label><input type="text" id="Rencana4" placeholder="Rencana keempat"></div>
+    </div>
+  </div>
+
+  <!-- DOKTER DPJP -->
+  <div class="card" id="cardDPJP" style="display:none">
+    <div class="card-title"><div class="ct-icon">👨‍⚕️</div> Dokter DPJP</div>
+    <div class="grid2">
+      <div class="field"><label>Dokter DPJP 1</label><input type="text" id="DokterDPJP1" placeholder="Nama dokter 1"></div>
+      <div class="field"><label>Dokter DPJP 2</label><input type="text" id="DokterDPJP2" placeholder="Nama dokter 2"></div>
+      <div class="field"><label>Dokter DPJP 3</label><input type="text" id="DokterDPJP3" placeholder="Nama dokter 3"></div>
+      <div class="field"><label>Dokter DPJP 4</label><input type="text" id="DokterDPJP4" placeholder="Nama dokter 4"></div>
+    </div>
+  </div>
+
+  <!-- DOKUMENTASI -->
+  <div class="card">
+    <div class="card-title"><div class="ct-icon">📷</div> Dokumentasi</div>
+    <div class="grid2">
+      <div class="field">
+        <label>Foto 1 <span class="req">*</span></label>
+        <div class="upload-area" onclick="document.getElementById('fileDoc1').click()">
+          <input type="file" id="fileDoc1" accept="image/*" onchange="previewImg(this,'prev1')">
+          <div class="u-icon">📷</div>
+          <div class="u-text">Tap untuk pilih foto</div>
+          <div class="u-sub">JPG / PNG / WEBP</div>
+        </div>
+        <div class="preview-imgs" id="prev1"></div>
+      </div>
+      <div class="field">
+        <label>Foto 2 <span class="req">*</span></label>
+        <div class="upload-area" onclick="document.getElementById('fileDoc2').click()">
+          <input type="file" id="fileDoc2" accept="image/*" onchange="previewImg(this,'prev2')">
+          <div class="u-icon">📷</div>
+          <div class="u-text">Tap untuk pilih foto</div>
+          <div class="u-sub">JPG / PNG / WEBP</div>
+        </div>
+        <div class="preview-imgs" id="prev2"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-reset" onclick="resetForm()">↺ Reset</button>
+    <button class="btn btn-save" id="btnSave" onclick="simpanLaporan()">💾 Simpan & Kirim WA</button>
+  </div>
+  <div style="height:32px"></div>
+
+</div>
+</div>
+
+<!-- ═══════════════ PAGE: REKAM MEDIS ═══════════════ -->
+<div class="page" id="page-rekam">
+<div class="container">
+  <div class="card">
+    <div class="card-title"><div class="ct-icon">🔍</div> Cari Pasien</div>
+    <div class="rm-search-bar">
+      <input type="text" id="rmSearch" placeholder="Cari nama pasien..." oninput="filterPasien(this.value)">
+    </div>
+    <div id="rmList"></div>
+  </div>
+</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- PASSWORD MODAL -->
+<div class="pw-modal" id="pwModal">
+  <div class="pw-box">
+    <div class="pw-icon">🔒</div>
+    <h3>Akses Admin</h3>
+    <p>Masukkan password untuk membuka halaman Rekam Medis</p>
+    <input type="password" id="pwInput" placeholder="••••••••••" onkeydown="if(event.key==='Enter')cekPassword()">
+    <div class="pw-btn-row">
+      <button class="pw-btn cancel" onclick="tutupPwModal()">Batal</button>
+      <button class="pw-btn confirm" onclick="cekPassword()">Masuk</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETAIL KUNJUNGAN -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)tutupModal()">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbw2Ux1UMOhzLeNPxk4fqgQ7Fsof5SeH1tqz-qjzmXIrOj0522o97GHEBvzZsfPwzQe9zQ/exec";
+const ADMIN_PW = "Biddokkes2026";
+const FIELDS = ["JenisPelayanan","NamaPasien","NoHP","Kepada","MohonIjin","Hari","Dari","FKTP","PersonelTerlibat","Tanggal","Waktu","Tempat","Pangkat","NIPNRP","Jabatan","Kesatuan","Tembusan","KondisiUmum","Tensi","SpO2","RR","Keterangan","Nadi","Keluhan1","Keluhan2","Keluhan3","Keluhan4","Diagnosa1","Diagnosa2","Diagnosa3","Diagnosa4","Tindakan1","Tindakan2","Tindakan3","Tindakan4","Rencana1","Rencana2","Rencana3","Rencana4","DokterDPJP1","DokterDPJP2","DokterDPJP3","DokterDPJP4"];
+
+let adminUnlocked = false;
+let allData = [];
+
+// ── FKTP DATA ──
+const FKTP_DATA = {
+  "Polda NTB":            { kepada:"BAPAK KAPOLDA NTB",       dari:"Kabid Dokkes Polda NTB",             mohonIjin:"Jenderal", tembusan5:"" },
+  "Brimob Polda NTB":     { kepada:"KABID DOKKES POLDA NTB",  dari:"Ka Poliklinik Brimob Polda NTB",     mohonIjin:"Komandan", tembusan5:"" },
+  "SPN Polda NTB":        { kepada:"KABID DOKKES POLDA NTB",  dari:"Ka Poliklinik SPN Polda NTB",        mohonIjin:"Komandan", tembusan5:"" },
+  "Polresta Mataram":     { kepada:"KABID DOKKES POLDA NTB",  dari:"Ka Poliklinik Polresta Mataram",     mohonIjin:"Komandan", tembusan5:"Kapolresta Mataram" },
+  "Polres Lombok Barat":  { kepada:"KABID DOKKES POLDA NTB",  dari:"KASI DOKKES POLRES LOMBOK BARAT",    mohonIjin:"Komandan", tembusan5:"Kapolres Lombok Barat" },
+  "Polres Lombok Tengah": { kepada:"KABID DOKKES POLDA NTB",  dari:"KASI DOKKES POLRES LOMBOK TENGAH",   mohonIjin:"Komandan", tembusan5:"Kapolres Lombok Tengah" },
+  "Polres Lombok Timur":  { kepada:"KABID DOKKES POLDA NTB",  dari:"KASI DOKKES POLRES LOMBOK TIMUR",    mohonIjin:"Komandan", tembusan5:"Kapolres Lombok Timur" },
+  "Polres Lombok Utara":  { kepada:"KABID DOKKES POLDA NTB",  dari:"KASI DOKKES POLRES LOMBOK UTARA",    mohonIjin:"Komandan", tembusan5:"Kapolres Lombok Utara" },
+  "Polres Sumbawa":       { kepada:"KABID DOKKES POLDA NTB",  dari:"KASI DOKKES POLRES SUMBAWA",         mohonIjin:"Komandan", tembusan5:"Kapolres Sumbawa" },
+  "Polres Sumbawa Barat": { kepada:"KABID DOKKES POLDA NTB",  dari:"KASI DOKKES POLRES SUMBAWA BARAT",   mohonIjin:"Komandan", tembusan5:"Kapolres Sumbawa Barat" },
+  "Polres Dompu":         { kepada:"KABID DOKKES POLDA NTB",  dari:"KASI DOKKES POLRES DOMPU",           mohonIjin:"Komandan", tembusan5:"Kapolres Dompu" },
+  "Polres Bima":          { kepada:"KABID DOKKES POLDA NTB",  dari:"KASI DOKKES POLRES BIMA",            mohonIjin:"Komandan", tembusan5:"Kapolres Bima" },
+  "Polres Bima Kota":     { kepada:"KABID DOKKES POLDA NTB",  dari:"KASI DOKKES POLRES BIMA KOTA",       mohonIjin:"Komandan", tembusan5:"Kapolres Bima Kota" },
+};
+
+// ── NAVIGASI ──
+function ganti(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.getElementById('tab-'+page).classList.add('active');
+}
+
+function bukaRekamMedis() {
+  if (adminUnlocked) { bukaModeRekam(); return; }
+  document.getElementById('pwModal').classList.add('show');
+  setTimeout(() => document.getElementById('pwInput').focus(), 100);
+}
+
+function cekPassword() {
+  const pw = document.getElementById('pwInput').value;
+  if (pw === ADMIN_PW) {
+    adminUnlocked = true;
+    document.getElementById('pwModal').classList.remove('show');
+    document.getElementById('pwInput').value = '';
+    bukaModeRekam();
+  } else {
+    showToast('Password salah!','error');
+    document.getElementById('pwInput').value = '';
+  }
+}
+
+function tutupPwModal() {
+  document.getElementById('pwModal').classList.remove('show');
+  document.getElementById('pwInput').value = '';
+}
+
+async function bukaModeRekam() {
+  document.getElementById('tab-rekam').style.display = 'block';
+  ganti('rekam');
+  await muatSemuaData();
+}
+
+// ── JENIS PELAYANAN ──
+function pilihJenis(jenis) {
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  event.target.closest('.pill').classList.add('active');
+  document.getElementById('JenisPelayanan').value = jenis;
+  const showDPJP = (jenis === 'Pendampingan' || jenis === 'Monitoring');
+  document.getElementById('cardDPJP').style.display = showDPJP ? 'block' : 'none';
+}
+
+// ── FKTP AUTO-FILL ──
+function pilihFKTP(val) {
+  const d = FKTP_DATA[val];
+  if (!d) return;
+  document.getElementById('Kepada').value = d.kepada;
+  document.getElementById('MohonIjin').value = d.mohonIjin;
+  document.getElementById('Dari').value = d.dari;
+  const tembusan = "1. Kapusdokkes Polri\n2. Wakapolda NTB\n3. Irwasda Polda NTB\n4. Karo SDM Polda NTB" + (d.tembusan5 ? "\n5. "+d.tembusan5 : "");
+  document.getElementById('Tembusan').value = tembusan;
+}
+
+// ── CARI PASIEN ──
+let cariTimer = null;
+function cariPasien(val) {
+  clearTimeout(cariTimer);
+  document.getElementById('loadedBanner').style.display = 'none';
+  if (!val || val.length < 2) { document.getElementById('dropdown').style.display = 'none'; return; }
+  cariTimer = setTimeout(async () => {
+    try {
+      const res = await fetch(API_URL + '?action=search&nama=' + encodeURIComponent(val));
+      const data = await res.json();
+      tampilDropdown(data);
+    } catch(e) { tampilDropdown([]); }
+  }, 350);
+}
+
+function tampilDropdown(data) {
+  const dd = document.getElementById('dropdown');
+  if (!data.length) {
+    dd.innerHTML = '<div class="no-result">Belum ada data — akan dibuat baru</div>';
+  } else {
+    // Deduplikasi by Nama + NIPNRP + Kesatuan — tampilkan semua yang berbeda
+    const seen = {};
+    const unik = [];
+    data.forEach(r => {
+      const key = (r['Nama Pasien']||'') + '||' + (r['NIPNRP']||'') + '||' + (r['Kesatuan']||'');
+      if (!seen[key]) { seen[key] = true; unik.push(r); }
+    });
+    dd.innerHTML = unik.map(r => `
+      <div class="dropdown-item" onclick='muatData(${JSON.stringify(r).replace(/'/g,"&#39;")})'>
+        <div class="avatar">${getInisial(r['Nama Pasien']||'?')}</div>
+        <div style="flex:1">
+          <div class="d-name">${r['Nama Pasien']||''}</div>
+          <div class="d-sub">${r['Kesatuan']||''} · ${r['Pangkat']||''} · ${r['NIPNRP']||'-'}</div>
+        </div>
+        <span class="d-badge">🕐 data lama</span>
+      </div>`).join('');
+  }
+  dd.style.display = 'block';
+}
+
+function muatData(r) {
+  // Data Pasien
+  [['NamaPasien','Nama Pasien'],['Pangkat','Pangkat'],['NIPNRP','NIPNRP'],['Jabatan','Jabatan']].forEach(([id,key]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = r[key] || '';
+  });
+  // Kesatuan + trigger auto-fill
+  if (r['Kesatuan']) { document.getElementById('Kesatuan').value = r['Kesatuan']; pilihFKTP(r['Kesatuan']); }
+  // FKTP
+  if (r['FKTP']) document.getElementById('FKTP').value = r['FKTP'];
+  // Vital + Klinis
+  ['KondisiUmum','Tensi','Nadi','RR','SpO2','Keterangan',
+   'Keluhan1','Keluhan2','Keluhan3','Keluhan4',
+   'Diagnosa1','Diagnosa2','Diagnosa3','Diagnosa4',
+   'Tindakan1','Tindakan2','Tindakan3','Tindakan4',
+   'Rencana1','Rencana2','Rencana3','Rencana4',
+   'DokterDPJP1','DokterDPJP2','DokterDPJP3','DokterDPJP4'].forEach(k => {
+    const el = document.getElementById(k);
+    if (el) el.value = r[k] || '';
+  });
+  // Kosongkan field yang diisi ulang
+  ['NoHP','PersonelTerlibat','Waktu','Tempat'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  // Tanggal & hari hari ini
+  document.getElementById('Tanggal').value = new Date().toISOString().split('T')[0];
+  const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  document.getElementById('Hari').value = days[new Date().getDay()];
+  // Jenis pelayanan
+  if (r['JenisPelayanan']) {
+    document.getElementById('JenisPelayanan').value = r['JenisPelayanan'];
+    document.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', p.textContent.includes(r['JenisPelayanan'])));
+    document.getElementById('cardDPJP').style.display = (r['JenisPelayanan']==='Pendampingan'||r['JenisPelayanan']==='Monitoring') ? 'block' : 'none';
+  }
+  document.getElementById('dropdown').style.display = 'none';
+  document.getElementById('loadedNama').textContent = r['Nama Pasien'] || '';
+  document.getElementById('loadedBanner').style.display = 'flex';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function getInisial(nama) { return nama.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
+
+// ── UPLOAD FOTO ──
+function previewImg(input, previewId) {
+  const prev = document.getElementById(previewId);
+  prev.innerHTML = '';
+  if (input.files && input.files[0]) {
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(input.files[0]);
+    prev.appendChild(img);
+  }
+}
+function toBase64(file) {
+  return new Promise((res,rej) => { const r = new FileReader(); r.onload = () => res(r.result.split(',')[1]); r.onerror = rej; r.readAsDataURL(file); });
+}
+
+async function uploadKeImgBB(file) {
+  try {
+    const base64 = await toBase64(file);
+    const formData = new FormData();
+    formData.append('key', 'e5eea8825511be82244dec1b3dd2fe83');
+    formData.append('image', base64);
+    formData.append('name', file.name);
+    const res = await fetch('https://api.imgbb.com/1/upload', {
+      method: 'POST',
+      body: formData
+    });
+    const result = await res.json();
+    if (result.success) return result.data.url;
+    console.error('ImgBB error:', result);
+    return '';
+  } catch(e) {
+    console.error('Upload gagal:', e);
+    return '';
+  }
+}
+
+// ── SIMPAN ──
+async function simpanLaporan() {
+  const jenis = document.getElementById('JenisPelayanan').value;
+  const nama = document.getElementById('NamaPasien').value.trim();
+  const noHp = document.getElementById('NoHP').value.trim();
+  if (!jenis) { showToast('Pilih jenis pelayanan dulu!','error'); return; }
+  if (!nama) { showToast('Nama pasien wajib diisi!','error'); return; }
+  if (!document.getElementById('Pangkat').value.trim()) { showToast('Pangkat wajib diisi!','error'); return; }
+  if (!document.getElementById('NIPNRP').value.trim()) { showToast('NIP/NRP wajib diisi!','error'); return; }
+  if (!document.getElementById('Jabatan').value.trim()) { showToast('Jabatan wajib diisi!','error'); return; }
+  if (!document.getElementById('Kesatuan').value) { showToast('Kesatuan wajib dipilih!','error'); return; }
+  if (!noHp) { showToast('No HP wajib diisi!','error'); return; }
+  if (!document.getElementById('FKTP').value) { showToast('FKTP wajib dipilih!','error'); return; }
+  if (!document.getElementById('Hari').value) { showToast('Hari wajib dipilih!','error'); return; }
+  if (!document.getElementById('Tanggal').value) { showToast('Tanggal wajib diisi!','error'); return; }
+  if (!document.getElementById('Waktu').value) { showToast('Waktu wajib diisi!','error'); return; }
+  if (!document.getElementById('Tempat').value.trim()) { showToast('Tempat wajib diisi!','error'); return; }
+  if (!document.getElementById('KondisiUmum').value.trim()) { showToast('Kondisi Umum wajib diisi!','error'); return; }
+  if (!document.getElementById('Tensi').value.trim()) { showToast('Tensi wajib diisi!','error'); return; }
+  if (!document.getElementById('Nadi').value.trim()) { showToast('Nadi wajib diisi!','error'); return; }
+  if (!document.getElementById('RR').value.trim()) { showToast('RR wajib diisi!','error'); return; }
+  if (!document.getElementById('SpO2').value.trim()) { showToast('SpO2 wajib diisi!','error'); return; }
+  if (!document.getElementById('Keluhan1').value.trim()) { showToast('Keluhan 1 wajib diisi!','error'); return; }
+  if (!document.getElementById('Diagnosa1').value.trim()) { showToast('Diagnosa 1 wajib diisi!','error'); return; }
+  if (!document.getElementById('Tindakan1').value.trim()) { showToast('Tindakan 1 wajib diisi!','error'); return; }
+  if (!document.getElementById('Rencana1').value.trim()) { showToast('Rencana 1 wajib diisi!','error'); return; }
+  if (!document.getElementById('fileDoc1').files[0]) { showToast('Foto 1 wajib diupload!','error'); return; }
+  if (!document.getElementById('fileDoc2').files[0]) { showToast('Foto 2 wajib diupload!','error'); return; }
+
+  document.getElementById('loadingOverlay').classList.add('show');
+  document.getElementById('btnSave').disabled = true;
+  try {
+    const payload = { action:'save' };
+    FIELDS.forEach(id => { const el = document.getElementById(id); if (el) payload[id==='NamaPasien'?'Nama Pasien':id] = el.value||''; });
+
+    // Upload foto langsung ke ImgBB dari browser
+    const f1 = document.getElementById('fileDoc1').files[0];
+    const f2 = document.getElementById('fileDoc2').files[0];
+    if (f1) {
+      document.getElementById('loadingText').textContent='Mengupload foto 1...';
+      payload['Dokumentasi1'] = await uploadKeImgBB(f1);
+    }
+    if (f2) {
+      document.getElementById('loadingText').textContent='Mengupload foto 2...';
+      payload['Dokumentasi2'] = await uploadKeImgBB(f2);
+    }
+    document.getElementById('loadingText').textContent='Menyimpan & mengirim WA...';
+    const res = await fetch(API_URL, { method:'POST', body:JSON.stringify(payload) });
+    const result = await res.json();
+    if (result.status==='ok') { showToast('Laporan berhasil disimpan! WA terkirim ✓','success'); resetForm(); }
+    else showToast('Gagal menyimpan, coba lagi','error');
+  } catch(e) { showToast('Koneksi bermasalah, coba lagi','error'); }
+  document.getElementById('loadingOverlay').classList.remove('show');
+  document.getElementById('btnSave').disabled = false;
+}
+
+// ── RESET ──
+function resetForm() {
+  FIELDS.forEach(id => { const el = document.getElementById(id); if (el) el.value=''; });
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  document.getElementById('loadedBanner').style.display = 'none';
+  document.getElementById('dropdown').style.display = 'none';
+  document.getElementById('prev1').innerHTML = '';
+  document.getElementById('prev2').innerHTML = '';
+  document.getElementById('fileDoc1').value = '';
+  document.getElementById('fileDoc2').value = '';
+  document.getElementById('cardDPJP').style.display = 'none';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── REKAM MEDIS ──
+async function muatSemuaData() {
+  document.getElementById('rmList').innerHTML = '<div class="empty-state"><div class="es-icon">⏳</div><p>Memuat data...</p></div>';
+  try {
+    const res = await fetch(API_URL + '?action=getAll');
+    const raw = await res.json();
+    // Normalize field names (Sheet pakai spasi, frontend pakai tanpa spasi)
+    allData = raw.map(r => ({
+      ...r,
+      'Nama Pasien': r['Nama Pasien'] || '',
+      'NIPNRP':      r['NIP/NRP']    || r['NIPNRP']    || '',
+      'KondisiUmum': r['Kondisi Umum']|| r['KondisiUmum']|| '',
+      'Keluhan1':    r['Keluhan 1']  || r['Keluhan1']  || '',
+      'Keluhan2':    r['Keluhan 2']  || r['Keluhan2']  || '',
+      'Keluhan3':    r['Keluhan 3']  || r['Keluhan3']  || '',
+      'Keluhan4':    r['Keluhan 4']  || r['Keluhan4']  || '',
+      'Diagnosa1':   r['Diagnosa 1'] || r['Diagnosa1'] || '',
+      'Diagnosa2':   r['Diagnosa 2'] || r['Diagnosa2'] || '',
+      'Diagnosa3':   r['Diagnosa 3'] || r['Diagnosa3'] || '',
+      'Diagnosa4':   r['Diagnosa 4'] || r['Diagnosa4'] || '',
+      'Tindakan1':   r['Tindakan 1'] || r['Tindakan1'] || '',
+      'Tindakan2':   r['Tindakan 2'] || r['Tindakan2'] || '',
+      'Tindakan3':   r['Tindakan 3'] || r['Tindakan3'] || '',
+      'Tindakan4':   r['Tindakan 4'] || r['Tindakan4'] || '',
+      'Rencana1':    r['Rencana 1']  || r['Rencana1']  || '',
+      'Rencana2':    r['Rencana 2']  || r['Rencana2']  || '',
+      'Rencana3':    r['Rencana 3']  || r['Rencana3']  || '',
+      'Rencana4':    r['Rencana 4']  || r['Rencana4']  || '',
+      'DokterDPJP1': r['Dokter DPJP 1']||r['DokterDPJP1']||'',
+      'DokterDPJP2': r['Dokter DPJP 2']||r['DokterDPJP2']||'',
+      'DokterDPJP3': r['Dokter DPJP 3']||r['DokterDPJP3']||'',
+      'DokterDPJP4': r['Dokter DPJP 4']||r['DokterDPJP4']||'',
+      'FKTP':        r['FKTP Yang Melaksanakan']||r['FKTP']||'',
+      'Dokumentasi1':r['Dokumentasi 1']||r['Dokumentasi1']||'',
+      'Dokumentasi2':r['Dokumentasi 2']||r['Dokumentasi2']||'',
+    }));
+    tampilRekamMedis(allData);
+  } catch(e) {
+    document.getElementById('rmList').innerHTML = '<div class="empty-state"><div class="es-icon">❌</div><p>Gagal memuat data</p></div>';
+  }
+}
+
+function tampilRekamMedis(data) {
+  // Grup by Nama Pasien + NIPNRP + Kesatuan
+  const grup = {};
+  data.forEach(r => {
+    const key = (r['Nama Pasien']||'') + '||' + (r['NIPNRP']||'') + '||' + (r['Kesatuan']||'');
+    if (!grup[key]) grup[key] = { info: r, kunjungan: [] };
+    grup[key].kunjungan.push(r);
+  });
+
+  const keys = Object.keys(grup);
+  if (!keys.length) {
+    document.getElementById('rmList').innerHTML = '<div class="empty-state"><div class="es-icon">📭</div><p>Belum ada data laporan</p></div>';
+    return;
+  }
+
+  document.getElementById('rmList').innerHTML = keys.map((key, idx) => {
+    const g = grup[key];
+    const info = g.info;
+    const jml = g.kunjungan.length;
+    const terbaru = g.kunjungan[g.kunjungan.length-1];
+    return `
+    <div class="pasien-card" onclick="toggleKunjungan('kv-${idx}')">
+      <div class="pasien-card-header">
+        <div class="pasien-avatar">${getInisial(info['Nama Pasien']||'?')}</div>
+        <div class="pasien-info">
+          <div class="pasien-name">${info['Nama Pasien']||'-'}</div>
+          <div class="pasien-meta">${info['Pangkat']||''} · ${info['NIPNRP']||'-'} · ${info['Kesatuan']||'-'}</div>
+          <div class="pasien-meta" style="margin-top:3px">Terakhir: ${formatTanggal(terbaru['Tanggal'])} · ${terbaru['JenisPelayanan']||'-'}</div>
+        </div>
+        <span class="pasien-count">${jml} kunjungan</span>
+      </div>
+      <div class="kunjungan-list" id="kv-${idx}">
+        ${g.kunjungan.slice().reverse().map((k,i) => {
+          const kJson = JSON.stringify(k).replace(/"/g,'&quot;');
+          return `
+          <div class="kunjungan-item">
+            <div style="display:flex;align-items:flex-start;gap:8px">
+              <div style="flex:1" onclick="event.stopPropagation();bukaDetail(${kJson})">
+                <div class="kv-header">
+                  <span class="kv-tanggal">📅 ${formatTanggal(k['Tanggal'])} · ${k['Hari']||''} ${formatWaktu(k['Waktu'])}</span>
+                  <span class="kv-jenis">${k['JenisPelayanan']||'-'}</span>
+                </div>
+                <div class="kv-detail">🏥 ${k['FKTP']||'-'} · 📍 ${k['Tempat']||'-'}</div>
+                <div class="kv-detail" style="margin-top:3px">🩺 ${[k['Diagnosa1'],k['Diagnosa2'],k['Diagnosa3'],k['Diagnosa4']].filter(Boolean).join(', ')||'-'}</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+                <button onclick="event.stopPropagation();exportWord(${kJson})"
+                  style="background:#1a7a3c;border:none;color:white;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap">
+                  📄 Word
+                </button>
+                <button onclick="event.stopPropagation();hapusLangsung(${k._rowIndex||0},'${(k['Nama Pasien']||'').replace(/'/g,"")}')"
+                  style="background:#fee2e2;border:none;color:#dc2626;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap">
+                  🗑️
+                </button>
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleKunjungan(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+}
+
+function filterPasien(val) {
+  if (!val) { tampilRekamMedis(allData); return; }
+  const filtered = allData.filter(r => (r['Nama Pasien']||'').toLowerCase().includes(val.toLowerCase()));
+  tampilRekamMedis(filtered);
+}
+
+// Format tanggal: YYYY-MM-DD atau Date → DD/MM/YYYY
+function formatTanggal(val) {
+  if (!val) return '-';
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(val)) return val;
+  if (/^\d{4}-\d{2}-\d{2}/.test(val)) {
+    return val.substring(8,10) + '/' + val.substring(5,7) + '/' + val.substring(0,4);
+  }
+  return val;
+}
+
+// Format waktu: pastikan HH:MM saja
+function formatWaktu(val) {
+  if (!val) return '-';
+  if (typeof val === 'string' && /^\d{1,2}:\d{2}/.test(val)) return val.substring(0,5);
+  return val;
+}
+
+// Fix SpO2 — kalau angka desimal (0.98) ubah ke persen (98%)
+function formatSpO2(val) {
+  if (!val) return '-';
+  const str = String(val).trim();
+  // Sudah ada % atau teks normal
+  if (str.includes('%') || isNaN(parseFloat(str))) return str;
+  const num = parseFloat(str);
+  // Kalau angka desimal < 2 (misal 0.98), kalikan 100
+  if (num > 0 && num <= 1) return Math.round(num * 100) + '%';
+  return str;
+}
+
+// Export ke Word (.doc)
+function exportWord(r) {
+  const fktp = r['FKTP'] || '-';
+  const jenis = r['JenisPelayanan'] || '-';
+  const hari = r['Hari'] || '-';
+  const tanggal = formatTanggal(r['Tanggal']);
+  const nama = r['Nama Pasien'] || '-';
+  const pangkat = r['Pangkat'] || '-';
+  const nipnrp = r['NIPNRP'] || '-';
+  const jabatan = r['Jabatan'] || '-';
+  const kesatuan = r['Kesatuan'] || '-';
+  const tempat = r['Tempat'] || '-';
+  const keluhan = [r['Keluhan1'],r['Keluhan2'],r['Keluhan3'],r['Keluhan4']].filter(Boolean).map(k=>'- '+k).join('\n');
+  const diagnosa = [r['Diagnosa1'],r['Diagnosa2'],r['Diagnosa3'],r['Diagnosa4']].filter(Boolean).map(d=>'- '+d).join('\n');
+  const tindakan = [r['Tindakan1'],r['Tindakan2'],r['Tindakan3'],r['Tindakan4']].filter(Boolean).map(t=>'- '+t).join('\n');
+
+  const html = `
+<html xmlns:o='urn:schemas-microsoft-com:office:office'
+      xmlns:w='urn:schemas-microsoft-com:office:word'
+      xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset='utf-8'>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 12pt; margin: 2cm; }
+  h2 { text-align: center; font-size: 13pt; text-transform: uppercase; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10pt; }
+  td { padding: 4pt 6pt; vertical-align: top; font-size: 11pt; }
+  .label { width: 35%; font-weight: normal; }
+  .sep { width: 5%; }
+  .val { width: 60%; }
+  .section { font-weight: bold; margin-top: 14pt; margin-bottom: 4pt; font-size: 11pt; }
+  p { margin: 3pt 0; font-size: 11pt; }
+</style>
+</head>
+<body>
+<h2>FKTP ${fktp}</h2>
+<p style="text-align:center;font-size:11pt">1. <em>${jenis}</em> Kepada Anggota pada Hari/Tanggal : ${hari}, ${tanggal}</p>
+<br>
+<table>
+  <tr><td class="label">Nama</td><td class="sep">:</td><td class="val">${nama}</td></tr>
+  <tr><td class="label">Pangkat/NRP</td><td class="sep">:</td><td class="val">${pangkat} / ${nipnrp}</td></tr>
+  <tr><td class="label">Jabatan</td><td class="sep">:</td><td class="val">${jabatan}</td></tr>
+  <tr><td class="label">Kesatuan</td><td class="sep">:</td><td class="val">${kesatuan}</td></tr>
+  <tr><td class="label">Tempat</td><td class="sep">:</td><td class="val">${tempat}</td></tr>
+</table>
+<br>
+<p class="section">📌 Keluhan :</p>
+${keluhan.split('\n').map(k=>`<p>${k}</p>`).join('')}
+<br>
+<p class="section">📌 Diagnosa</p>
+${diagnosa.split('\n').map(d=>`<p>${d}</p>`).join('')}
+<br>
+<p class="section">📌 Tindakan:</p>
+${tindakan.split('\n').map(t=>`<p>${t}</p>`).join('')}
+</body></html>`;
+
+  const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Laporan_${jenis}_${nama}_${tanggal.replace(/\//g,'-')}.doc`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Download foto langsung
+async function downloadFoto(url, nama) {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = nama + '.jpg';
+    a.click();
+  } catch(e) {
+    window.open(url, '_blank');
+  }
+}
+
+function bukaDetail(r) {
+  const list = (arr) => arr.filter(Boolean).map(x=>`<span class="rm-tag">${x}</span>`).join('');
+  const field = (label, val) => val ? `<div class="rm-field"><div class="rm-label">${label}</div><div class="rm-value">${val}</div></div>` : '';
+
+  document.getElementById('modalContent').innerHTML = `
+    <div class="modal-header">
+      <h3>📋 Detail Kunjungan — ${r['Nama Pasien']||''}</h3>
+      <button class="modal-close" onclick="tutupModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="rm-section">
+        <div class="rm-section-title">👤 Data Pasien</div>
+        <div class="rm-grid">
+          ${field('Nama Pasien', r['Nama Pasien'])}
+          ${field('Pangkat', r['Pangkat'])}
+          ${field('NIP/NRP', r['NIPNRP'])}
+          ${field('Jabatan', r['Jabatan'])}
+          <div class="rm-field full">${field('Kesatuan', r['Kesatuan'])}</div>
+        </div>
+      </div>
+      <div class="rm-section">
+        <div class="rm-section-title">📋 Detail Kunjungan</div>
+        <div class="rm-grid">
+          ${field('Jenis Pelayanan', r['JenisPelayanan'])}
+          ${field('Tanggal', formatTanggal(r['Tanggal']))}
+          ${field('Hari', r['Hari'])}
+          ${field('Waktu', formatWaktu(r['Waktu']))}
+          ${field('FKTP', r['FKTP'])}
+          <div class="rm-field full">${field('Tempat', r['Tempat'])}</div>
+          <div class="rm-field full">${field('Personel Terlibat', r['PersonelTerlibat'])}</div>
+        </div>
+      </div>
+      <div class="rm-section">
+        <div class="rm-section-title">💊 Kondisi & Vital Sign</div>
+        ${field('Kondisi Umum', r['KondisiUmum'])}
+        <div class="rm-vitals" style="margin-top:8px">
+          <div class="vital-box"><div class="vb-val">${r['Tensi']||'-'}</div><div class="vb-label">Tensi</div></div>
+          <div class="vital-box"><div class="vb-val">${r['Nadi']||'-'}</div><div class="vb-label">Nadi</div></div>
+          <div class="vital-box"><div class="vb-val">${r['RR']||'-'}</div><div class="vb-label">RR</div></div>
+          <div class="vital-box"><div class="vb-val">${formatSpO2(r['SpO2'])}</div><div class="vb-label">SpO2</div></div>
+        </div>
+        ${r['Keterangan'] ? `<div style="margin-top:8px">${field('Keterangan', r['Keterangan'])}</div>` : ''}
+      </div>
+      <div class="rm-section">
+        <div class="rm-section-title">🩺 Keluhan</div>
+        <div class="rm-list">${list([r['Keluhan1'],r['Keluhan2'],r['Keluhan3'],r['Keluhan4']])||'<span style="color:var(--text3);font-size:13px">-</span>'}</div>
+      </div>
+      <div class="rm-section">
+        <div class="rm-section-title">🔬 Diagnosa</div>
+        <div class="rm-list">${list([r['Diagnosa1'],r['Diagnosa2'],r['Diagnosa3'],r['Diagnosa4']])||'<span style="color:var(--text3);font-size:13px">-</span>'}</div>
+      </div>
+      <div class="rm-section">
+        <div class="rm-section-title">💉 Tindakan</div>
+        <div class="rm-list">${list([r['Tindakan1'],r['Tindakan2'],r['Tindakan3'],r['Tindakan4']])||'<span style="color:var(--text3);font-size:13px">-</span>'}</div>
+      </div>
+      <div class="rm-section">
+        <div class="rm-section-title">📅 Rencana Tindak Lanjut</div>
+        <div class="rm-list">${list([r['Rencana1'],r['Rencana2'],r['Rencana3'],r['Rencana4']])||'<span style="color:var(--text3);font-size:13px">-</span>'}</div>
+      </div>
+      ${[r['DokterDPJP1'],r['DokterDPJP2'],r['DokterDPJP3'],r['DokterDPJP4']].filter(Boolean).length ? `
+      <div class="rm-section">
+        <div class="rm-section-title">👨‍⚕️ Dokter DPJP</div>
+        <div class="rm-list">${list([r['DokterDPJP1'],r['DokterDPJP2'],r['DokterDPJP3'],r['DokterDPJP4']])}</div>
+      </div>` : ''}
+      <div class="rm-section">
+        <div class="rm-section-title">📷 Dokumentasi</div>
+        ${(r['Dokumentasi1']||r['Dokumentasi2']) ? `
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">
+          ${r['Dokumentasi1'] ? `
+          <div style="text-align:center">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600">FOTO 1</div>
+            <img src="${r['Dokumentasi1']}"
+              onclick="window.open('${r['Dokumentasi1']}','_blank')"
+              onerror="this.alt='Foto tidak tersedia'"
+              style="width:130px;height:130px;object-fit:cover;border-radius:10px;border:2px solid var(--green4);display:block;cursor:pointer">
+            <a href="${r['Dokumentasi1']}" download
+              onclick="event.preventDefault();downloadFoto('${r['Dokumentasi1']}','foto1')"
+              style="display:inline-block;margin-top:8px;font-size:12px;background:var(--green);color:white;padding:6px 14px;border-radius:99px;font-weight:600;text-decoration:none;cursor:pointer">
+              ⬇ Download
+            </a>
+          </div>` : ''}
+          ${r['Dokumentasi2'] ? `
+          <div style="text-align:center">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600">FOTO 2</div>
+            <img src="${r['Dokumentasi2']}"
+              onclick="window.open('${r['Dokumentasi2']}','_blank')"
+              onerror="this.alt='Foto tidak tersedia'"
+              style="width:130px;height:130px;object-fit:cover;border-radius:10px;border:2px solid var(--green4);display:block;cursor:pointer">
+            <a href="${r['Dokumentasi2']}" download
+              onclick="event.preventDefault();downloadFoto('${r['Dokumentasi2']}','foto2')"
+              style="display:inline-block;margin-top:8px;font-size:12px;background:var(--green);color:white;padding:6px 14px;border-radius:99px;font-weight:600;text-decoration:none;cursor:pointer">
+              ⬇ Download
+            </a>
+          </div>` : ''}
+        </div>` : '<div style="font-size:13px;color:var(--text3)">Tidak ada dokumentasi</div>'}
+      </div>
+    </div>`;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function tutupModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+
+// ── HAPUS KUNJUNGAN (Admin Only) ──
+async function hapusLangsung(rowIndex, namaPasien) {
+  if (!confirm('Hapus data kunjungan ' + namaPasien + '?')) return;
+  try {
+    showToast('Menghapus data...', 'success');
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'delete', rowIndex: rowIndex })
+    });
+    const result = await res.json();
+    if (result.status === 'ok') {
+      showToast('Data berhasil dihapus! ✓', 'success');
+      await muatSemuaData();
+    } else {
+      showToast('Gagal menghapus: ' + (result.msg||''), 'error');
+    }
+  } catch(e) {
+    showToast('Koneksi bermasalah', 'error');
+  }
+}
+
+// ── TOAST ──
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast '+type+' show';
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── INIT ──
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-wrap')) document.getElementById('dropdown').style.display = 'none';
+});
+document.getElementById('Tanggal').value = new Date().toISOString().split('T')[0];
+const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+document.getElementById('Hari').value = days[new Date().getDay()];
+</script>
+</body>
+</html>
