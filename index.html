@@ -115,6 +115,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height
 .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);padding:13px 24px;border-radius:99px;font-size:14px;font-weight:600;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:9999;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.15)}
 .toast.success{background:var(--green);color:white}
 .toast.error{background:#c62828;color:white}
+.toast.info{background:#1565c0;color:white}
 .toast.show{opacity:1}
 
 /* ── PAGE ── */
@@ -619,13 +620,35 @@ function previewImg(input, previewId) {
     prev.appendChild(img);
   }
 }
-function toBase64(file) {
-  return new Promise((res,rej) => { const r = new FileReader(); r.onload = () => res(r.result.split(',')[1]); r.onerror = rej; r.readAsDataURL(file); });
+// Kompres foto sebelum upload — max 1024px, quality 0.7
+function kompressFoto(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        const maxSize = 1024;
+        if (w > maxSize || h > maxSize) {
+          if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+          else { w = Math.round(w * maxSize / h); h = maxSize; }
+        }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const base64 = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+        resolve(base64);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 async function uploadKeImgBB(file) {
   try {
-    const base64 = await toBase64(file);
+    showToast('Mengupload foto...', 'info');
+    const base64 = await kompressFoto(file);
     const formData = new FormData();
     formData.append('key', 'e5eea8825511be82244dec1b3dd2fe83');
     formData.append('image', base64);
