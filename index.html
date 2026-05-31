@@ -380,20 +380,20 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height
       <div class="field">
         <label>Foto 1 <span class="req">*</span></label>
         <div class="upload-area" onclick="document.getElementById('fileDoc1').click()">
-          <input type="file" id="fileDoc1" accept="image/*" onchange="previewImg(this,'prev1')">
+          <input type="file" id="fileDoc1" accept="image/*" capture="environment" onchange="previewImg(this,'prev1')">
           <div class="u-icon">📷</div>
-          <div class="u-text">Tap untuk pilih foto</div>
-          <div class="u-sub">JPG / PNG / WEBP</div>
+          <div class="u-text">Tap untuk foto / pilih gambar</div>
+          <div class="u-sub">Kamera langsung atau dari galeri</div>
         </div>
         <div class="preview-imgs" id="prev1"></div>
       </div>
       <div class="field">
         <label>Foto 2 <span class="req">*</span></label>
         <div class="upload-area" onclick="document.getElementById('fileDoc2').click()">
-          <input type="file" id="fileDoc2" accept="image/*" onchange="previewImg(this,'prev2')">
+          <input type="file" id="fileDoc2" accept="image/*" capture="environment" onchange="previewImg(this,'prev2')">
           <div class="u-icon">📷</div>
-          <div class="u-text">Tap untuk pilih foto</div>
-          <div class="u-sub">JPG / PNG / WEBP</div>
+          <div class="u-text">Tap untuk foto / pilih gambar</div>
+          <div class="u-sub">Kamera langsung atau dari galeri</div>
         </div>
         <div class="preview-imgs" id="prev2"></div>
       </div>
@@ -937,6 +937,15 @@ ${tindakanArr.map(t => p(b, '- <i>' + t + '</i>')).join('')}
   URL.revokeObjectURL(url);
 }
 
+// Fix URL ImgBB agar bisa tampil di semua browser/HP
+function fixImgBBUrl(url) {
+  if (!url) return url;
+  // Ganti i.ibb.co ke ibb.co/... format display langsung
+  // URL format ImgBB: https://i.ibb.co/XXXXX/nama.jpg → tetap pakai tapi tambah https
+  if (url.startsWith('http://')) return url.replace('http://', 'https://');
+  return url;
+}
+
 // Download foto langsung
 async function downloadFoto(url, nama) {
   try {
@@ -1019,15 +1028,15 @@ function bukaDetail(r) {
         <div class="rm-section-title">📷 Dokumentasi</div>
         ${(r['Dokumentasi1']||r['Dokumentasi2']) ? `
         <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">
-          ${r['Dokumentasi1'] ? `
+        ${r['Dokumentasi1'] ? `
           <div style="text-align:center">
             <div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600">FOTO 1</div>
-            <img src="${r['Dokumentasi1']}"
-              onclick="window.open('${r['Dokumentasi1']}','_blank')"
+            <img src="${fixImgBBUrl(r['Dokumentasi1'])}"
+              onclick="window.open('${fixImgBBUrl(r['Dokumentasi1'])}','_blank')"
               onerror="this.alt='Foto tidak tersedia'"
               style="width:130px;height:130px;object-fit:cover;border-radius:10px;border:2px solid var(--green4);display:block;cursor:pointer">
-            <a href="${r['Dokumentasi1']}" download
-              onclick="event.preventDefault();downloadFoto('${r['Dokumentasi1']}','foto1')"
+            <a href="${fixImgBBUrl(r['Dokumentasi1'])}" download
+              onclick="event.preventDefault();downloadFoto('${fixImgBBUrl(r['Dokumentasi1'])}','foto1')"
               style="display:inline-block;margin-top:8px;font-size:12px;background:var(--green);color:white;padding:6px 14px;border-radius:99px;font-weight:600;text-decoration:none;cursor:pointer">
               ⬇ Download
             </a>
@@ -1035,12 +1044,12 @@ function bukaDetail(r) {
           ${r['Dokumentasi2'] ? `
           <div style="text-align:center">
             <div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600">FOTO 2</div>
-            <img src="${r['Dokumentasi2']}"
-              onclick="window.open('${r['Dokumentasi2']}','_blank')"
+            <img src="${fixImgBBUrl(r['Dokumentasi2'])}"
+              onclick="window.open('${fixImgBBUrl(r['Dokumentasi2'])}','_blank')"
               onerror="this.alt='Foto tidak tersedia'"
               style="width:130px;height:130px;object-fit:cover;border-radius:10px;border:2px solid var(--green4);display:block;cursor:pointer">
-            <a href="${r['Dokumentasi2']}" download
-              onclick="event.preventDefault();downloadFoto('${r['Dokumentasi2']}','foto2')"
+            <a href="${fixImgBBUrl(r['Dokumentasi2'])}" download
+              onclick="event.preventDefault();downloadFoto('${fixImgBBUrl(r['Dokumentasi2'])}','foto2')"
               style="display:inline-block;margin-top:8px;font-size:12px;background:var(--green);color:white;padding:6px 14px;border-radius:99px;font-weight:600;text-decoration:none;cursor:pointer">
               ⬇ Download
             </a>
