@@ -957,7 +957,7 @@ function bukaDetail(r) {
 
   document.getElementById('modalContent').innerHTML = `
     <div class="modal-header">
-      <h3>📋 Detail Kunjungan — ${r['Nama Pasien']||''}</h3>
+      <h3>📋 Detail Kunjungan ${r['JenisPelayanan']||''} — ${r['Nama Pasien']||''}</h3>
       <button class="modal-close" onclick="tutupModal()">✕</button>
     </div>
     <div class="modal-body">
