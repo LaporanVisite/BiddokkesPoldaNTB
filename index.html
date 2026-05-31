@@ -974,7 +974,7 @@ function bukaDetail(r) {
       <div class="rm-section">
         <div class="rm-section-title">📋 Detail Kunjungan</div>
         <div class="rm-grid">
-          ${field('Jenis Pelayanan', r['JenisPelayanan'])}
+          <div class="rm-field full">${field('Jenis Pelayanan', r['JenisPelayanan'])}</div>
           ${field('Tanggal', formatTanggal(r['Tanggal']))}
           ${field('Hari', r['Hari'])}
           ${field('Waktu', formatWaktu(r['Waktu']))}
