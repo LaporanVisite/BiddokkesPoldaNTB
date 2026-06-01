@@ -636,8 +636,7 @@ function kompressFoto(file) {
         }
         canvas.width = w; canvas.height = h;
         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        const base64 = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
-        resolve(base64);
+        canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.7);
       };
       img.src = e.target.result;
     };
@@ -648,18 +647,18 @@ function kompressFoto(file) {
 async function uploadKeImgBB(file) {
   try {
     showToast('Mengupload foto...', 'info');
-    const base64 = await kompressFoto(file);
+    const blob = await kompressFoto(file);
     const formData = new FormData();
-    formData.append('key', 'e5eea8825511be82244dec1b3dd2fe83');
-    formData.append('image', base64);
-    formData.append('name', file.name);
-    const res = await fetch('https://api.imgbb.com/1/upload', {
+    formData.append('file', blob, file.name);
+    formData.append('upload_preset', 'biddokkes');
+    formData.append('cloud_name', 'dyrhzsyp3');
+    const res = await fetch('https://api.cloudinary.com/v1_1/dyrhzsyp3/image/upload', {
       method: 'POST',
       body: formData
     });
     const result = await res.json();
-    if (result.success) return result.data.url;
-    console.error('ImgBB error:', result);
+    if (result.secure_url) return result.secure_url;
+    console.error('Cloudinary error:', result);
     return '';
   } catch(e) {
     console.error('Upload gagal:', e);
@@ -960,16 +959,14 @@ ${tindakanArr.map(t => p(b, '- <i>' + t + '</i>')).join('')}
   URL.revokeObjectURL(url);
 }
 
-// Fix URL ImgBB agar bisa tampil di semua browser/HP
+// Fix URL foto agar bisa tampil di semua browser/HP
 function fixImgBBUrl(url) {
   if (!url) return url;
   // Pastikan pakai https
   if (url.startsWith('http://')) url = url.replace('http://', 'https://');
-  // ibb.co/XXXX/nama.jpg → i.ibb.co/XXXX/nama.jpg (direct image)
-  // Tapi jangan ubah yang sudah i.ibb.co
-  if (/https:\/\/ibb\.co\/[^/]+\//.test(url)) {
-    url = url.replace('https://ibb.co/', 'https://i.ibb.co/');
-  }
+  // URL Cloudinary: langsung pakai, tidak perlu diubah
+  if (url.includes('cloudinary.com')) return url;
+  // URL ImgBB lama: i.ibb.co sudah benar, pastikan https saja
   return url;
 }
 
