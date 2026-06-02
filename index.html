@@ -843,10 +843,6 @@ function tampilRekamMedis(data) {
                   style="background:#1a7a3c;border:none;color:white;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap">
                   📄 Word
                 </button>
-                <button onclick="event.stopPropagation();bukaEdit(${kJson})"
-                  style="background:#dbeafe;border:none;color:#1e40af;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap">
-                  ✏️ Edit
-                </button>
                 <button onclick="event.stopPropagation();hapusLangsung(${k._rowIndex||0},'${(k['Nama Pasien']||'').replace(/'/g,"")}')"
                   style="background:#fee2e2;border:none;color:#dc2626;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap">
                   🗑️
