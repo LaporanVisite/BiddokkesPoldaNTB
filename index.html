@@ -424,10 +424,33 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height
 <div class="page" id="page-rekam">
 <div class="container">
   <div class="card">
-    <div class="card-title"><div class="ct-icon">🔍</div> Cari Pasien</div>
+    <div class="card-title"><div class="ct-icon">🔍</div> Cari & Filter Pasien</div>
     <div class="rm-search-bar">
       <input type="text" id="rmSearch" placeholder="Cari nama pasien..." oninput="filterPasien(this.value)">
     </div>
+    <!-- Filter FKTP -->
+    <div style="margin-top:10px">
+      <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.4px;display:block;margin-bottom:6px">🏥 Filter FKTP</label>
+      <select id="filterFKTP" onchange="filterPasien(document.getElementById('rmSearch').value)"
+        style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;color:var(--text);background:#f8fafc;outline:none">
+        <option value="">— Semua FKTP —</option>
+        <option>Polres Lombok Barat</option>
+        <option>Polres Lombok Tengah</option>
+        <option>Polres Lombok Timur</option>
+        <option>Polres Lombok Utara</option>
+        <option>Polresta Mataram</option>
+        <option>Polres Sumbawa</option>
+        <option>Polres Sumbawa Barat</option>
+        <option>Polres Dompu</option>
+        <option>Polres Bima</option>
+        <option>Polresta Bima</option>
+        <option>Brimob Polda NTB</option>
+        <option>SPN Polda NTB</option>
+        <option>Polda NTB</option>
+      </select>
+    </div>
+    <!-- Info jumlah hasil filter -->
+    <div id="filterInfo" style="display:none;margin-top:8px;font-size:12px;color:var(--green);font-weight:600;padding:6px 10px;background:var(--green3);border-radius:8px"></div>
     <div id="rmList"></div>
   </div>
 </div>
@@ -859,8 +882,38 @@ function toggleKunjungan(id) {
 }
 
 function filterPasien(val) {
-  if (!val) { tampilRekamMedis(allData); return; }
-  const filtered = allData.filter(r => (r['Nama Pasien']||'').toLowerCase().includes(val.toLowerCase()));
+  const fktp = (document.getElementById('filterFKTP')||{}).value || '';
+  let filtered = allData;
+
+  // Filter nama
+  if (val && val.length > 0) {
+    filtered = filtered.filter(r => (r['Nama Pasien']||'').toLowerCase().includes(val.toLowerCase()));
+  }
+
+  // Filter FKTP
+  if (fktp) {
+    filtered = filtered.filter(r => (r['FKTP']||'').toLowerCase().includes(fktp.toLowerCase()));
+  }
+
+  // Tampilkan info jumlah hasil filter
+  const infoEl = document.getElementById('filterInfo');
+  if (fktp || val) {
+    // Hitung jumlah pasien unik
+    const seen = {};
+    filtered.forEach(r => {
+      const key = (r['Nama Pasien']||'') + '||' + (r['NIPNRP']||'');
+      seen[key] = true;
+    });
+    const jmlPasien = Object.keys(seen).length;
+    const jmlLaporan = filtered.length;
+    infoEl.style.display = 'block';
+    infoEl.textContent = fktp
+      ? `🏥 ${fktp}: ${jmlPasien} pasien · ${jmlLaporan} laporan`
+      : `🔍 Hasil: ${jmlPasien} pasien · ${jmlLaporan} laporan`;
+  } else {
+    infoEl.style.display = 'none';
+  }
+
   tampilRekamMedis(filtered);
 }
 
