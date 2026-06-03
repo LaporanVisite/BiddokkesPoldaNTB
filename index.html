@@ -710,6 +710,8 @@ async function simpanLaporan() {
   try {
     const payload = { action:'save' };
     FIELDS.forEach(id => { const el = document.getElementById(id); if (el) payload[id==='NamaPasien'?'Nama Pasien':id] = el.value||''; });
+    // Pastikan NIPNRP dikirim sebagai string agar angka 0 di depan tidak hilang
+    payload['NIPNRP'] = String(document.getElementById('NIPNRP').value || '');
 
     // Upload foto langsung ke ImgBB dari browser
     const f1 = document.getElementById('fileDoc1').files[0];
