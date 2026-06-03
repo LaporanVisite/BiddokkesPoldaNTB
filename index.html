@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Laporan Biddokkes Polda NTB</title>
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a7a3c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Biddokkes NTB">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -898,7 +907,13 @@ function formatTanggalPanjang(val) {
   return val;
 }
 
-// Export ke Word (.doc) — format sama persis seperti template resmi
+// Huruf awal kapital
+function kapital(str) {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// Export ke Word (.doc) — format sesuai template resmi
 function exportWord(r) {
   const fktp = (r['FKTP'] || '-').toUpperCase();
   const jenis = r['JenisPelayanan'] || '-';
@@ -911,14 +926,18 @@ function exportWord(r) {
   const kesatuan = r['Kesatuan'] || '-';
   const tempat = r['Tempat'] || '-';
 
-  const keluhanArr = [r['Keluhan1'],r['Keluhan2'],r['Keluhan3'],r['Keluhan4']].filter(Boolean);
-  const diagnosaArr = [r['Diagnosa1'],r['Diagnosa2'],r['Diagnosa3'],r['Diagnosa4']].filter(Boolean);
-  const tindakanArr = [r['Tindakan1'],r['Tindakan2'],r['Tindakan3'],r['Tindakan4']].filter(Boolean);
+  const keluhanArr = [r['Keluhan1'],r['Keluhan2'],r['Keluhan3'],r['Keluhan4']].filter(Boolean).map(kapital);
+  const diagnosaArr = [r['Diagnosa1'],r['Diagnosa2'],r['Diagnosa3'],r['Diagnosa4']].filter(Boolean).map(kapital);
+  const tindakanArr = [r['Tindakan1'],r['Tindakan2'],r['Tindakan3'],r['Tindakan4']].filter(Boolean).map(kapital);
+  const rencanaArr  = [r['Rencana1'],r['Rencana2'],r['Rencana3'],r['Rencana4']].filter(Boolean).map(kapital);
+  const dpjpArr     = [r['DokterDPJP1'],r['DokterDPJP2'],r['DokterDPJP3'],r['DokterDPJP4']].filter(Boolean).map(kapital);
 
-  // Style bold, rata kiri, Arial 11pt — sama persis format asli
   const b = 'font-family:Arial;font-size:11pt;font-weight:bold;';
-  const bi = 'font-family:Arial;font-size:11pt;font-weight:bold;font-style:italic;';
   const p = (style, content) => `<p style="margin:2pt 0;${style}">${content}</p>`;
+  const seksi = (judul, arr) => arr.length ? `
+${p(b, '🎈 ' + judul)}
+${arr.map(x => p(b, '- ' + x)).join('')}
+<br>` : '';
 
   const html = `
 <html xmlns:o='urn:schemas-microsoft-com:office:office'
@@ -933,22 +952,19 @@ function exportWord(r) {
 <body>
 ${p(b, '🔹 FKTP ' + fktp)}
 <br>
-${p(b, '1. <span style="${bi}font-style:italic">' + jenis + '</span> Kepada Anggota pada Hari/Tanggal : ' + hari + ', ' + tanggalPanjang)}
+${p(b, '1. ' + jenis + ' Kepada Anggota pada Hari/Tanggal : ' + hari + ', ' + tanggalPanjang)}
 <br>
-${p(b, 'Nama&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; : ' + nama)}
+${p(b, 'Nama           : ' + nama)}
 ${p(b, 'Pangkat/NRP : ' + pangkat + '/' + nipnrp)}
-${p(b, 'Jabatan&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; : ' + jabatan)}
-${p(b, 'Kesatuan&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; : ' + kesatuan)}
-${p(b, 'Tempat&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; : ' + tempat)}
+${p(b, 'Jabatan        : ' + jabatan)}
+${p(b, 'Kesatuan       : ' + kesatuan)}
+${p(b, 'Tempat         : ' + tempat)}
 <br>
-${p(b, '🎈 Keluhan :')}
-${keluhanArr.map(k => p(b, '- ' + k)).join('')}
-<br>
-${p(b, '🎈 Diagnosa')}
-${diagnosaArr.map(d => p(b, '- <i>' + d + '</i>')).join('')}
-<br>
-${p(b, '🎈 Tindakan:')}
-${tindakanArr.map(t => p(b, '- <i>' + t + '</i>')).join('')}
+${seksi('Keluhan :', keluhanArr)}
+${seksi('Diagnosa', diagnosaArr)}
+${seksi('Tindakan:', tindakanArr)}
+${seksi('Rencana :', rencanaArr)}
+${seksi('Dokter DPJP :', dpjpArr)}
 </body></html>`;
 
   const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
@@ -1123,5 +1139,58 @@ document.getElementById('Tanggal').value = new Date().toISOString().split('T')[0
 const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
 document.getElementById('Hari').value = days[new Date().getDay()];
 </script>
+<script>
+// ── PWA Service Worker ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.log('SW error:', err));
+  });
+}
+
+// ── PWA Install Prompt ──
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Tampilkan tombol install
+  document.getElementById('installBanner').style.display = 'flex';
+});
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBanner').style.display = 'none';
+  deferredPrompt = null;
+});
+
+function installPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(result => {
+    if (result.outcome === 'accepted') {
+      showToast('Aplikasi berhasil diinstall! 🎉', 'success');
+    }
+    deferredPrompt = null;
+    document.getElementById('installBanner').style.display = 'none';
+  });
+}
+
+function tutupBanner() {
+  document.getElementById('installBanner').style.display = 'none';
+}
+</script>
+
+<!-- PWA Install Banner -->
+<div id="installBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1a7a3c;color:white;padding:12px 16px;z-index:9998;align-items:center;gap:12px;box-shadow:0 -4px 20px rgba(0,0,0,0.15)">
+  <img src="icon-192.png" style="width:36px;height:36px;border-radius:8px;flex-shrink:0">
+  <div style="flex:1">
+    <div style="font-size:13px;font-weight:700">Install Aplikasi Biddokkes NTB</div>
+    <div style="font-size:11px;opacity:0.85;margin-top:2px">Tambahkan ke layar utama HP Anda</div>
+  </div>
+  <button onclick="installPWA()" style="background:white;color:#1a7a3c;border:none;padding:8px 16px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">
+    Install
+  </button>
+  <button onclick="tutupBanner()" style="background:rgba(255,255,255,0.2);border:none;color:white;width:28px;height:28px;border-radius:50%;font-size:16px;cursor:pointer;flex-shrink:0">×</button>
+</div>
 </body>
 </html>
