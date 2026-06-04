@@ -1100,8 +1100,10 @@ ${isi}
   const a = document.createElement('a');
   a.href = url;
   a.download = `Rekap_Mingguan_Biddokkes_${formatTglPendek(senin).replace(/ /g,'_')}-${formatTglPendek(minggu).replace(/ /g,'_')}.doc`;
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
   showToast('Rekap berhasil didownload! 🎉', 'success');
 }
 
@@ -1251,8 +1253,10 @@ ${seksi('Dokter DPJP :', dpjpArr)}
   const a = document.createElement('a');
   a.href = url;
   a.download = `Laporan_${jenis}_${nama}_${tanggalPanjang.replace(/ /g,'_')}.doc`;
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // Fix URL foto agar bisa tampil di semua browser/HP
