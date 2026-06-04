@@ -1040,7 +1040,17 @@ function parseDate(val) {
   return new Date(val);
 }
 
-function eksporRekapMingguan() {
+async function eksporRekapMingguan() {
+  // Pastikan data sudah dimuat
+  if (!allData || allData.length === 0) {
+    showToast('Memuat data, harap tunggu...', 'info');
+    await muatSemuaData();
+    if (!allData || allData.length === 0) {
+      showToast('Tidak ada data!', 'error');
+      return;
+    }
+  }
+
   const idx = parseInt(document.getElementById('pilihanMinggu').value) || 0;
   const mingguList = getMingguList();
   const { senin, minggu } = mingguList[idx];
