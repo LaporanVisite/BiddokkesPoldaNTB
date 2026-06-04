@@ -423,6 +423,24 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height
 <!-- ═══════════════ PAGE: REKAM MEDIS ═══════════════ -->
 <div class="page" id="page-rekam">
 <div class="container">
+
+  <!-- REKAP MINGGUAN -->
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-title"><div class="ct-icon">📊</div> Rekap Mingguan</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:4px">Pilih minggu:</div>
+        <select id="pilihanMinggu" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;color:var(--text);background:#f8fafc;outline:none">
+        </select>
+      </div>
+      <button onclick="eksporRekapMingguan()"
+        style="background:#1a7a3c;border:none;color:white;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;margin-top:18px">
+        📄 Download Word
+      </button>
+    </div>
+    <div id="rekapInfo" style="display:none;margin-top:8px;font-size:12px;color:var(--green);font-weight:600;padding:6px 10px;background:var(--green3);border-radius:8px"></div>
+  </div>
+
   <div class="card">
     <div class="card-title"><div class="ct-icon">🔍</div> Cari & Filter Pasien</div>
     <div class="rm-search-bar">
@@ -434,19 +452,19 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height
       <select id="filterFKTP" onchange="filterPasien(document.getElementById('rmSearch').value)"
         style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;color:var(--text);background:#f8fafc;outline:none">
         <option value="">— Semua FKTP —</option>
+        <option>Polda NTB</option>
+        <option>Brimob Polda NTB</option>
+        <option>SPN Polda NTB</option>
+        <option>Polresta Mataram</option>
         <option>Polres Lombok Barat</option>
         <option>Polres Lombok Tengah</option>
         <option>Polres Lombok Timur</option>
         <option>Polres Lombok Utara</option>
-        <option>Polresta Mataram</option>
         <option>Polres Sumbawa</option>
         <option>Polres Sumbawa Barat</option>
         <option>Polres Dompu</option>
         <option>Polres Bima</option>
         <option>Polresta Bima</option>
-        <option>Brimob Polda NTB</option>
-        <option>SPN Polda NTB</option>
-        <option>Polda NTB</option>
       </select>
     </div>
     <!-- Info jumlah hasil filter -->
@@ -808,6 +826,7 @@ async function muatSemuaData() {
       'Dokumentasi2':r['Dokumentasi 2']||r['Dokumentasi2']||'',
     }));
     tampilRekamMedis(allData);
+    isiPilihanMinggu();
   } catch(e) {
     document.getElementById('rmList').innerHTML = '<div class="empty-state"><div class="es-icon">❌</div><p>Gagal memuat data</p></div>';
   }
@@ -879,6 +898,211 @@ function tampilRekamMedis(data) {
 function toggleKunjungan(id) {
   const el = document.getElementById(id);
   el.classList.toggle('open');
+}
+
+// ── REKAP MINGGUAN ──
+const URUTAN_FKTP = [
+  'Polda NTB',
+  'Brimob Polda NTB',
+  'SPN Polda NTB',
+  'Polresta Mataram',
+  'Polres Lombok Barat',
+  'Polres Lombok Tengah',
+  'Polres Lombok Timur',
+  'Polres Lombok Utara',
+  'Polres Sumbawa',
+  'Polres Sumbawa Barat',
+  'Polres Dompu',
+  'Polres Bima',
+  'Polresta Bima'
+];
+
+function getMingguList() {
+  // Generate daftar minggu dari data pertama hingga sekarang
+  const mingguList = [];
+  const now = new Date();
+  // Mulai dari minggu ini mundur 12 minggu
+  for (let i = 0; i < 12; i++) {
+    const senin = new Date(now);
+    const hari = senin.getDay() === 0 ? 6 : senin.getDay() - 1;
+    senin.setDate(senin.getDate() - hari - (i * 7));
+    senin.setHours(0,0,0,0);
+    const minggu = new Date(senin);
+    minggu.setDate(minggu.getDate() + 6);
+    minggu.setHours(23,59,59,999);
+    mingguList.push({ senin, minggu });
+  }
+  return mingguList;
+}
+
+function formatTglPendek(d) {
+  const bulan = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  return d.getDate() + ' ' + bulan[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+function isiPilihanMinggu() {
+  const sel = document.getElementById('pilihanMinggu');
+  if (!sel) return;
+  const list = getMingguList();
+  sel.innerHTML = list.map((m, i) => {
+    const label = (i === 0 ? '📅 Minggu ini: ' : '') +
+      formatTglPendek(m.senin) + ' — ' + formatTglPendek(m.minggu);
+    return `<option value="${i}">${label}</option>`;
+  }).join('');
+}
+
+function parseDate(val) {
+  if (!val) return null;
+  // DD/MM/YYYY
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(val)) {
+    const [d,m,y] = val.split('/');
+    return new Date(parseInt(y), parseInt(m)-1, parseInt(d));
+  }
+  // YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}/.test(val)) {
+    return new Date(val.substring(0,4), parseInt(val.substring(5,7))-1, parseInt(val.substring(8,10)));
+  }
+  return new Date(val);
+}
+
+function eksporRekapMingguan() {
+  const idx = parseInt(document.getElementById('pilihanMinggu').value) || 0;
+  const mingguList = getMingguList();
+  const { senin, minggu } = mingguList[idx];
+
+  // Filter data sesuai rentang minggu
+  const dataFKTP = {};
+  let totalLaporan = 0;
+
+  allData.forEach(r => {
+    const tgl = parseDate(r['Tanggal']);
+    if (!tgl || tgl < senin || tgl > minggu) return;
+
+    // Cari FKTP yang cocok
+    const fktpData = (r['FKTP'] || '').trim();
+    let fktpKey = URUTAN_FKTP.find(f =>
+      fktpData.toLowerCase().includes(f.toLowerCase()) ||
+      f.toLowerCase().includes(fktpData.toLowerCase())
+    ) || fktpData || 'Lainnya';
+
+    if (!dataFKTP[fktpKey]) dataFKTP[fktpKey] = [];
+    dataFKTP[fktpKey].push(r);
+    totalLaporan++;
+  });
+
+  if (totalLaporan === 0) {
+    showToast('Tidak ada laporan minggu ini!', 'error');
+    return;
+  }
+
+  // Tampilkan info
+  const infoEl = document.getElementById('rekapInfo');
+  infoEl.style.display = 'block';
+  infoEl.textContent = `📊 ${formatTglPendek(senin)} — ${formatTglPendek(minggu)}: ${totalLaporan} laporan dari ${Object.keys(dataFKTP).length} FKTP`;
+
+  // Build Word document
+  const bulan = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const b = 'font-family:Arial;font-size:11pt;font-weight:bold;';
+  const p = (content, align='left') => `<p style="margin:2pt 0;font-family:Arial;font-size:11pt;font-weight:bold;text-align:${align}">${content}</p>`;
+
+  const formatTglPanjang = (val) => {
+    if (!val) return '-';
+    let d, m, y;
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(val)) { [d,m,y] = val.split('/'); }
+    else if (/^\d{4}-\d{2}-\d{2}/.test(val)) { y=val.substring(0,4); m=val.substring(5,7); d=val.substring(8,10); }
+    else return val;
+    return parseInt(d) + ' ' + bulan[parseInt(m)] + ' ' + y;
+  };
+
+  const kap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+
+  let isi = '';
+  let nomorUrut = 1;
+
+  // Urutkan FKTP sesuai urutan resmi
+  const fktpUrut = [...URUTAN_FKTP.filter(f => dataFKTP[f]), ...Object.keys(dataFKTP).filter(f => !URUTAN_FKTP.includes(f))];
+
+  fktpUrut.forEach(fktp => {
+    const laporan = dataFKTP[fktp];
+    if (!laporan || !laporan.length) return;
+
+    // Header FKTP
+    isi += `
+<p style="text-align:center;font-family:Arial;font-size:12pt;font-weight:bold;margin:10pt 0 4pt 0">🔹 FKTP ${fktp.toUpperCase()}</p>
+<p style="text-align:center;font-family:Arial;font-size:10pt;color:#555;margin:0 0 8pt 0">${laporan.length} laporan · ${formatTglPendek(senin)} — ${formatTglPendek(minggu)}</p>
+<hr style="border:1px solid #1a7a3c;margin:4pt 0 8pt 0">`;
+
+    laporan.forEach(r => {
+      const jenis = r['JenisPelayanan'] || '-';
+      const hari = r['Hari'] || '-';
+      const tglP = formatTglPanjang(r['Tanggal']);
+      const nama = r['Nama Pasien'] || '-';
+      const pangkat = r['Pangkat'] || '-';
+      const nipnrp = r['NIPNRP'] || '-';
+      const jabatan = r['Jabatan'] || '-';
+      const kesatuan = r['Kesatuan'] || '-';
+      const tempat = r['Tempat'] || '-';
+
+      const keluhanArr = [r['Keluhan1'],r['Keluhan2'],r['Keluhan3'],r['Keluhan4']].filter(Boolean).map(kap);
+      const diagnosaArr = [r['Diagnosa1'],r['Diagnosa2'],r['Diagnosa3'],r['Diagnosa4']].filter(Boolean).map(kap);
+      const tindakanArr = [r['Tindakan1'],r['Tindakan2'],r['Tindakan3'],r['Tindakan4']].filter(Boolean).map(kap);
+      const rencanaArr  = [r['Rencana1'],r['Rencana2'],r['Rencana3'],r['Rencana4']].filter(Boolean).map(kap);
+      const dpjpArr     = [r['DokterDPJP1'],r['DokterDPJP2'],r['DokterDPJP3'],r['DokterDPJP4']].filter(Boolean).map(kap);
+
+      const seksi = (judul, arr) => arr.length ? `
+${p('🎈 ' + judul)}
+${arr.map(x => p('- ' + x)).join('')}
+<br>` : '';
+
+      isi += `
+${p(nomorUrut + '. ' + jenis + ' Kepada Anggota pada Hari/Tanggal : ' + hari + ', ' + tglP)}
+<br>
+${p('Nama           : ' + nama)}
+${p('Pangkat/NRP : ' + pangkat + '/' + nipnrp)}
+${p('Jabatan        : ' + jabatan)}
+${p('Kesatuan       : ' + kesatuan)}
+${p('Tempat         : ' + tempat)}
+<br>
+${seksi('Keluhan :', keluhanArr)}
+${seksi('Diagnosa', diagnosaArr)}
+${seksi('Tindakan:', tindakanArr)}
+${seksi('Rencana :', rencanaArr)}
+${seksi('Dokter DPJP :', dpjpArr)}
+<br><hr style="border:0.5px solid #ccc;margin:6pt 0">`;
+      nomorUrut++;
+    });
+
+    isi += '<br>';
+  });
+
+  const html = `
+<html xmlns:o='urn:schemas-microsoft-com:office:office'
+      xmlns:w='urn:schemas-microsoft-com:office:word'
+      xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset='utf-8'>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 11pt; margin: 2cm; }
+  p { margin: 2pt 0; font-size: 11pt; }
+  hr { page-break-after: avoid; }
+</style>
+</head>
+<body>
+${p('REKAP LAPORAN MINGGUAN BIDDOKKES POLDA NTB', 'center')}
+${p('Periode: ' + formatTglPendek(senin) + ' — ' + formatTglPendek(minggu), 'center')}
+${p('Total: ' + totalLaporan + ' Laporan dari ' + Object.keys(dataFKTP).length + ' FKTP', 'center')}
+<hr style="border:2px solid #1a7a3c;margin:8pt 0">
+<br>
+${isi}
+</body></html>`;
+
+  const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Rekap_Mingguan_Biddokkes_${formatTglPendek(senin).replace(/ /g,'_')}-${formatTglPendek(minggu).replace(/ /g,'_')}.doc`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Rekap berhasil didownload! 🎉', 'success');
 }
 
 function filterPasien(val) {
