@@ -423,10 +423,10 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height
 </div>
 
 <!-- ═══════════════ PAGE: REKAP MINGGUAN ═══════════════ -->
-<div class="page" id="page-rekap" style="display:none">
+<div class="page" id="page-rekap">
 <div class="container">
   <!-- PASSWORD REKAP -->
-  <div id="rekapPwBox" class="pw-box">
+  <div id="rekapPwBox" class="pw-box" style="display:none">
     <div class="pw-icon">📊</div>
     <h3 class="pw-title">Rekap Mingguan</h3>
     <p class="pw-sub">Masukkan password untuk mengakses rekap</p>
@@ -557,12 +557,18 @@ const REKAP_PW = 'Adityask99';
 let rekapUnlocked = false;
 
 function bukaRekapMingguan() {
-  if (rekapUnlocked) { bukaModeRekap(); return; }
   document.getElementById('tab-rekap').style.display = 'block';
   ganti('rekap');
-  document.getElementById('rekapPwBox').style.display = 'block';
-  document.getElementById('rekapKonten').style.display = 'none';
-  setTimeout(() => document.getElementById('rekapPwInput').focus(), 100);
+  if (rekapUnlocked) {
+    document.getElementById('rekapPwBox').style.display = 'none';
+    document.getElementById('rekapKonten').style.display = 'block';
+    isiPilihanMinggu();
+    if (!allData || allData.length === 0) muatSemuaData();
+  } else {
+    document.getElementById('rekapPwBox').style.display = 'block';
+    document.getElementById('rekapKonten').style.display = 'none';
+    setTimeout(() => document.getElementById('rekapPwInput').focus(), 100);
+  }
 }
 
 function cekPwRekap() {
