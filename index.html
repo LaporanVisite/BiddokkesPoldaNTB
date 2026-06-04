@@ -576,7 +576,10 @@ function cekPwRekap() {
   if (pw === REKAP_PW) {
     rekapUnlocked = true;
     document.getElementById('rekapPwInput').value = '';
-    bukaModeRekap();
+    document.getElementById('rekapPwBox').style.display = 'none';
+    document.getElementById('rekapKonten').style.display = 'block';
+    isiPilihanMinggu();
+    muatSemuaData(); // Selalu muat data terbaru
   } else {
     showToast('Password salah!', 'error');
     document.getElementById('rekapPwInput').value = '';
@@ -589,8 +592,7 @@ function bukaModeRekap() {
   document.getElementById('rekapPwBox').style.display = 'none';
   document.getElementById('rekapKonten').style.display = 'block';
   isiPilihanMinggu();
-  // Pastikan allData sudah terisi
-  if (!allData || allData.length === 0) muatSemuaData();
+  muatSemuaData(); // Selalu muat data terbaru
 }
 
 function keluarRekap() {
@@ -861,11 +863,11 @@ function resetForm() {
 
 // ── REKAM MEDIS ──
 async function muatSemuaData() {
-  document.getElementById('rmList').innerHTML = '<div class="empty-state"><div class="es-icon">⏳</div><p>Memuat data...</p></div>';
+  const rmList = document.getElementById('rmList');
+  if (rmList) rmList.innerHTML = '<div class="empty-state"><div class="es-icon">⏳</div><p>Memuat data...</p></div>';
   try {
     const res = await fetch(API_URL + '?action=getAll');
     const raw = await res.json();
-    // Normalize field names (Sheet pakai spasi, frontend pakai tanpa spasi)
     allData = raw.map(r => ({
       ...r,
       'Nama Pasien': r['Nama Pasien'] || '',
@@ -894,11 +896,14 @@ async function muatSemuaData() {
       'FKTP':        r['FKTP Yang Melaksanakan']||r['FKTP']||'',
       'Dokumentasi1':r['Dokumentasi 1']||r['Dokumentasi1']||'',
       'Dokumentasi2':r['Dokumentasi 2']||r['Dokumentasi2']||'',
+      'JenisPelayanan': r['Jenis Pelayanan']||r['JenisPelayanan']||'',
     }));
-    tampilRekamMedis(allData);
+    // Hanya tampilkan rekam medis kalau sedang di halaman rekam
+    if (rmList) tampilRekamMedis(allData);
     isiPilihanMinggu();
   } catch(e) {
-    document.getElementById('rmList').innerHTML = '<div class="empty-state"><div class="es-icon">❌</div><p>Gagal memuat data</p></div>';
+    if (rmList) rmList.innerHTML = '<div class="empty-state"><div class="es-icon">❌</div><p>Gagal memuat data</p></div>';
+    else showToast('Gagal memuat data!', 'error');
   }
 }
 
