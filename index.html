@@ -639,11 +639,18 @@ function pilihJenis(jenis) {
   document.getElementById('JenisPelayanan').value = jenis;
   const showDPJP = (jenis === 'Pendampingan' || jenis === 'Monitoring');
   document.getElementById('cardDPJP').style.display = showDPJP ? 'block' : 'none';
+  // Kosongkan DPJP kalau tidak ditampilkan
+  if (!showDPJP) {
+    ['DokterDPJP1','DokterDPJP2','DokterDPJP3','DokterDPJP4'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+  }
   // Sembunyikan Tempat untuk Telemedicine
   const fieldTempat = document.getElementById('fieldTempat');
   if (fieldTempat) {
     fieldTempat.style.display = jenis === 'Telemedicine' ? 'none' : 'block';
-    if (jenis === 'Telemedicine') document.getElementById('Tempat').value = '-';
+    if (jenis === 'Telemedicine') document.getElementById('Tempat').value = '';
   }
 }
 
