@@ -323,13 +323,13 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height
   <div class="card">
     <div class="card-title"><div class="ct-icon">💊</div> Kondisi & Vital Sign</div>
     <div class="field"><label>Kondisi Umum <span class="req">*</span></label><input type="text" id="KondisiUmum" placeholder="Baik / Sedang / Buruk"></div>
-    <div class="vitals-grid">
+    <div id="vitalsGrid" class="vitals-grid">
       <div class="field"><label>Tensi <span class="req">*</span></label><input type="text" id="Tensi" placeholder="120/80"></div>
       <div class="field"><label>Nadi <span class="req">*</span></label><input type="text" id="Nadi" placeholder="80x/mnt"></div>
       <div class="field"><label>RR <span class="req">*</span></label><input type="text" id="RR" placeholder="20x/mnt"></div>
       <div class="field"><label>SpO2 <span class="req">*</span></label><input type="text" id="SpO2" placeholder="98%"></div>
-      <div class="field"><label>Keterangan</label><input type="text" id="Keterangan" placeholder="Catatan tambahan"></div>
     </div>
+    <div class="field"><label>Keterangan</label><input type="text" id="Keterangan" placeholder="Catatan tambahan"></div>
   </div>
 
   <!-- KELUHAN -->
@@ -639,18 +639,26 @@ function pilihJenis(jenis) {
   document.getElementById('JenisPelayanan').value = jenis;
   const showDPJP = (jenis === 'Pendampingan' || jenis === 'Monitoring');
   document.getElementById('cardDPJP').style.display = showDPJP ? 'block' : 'none';
-  // Kosongkan DPJP kalau tidak ditampilkan
   if (!showDPJP) {
     ['DokterDPJP1','DokterDPJP2','DokterDPJP3','DokterDPJP4'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.value = '';
+      const el = document.getElementById(id); if (el) el.value = '';
     });
   }
-  // Sembunyikan Tempat untuk Telemedicine
+  // Telemedicine: sembunyikan Tempat dan Vital Sign (Tensi/Nadi/RR/SpO2)
+  const isTelemedicine = jenis === 'Telemedicine';
   const fieldTempat = document.getElementById('fieldTempat');
+  const vitalsGrid = document.getElementById('vitalsGrid');
   if (fieldTempat) {
-    fieldTempat.style.display = jenis === 'Telemedicine' ? 'none' : 'block';
-    if (jenis === 'Telemedicine') document.getElementById('Tempat').value = '';
+    fieldTempat.style.display = isTelemedicine ? 'none' : 'block';
+    if (isTelemedicine) document.getElementById('Tempat').value = '';
+  }
+  if (vitalsGrid) {
+    vitalsGrid.style.display = isTelemedicine ? 'none' : 'grid';
+    if (isTelemedicine) {
+      ['Tensi','Nadi','RR','SpO2'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+      });
+    }
   }
 }
 
@@ -821,10 +829,12 @@ async function simpanLaporan() {
   if (!document.getElementById('Waktu').value) { showToast('Waktu wajib diisi!','error'); return; }
   if (jenis !== 'Telemedicine' && !document.getElementById('Tempat').value.trim()) { showToast('Tempat wajib diisi!','error'); return; }
   if (!document.getElementById('KondisiUmum').value.trim()) { showToast('Kondisi Umum wajib diisi!','error'); return; }
-  if (!document.getElementById('Tensi').value.trim()) { showToast('Tensi wajib diisi!','error'); return; }
-  if (!document.getElementById('Nadi').value.trim()) { showToast('Nadi wajib diisi!','error'); return; }
-  if (!document.getElementById('RR').value.trim()) { showToast('RR wajib diisi!','error'); return; }
-  if (!document.getElementById('SpO2').value.trim()) { showToast('SpO2 wajib diisi!','error'); return; }
+  if (jenis !== 'Telemedicine') {
+    if (!document.getElementById('Tensi').value.trim()) { showToast('Tensi wajib diisi!','error'); return; }
+    if (!document.getElementById('Nadi').value.trim()) { showToast('Nadi wajib diisi!','error'); return; }
+    if (!document.getElementById('RR').value.trim()) { showToast('RR wajib diisi!','error'); return; }
+    if (!document.getElementById('SpO2').value.trim()) { showToast('SpO2 wajib diisi!','error'); return; }
+  }
   if (!document.getElementById('Keluhan1').value.trim()) { showToast('Keluhan 1 wajib diisi!','error'); return; }
   if (!document.getElementById('Diagnosa1').value.trim()) { showToast('Diagnosa 1 wajib diisi!','error'); return; }
   if (!document.getElementById('Tindakan1').value.trim()) { showToast('Tindakan 1 wajib diisi!','error'); return; }
@@ -1153,6 +1163,16 @@ ${p('🎈 ' + judul)}
 ${arr.map(x => p('- ' + x)).join('')}
 <br>` : '';
 
+      const kondisiUmum = kap(r['KondisiUmum'] || '-');
+      const isTelemedicine = jenis === 'Telemedicine';
+      const spo2 = fixSpO2(r['SpO2']);
+
+      const vitalSection = isTelemedicine ? '' : `
+${p('Td       : ' + (r['Tensi'] || '-'))}
+${p('N.        : ' + (r['Nadi'] || '-'))}
+${p('RR       : ' + (r['RR'] || '-'))}
+${p('SpO2   : ' + spo2)}`;
+
       isi += `
 ${p(nomorUrut + '. <i>' + jenis + '</i> Kepada Anggota pada Hari/Tanggal : ' + hari + ', ' + tglP)}
 <br>
@@ -1161,6 +1181,11 @@ ${p('Pangkat/NRP : ' + pangkat + '/' + nipnrp)}
 ${p('Jabatan        : ' + jabatan)}
 ${p('Kesatuan       : ' + kesatuan)}
 ${tempat && tempat !== '-' ? p('Tempat         : ' + tempat) : ''}
+<br>
+${p('Kondisi Terkini')}
+${p('K/U.     : ' + kondisiUmum)}
+${vitalSection}
+${r['Keterangan'] ? p(kap(r['Keterangan'])) : ''}
 <br>
 ${seksi('Keluhan :', keluhanArr)}
 ${seksi('Diagnosa', diagnosaArr)}
@@ -1287,6 +1312,17 @@ function formatTanggalPanjang(val) {
   return val;
 }
 
+// Fix SpO2: 0.99 → 99%, 1 → 100%
+function fixSpO2(val) {
+  if (!val && val !== 0) return '';
+  const str = String(val).trim();
+  if (!str || str === '-') return str;
+  if (str.includes('%')) return str;
+  const num = parseFloat(str);
+  if (!isNaN(num) && num > 0 && num <= 1) return Math.round(num * 100) + '%';
+  return str;
+}
+
 // Huruf awal kapital
 function kapital(str) {
   if (!str) return '';
@@ -1319,6 +1355,16 @@ ${p(b, '🎈 ' + judul)}
 ${arr.map(x => p(b, '- ' + x)).join('')}
 <br>` : '';
 
+  const kondisiUmum = kapital(r['KondisiUmum'] || '-');
+  const isTelemedicine = jenis === 'Telemedicine';
+  const spo2 = fixSpO2(r['SpO2']);
+
+  const vitalSection = isTelemedicine ? '' : `
+${p(b, 'Td       : ' + (r['Tensi'] || '-'))}
+${p(b, 'N.        : ' + (r['Nadi'] || '-'))}
+${p(b, 'RR       : ' + (r['RR'] || '-'))}
+${p(b, 'SpO2   : ' + spo2)}`;
+
   const html = `
 <html xmlns:o='urn:schemas-microsoft-com:office:office'
       xmlns:w='urn:schemas-microsoft-com:office:word'
@@ -1339,6 +1385,11 @@ ${p(b, 'Pangkat/NRP : ' + pangkat + '/' + nipnrp)}
 ${p(b, 'Jabatan        : ' + jabatan)}
 ${p(b, 'Kesatuan       : ' + kesatuan)}
 ${tempat && tempat !== '-' ? p(b, 'Tempat         : ' + tempat) : ''}
+<br>
+${p(b, 'Kondisi Terkini')}
+${p(b, 'K/U.     : ' + kondisiUmum)}
+${vitalSection}
+${r['Keterangan'] ? p(b, kapital(r['Keterangan'])) : ''}
 <br>
 ${seksi('Keluhan :', keluhanArr)}
 ${seksi('Diagnosa', diagnosaArr)}
