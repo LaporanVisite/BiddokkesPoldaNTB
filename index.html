@@ -731,12 +731,17 @@ function muatData(r) {
    'Rencana1','Rencana2','Rencana3','Rencana4',
    'DokterDPJP1','DokterDPJP2','DokterDPJP3','DokterDPJP4'].forEach(k => {
     const el = document.getElementById(k);
-    if (el) el.value = r[k] || '';
+    if (el) el.value = k === 'SpO2' ? fixSpO2(r[k] || '') : (r[k] || '');
   });
-  // Kosongkan field yang diisi ulang
-  ['NoHP','PersonelTerlibat','Waktu','Tempat'].forEach(id => {
+  // Tempat ikut dari history, NoHP dan PersonelTerlibat dikosongkan
+  ['NoHP','PersonelTerlibat'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
+  // Isi Tempat dari history
+  const tempatEl = document.getElementById('Tempat');
+  if (tempatEl) tempatEl.value = r['Tempat'] || '';
+  // Waktu & Tanggal hari ini
+  document.getElementById('Waktu').value = '';
   // Tanggal & hari hari ini
   document.getElementById('Tanggal').value = new Date().toISOString().split('T')[0];
   const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
