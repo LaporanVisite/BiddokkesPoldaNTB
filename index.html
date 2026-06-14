@@ -197,6 +197,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height
 .empty-state .es-icon{font-size:48px;margin-bottom:12px}
 .empty-state p{font-size:14px}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -455,6 +456,10 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height
         <button onclick="eksporRekapMingguan()"
           style="background:#1a7a3c;border:none;color:white;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;margin-top:18px">
           📄 Download Word
+        </button>
+        <button onclick="eksporRekapExcel()"
+          style="background:#15803d;border:none;color:white;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;margin-top:18px">
+          📊 Download Excel
         </button>
       </div>
       <div id="rekapInfo" style="display:none;margin-top:8px;font-size:12px;color:var(--green);font-weight:600;padding:6px 10px;background:var(--green3);border-radius:8px"></div>
@@ -1272,6 +1277,154 @@ ${isi}
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   showToast('Rekap berhasil didownload! 🎉', 'success');
+}
+
+// ── EXPORT REKAP EXCEL ──
+async function eksporRekapExcel() {
+  if (!allData || allData.length === 0) {
+    showToast('Memuat data, harap tunggu...', 'info');
+    await muatSemuaData();
+    if (!allData || allData.length === 0) {
+      showToast('Tidak ada data!', 'error');
+      return;
+    }
+  }
+  if (typeof XLSX === 'undefined') {
+    showToast('Library Excel belum siap, coba lagi sebentar...', 'error');
+    return;
+  }
+
+  const idx = parseInt(document.getElementById('pilihanMinggu').value) || 0;
+  const mingguList = getMingguList();
+  const { senin, minggu } = mingguList[idx];
+
+  // Filter data sesuai rentang minggu & kelompokkan per FKTP
+  const dataFKTP = {};
+  let totalLaporan = 0;
+
+  allData.forEach(r => {
+    const tgl = parseDate(r['Tanggal']);
+    if (!tgl || tgl < senin || tgl > minggu) return;
+
+    const fktpData = (r['FKTP'] || '').trim();
+    let fktpKey = URUTAN_FKTP.find(f =>
+      fktpData.toLowerCase().includes(f.toLowerCase()) ||
+      f.toLowerCase().includes(fktpData.toLowerCase())
+    ) || fktpData || 'Lainnya';
+
+    if (!dataFKTP[fktpKey]) dataFKTP[fktpKey] = [];
+    dataFKTP[fktpKey].push(r);
+    totalLaporan++;
+  });
+
+  if (totalLaporan === 0) {
+    showToast('Tidak ada laporan minggu ini!', 'error');
+    return;
+  }
+
+  // Tampilkan info
+  const infoEl = document.getElementById('rekapInfo');
+  infoEl.style.display = 'block';
+  infoEl.textContent = `📊 ${formatTglPendek(senin)} — ${formatTglPendek(minggu)}: ${totalLaporan} laporan dari ${Object.keys(dataFKTP).length} FKTP`;
+
+  // Nama FKTP lengkap untuk kolom "TIM PELAYANAN KESEHATAN"
+  const namaFKTPLengkap = {
+    'Polda NTB':            'FKTP BIDDOKKES POLDA NTB',
+    'Brimob Polda NTB':     'FKTP BRIMOB POLDA NTB',
+    'SPN Polda NTB':        'FKTP SPN POLDA NTB',
+    'Polresta Mataram':     'FKTP POLRESTA MATARAM',
+    'Polres Lombok Barat':  'FKTP POLRES LOMBOK BARAT',
+    'Polres Lombok Tengah': 'FKTP POLRES LOMBOK TENGAH',
+    'Polres Lombok Timur':  'FKTP POLRES LOMBOK TIMUR',
+    'Polres Lombok Utara':  'FKTP POLRES LOMBOK UTARA',
+    'Polres Sumbawa':       'FKTP POLRES SUMBAWA',
+    'Polres Sumbawa Barat': 'FKTP POLRES SUMBAWA BARAT',
+    'Polres Dompu':         'FKTP POLRES DOMPU',
+    'Polres Bima':          'FKTP POLRES BIMA',
+    'Polresta Bima':        'FKTP POLRESTA BIMA',
+  };
+
+  // Header
+  const headerTanggal = `TANGGAL ${senin.getDate()} S.D ${minggu.getDate()} ${['','JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'][minggu.getMonth()+1]} ${minggu.getFullYear()}`;
+
+  const aoa = [];
+  aoa.push([headerTanggal]);
+  aoa.push([]);
+  aoa.push(['NO','TIM PELAYANAN KESEHATAN','JENIS PELAYANAN KESEHATAN','','','','TOTAL','DOKUMENTASI','']);
+  aoa.push(['','','HOME VISIT','MONITORING','PENDAMPINGAN','TELEMEDICINE','','FOTO 1','FOTO 2']);
+
+  let no = 1;
+  URUTAN_FKTP.forEach(fktp => {
+    const laporan = dataFKTP[fktp] || [];
+    const hv  = laporan.filter(r => r['JenisPelayanan'] === 'Home Visit').length;
+    const mon = laporan.filter(r => r['JenisPelayanan'] === 'Monitoring').length;
+    const pen = laporan.filter(r => r['JenisPelayanan'] === 'Pendampingan').length;
+    const tel = laporan.filter(r => r['JenisPelayanan'] === 'Telemedicine').length;
+    const total = hv + mon + pen + tel;
+
+    // Pilih 2 foto wakil: prioritaskan dari jenis pelayanan berbeda
+    let foto1 = '', foto2 = '';
+    if (laporan.length > 0) {
+      const dgnFoto = laporan.filter(r => r['Dokumentasi1'] || r['Dokumentasi2']);
+      if (dgnFoto.length > 0) {
+        // Cari laporan pertama dengan foto
+        const lp1 = dgnFoto[0];
+        foto1 = lp1['Dokumentasi1'] || lp1['Dokumentasi2'] || '';
+        // Cari laporan dengan jenis berbeda dari lp1 untuk foto2
+        const lp2 = dgnFoto.find(r => r['JenisPelayanan'] !== lp1['JenisPelayanan'] && (r['Dokumentasi1']||r['Dokumentasi2']));
+        if (lp2) {
+          foto2 = lp2['Dokumentasi2'] || lp2['Dokumentasi1'] || '';
+        } else {
+          // Jenis sama saja - ambil foto kedua dari laporan yang sama atau laporan lain
+          if (lp1['Dokumentasi1'] && lp1['Dokumentasi2']) {
+            foto2 = lp1['Dokumentasi2'];
+          } else if (dgnFoto.length > 1) {
+            const lp2b = dgnFoto[1];
+            foto2 = lp2b['Dokumentasi1'] || lp2b['Dokumentasi2'] || '';
+          }
+        }
+      }
+    }
+
+    aoa.push([
+      no, namaFKTPLengkap[fktp] || fktp.toUpperCase(),
+      hv || '', mon || '', pen || '', tel || '',
+      total,
+      foto1, foto2
+    ]);
+    no++;
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  // Merge cells untuk header
+  ws['!merges'] = [
+    { s: {r:0,c:0}, e: {r:0,c:8} }, // judul tanggal
+    { s: {r:2,c:0}, e: {r:3,c:0} }, // NO
+    { s: {r:2,c:1}, e: {r:3,c:1} }, // TIM PELAYANAN KESEHATAN
+    { s: {r:2,c:2}, e: {r:2,c:5} }, // JENIS PELAYANAN KESEHATAN
+    { s: {r:2,c:6}, e: {r:3,c:6} }, // TOTAL
+    { s: {r:2,c:7}, e: {r:2,c:8} }, // DOKUMENTASI
+  ];
+
+  // Lebar kolom
+  ws['!cols'] = [
+    { wch: 4 },  // NO
+    { wch: 28 }, // TIM PELAYANAN
+    { wch: 10 }, // HOME VISIT
+    { wch: 11 }, // MONITORING
+    { wch: 12 }, // PENDAMPINGAN
+    { wch: 12 }, // TELEMEDICINE
+    { wch: 7 },  // TOTAL
+    { wch: 30 }, // FOTO 1
+    { wch: 30 }, // FOTO 2
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'LAPORAN');
+
+  XLSX.writeFile(wb, `Rekap_Mingguan_Biddokkes_${formatTglPendek(senin).replace(/ /g,'_')}-${formatTglPendek(minggu).replace(/ /g,'_')}.xlsx`);
+  showToast('Rekap Excel berhasil didownload! 🎉', 'success');
 }
 
 function filterPasien(val) {
