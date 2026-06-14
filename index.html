@@ -1161,7 +1161,7 @@ async function eksporRekapMingguan() {
       const diagnosaArr = [r['Diagnosa1'],r['Diagnosa2'],r['Diagnosa3'],r['Diagnosa4']].filter(Boolean).map(kap);
       const tindakanArr = [r['Tindakan1'],r['Tindakan2'],r['Tindakan3'],r['Tindakan4']].filter(Boolean).map(kap);
       const rencanaArr  = [r['Rencana1'],r['Rencana2'],r['Rencana3'],r['Rencana4']].filter(Boolean).map(kap);
-      const dpjpArr     = [r['DokterDPJP1'],r['DokterDPJP2'],r['DokterDPJP3'],r['DokterDPJP4']].filter(Boolean).map(kap);
+      const dpjpArr     = [r['DokterDPJP1'],r['DokterDPJP2'],r['DokterDPJP3'],r['DokterDPJP4']].filter(Boolean);
 
       const seksi = (judul, arr) => arr.length ? `
 ${p('🎈 ' + judul)}
@@ -1351,7 +1351,7 @@ function exportWord(r) {
   const diagnosaArr = [r['Diagnosa1'],r['Diagnosa2'],r['Diagnosa3'],r['Diagnosa4']].filter(Boolean).map(kapital);
   const tindakanArr = [r['Tindakan1'],r['Tindakan2'],r['Tindakan3'],r['Tindakan4']].filter(Boolean).map(kapital);
   const rencanaArr  = [r['Rencana1'],r['Rencana2'],r['Rencana3'],r['Rencana4']].filter(Boolean).map(kapital);
-  const dpjpArr     = [r['DokterDPJP1'],r['DokterDPJP2'],r['DokterDPJP3'],r['DokterDPJP4']].filter(Boolean).map(kapital);
+  const dpjpArr     = [r['DokterDPJP1'],r['DokterDPJP2'],r['DokterDPJP3'],r['DokterDPJP4']].filter(Boolean);
 
   const b = 'font-family:Arial;font-size:11pt;font-weight:bold;';
   const p = (style, content) => `<p style="margin:2pt 0;${style}">${content}</p>`;
