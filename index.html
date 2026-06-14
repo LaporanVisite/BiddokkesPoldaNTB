@@ -1179,7 +1179,7 @@ ${p('RR       : ' + (r['RR'] || '-'))}
 ${p('SpO2   : ' + spo2)}`;
 
       isi += `
-${p(nomorUrut + '. <i>' + jenis + '</i> Kepada Anggota pada Hari/Tanggal : ' + hari + ', ' + tglP)}
+${p(nomorUrut + '. ' + ((jenis==='Home Visit'||jenis==='Telemedicine')?'<i>'+jenis+'</i>':jenis) + ' Kepada Anggota pada Hari/Tanggal : ' + hari + ', ' + tglP)}
 <br>
 ${p('Nama           : ' + nama)}
 ${p('Pangkat/NRP : ' + pangkat + '/' + nipnrp)}
@@ -1383,7 +1383,7 @@ ${p(b, 'SpO2   : ' + spo2)}`;
 <body>
 ${p(b, '🔹 FKTP ' + fktp)}
 <br>
-${p(b, '1. <i>' + jenis + '</i> Kepada Anggota pada Hari/Tanggal : ' + hari + ', ' + tanggalPanjang)}
+${p(b, '1. ' + ((jenis==='Home Visit'||jenis==='Telemedicine')?'<i>'+jenis+'</i>':jenis) + ' Kepada Anggota pada Hari/Tanggal : ' + hari + ', ' + tanggalPanjang)}
 <br>
 ${p(b, 'Nama           : ' + nama)}
 ${p(b, 'Pangkat/NRP : ' + pangkat + '/' + nipnrp)}
