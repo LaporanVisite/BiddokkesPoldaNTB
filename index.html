@@ -772,21 +772,33 @@ function previewImg(input, previewId) {
 }
 // Kompres foto sebelum upload — max 1024px, quality 0.7
 function kompressFoto(file) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Timeout kompres foto')), 15000);
     const reader = new FileReader();
+    reader.onerror = () => { clearTimeout(timer); reject(new Error('Gagal membaca file')); };
     reader.onload = (e) => {
       const img = new Image();
+      img.onerror = () => { clearTimeout(timer); reject(new Error('Gagal memuat gambar')); };
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let w = img.width, h = img.height;
-        const maxSize = 1024;
-        if (w > maxSize || h > maxSize) {
-          if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
-          else { w = Math.round(w * maxSize / h); h = maxSize; }
+        try {
+          const canvas = document.createElement('canvas');
+          let w = img.width, h = img.height;
+          const maxSize = 1024;
+          if (w > maxSize || h > maxSize) {
+            if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+            else { w = Math.round(w * maxSize / h); h = maxSize; }
+          }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          canvas.toBlob((blob) => {
+            clearTimeout(timer);
+            if (blob) resolve(blob);
+            else reject(new Error('Gagal membuat blob foto'));
+          }, 'image/jpeg', 0.7);
+        } catch(err) {
+          clearTimeout(timer);
+          reject(err);
         }
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.7);
       };
       img.src = e.target.result;
     };
@@ -794,24 +806,36 @@ function kompressFoto(file) {
   });
 }
 
-async function uploadKeImgBB(file) {
+async function uploadKeImgBB(file, retry=true) {
   try {
-    showToast('Mengupload foto...', 'info');
     const blob = await kompressFoto(file);
     const formData = new FormData();
     formData.append('file', blob, file.name);
     formData.append('upload_preset', 'biddokkes');
     formData.append('cloud_name', 'dyrhzsyp3');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
     const res = await fetch('https://api.cloudinary.com/v1_1/dyrhzsyp3/image/upload', {
       method: 'POST',
-      body: formData
+      body: formData,
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
     const result = await res.json();
     if (result.secure_url) return result.secure_url;
     console.error('Cloudinary error:', result);
+    // Retry sekali jika gagal
+    if (retry) {
+      await new Promise(r => setTimeout(r, 1000));
+      return await uploadKeImgBB(file, false);
+    }
     return '';
   } catch(e) {
     console.error('Upload gagal:', e);
+    if (retry) {
+      await new Promise(r => setTimeout(r, 1000));
+      return await uploadKeImgBB(file, false);
+    }
     return '';
   }
 }
@@ -855,16 +879,30 @@ async function simpanLaporan() {
     // Pastikan NIPNRP dikirim sebagai string agar angka 0 di depan tidak hilang
     payload['NIPNRP'] = String(document.getElementById('NIPNRP').value || '');
 
-    // Upload foto langsung ke ImgBB dari browser
+    // Upload foto langsung ke Cloudinary dari browser
     const f1 = document.getElementById('fileDoc1').files[0];
     const f2 = document.getElementById('fileDoc2').files[0];
     if (f1) {
       document.getElementById('loadingText').textContent='Mengupload foto 1...';
-      payload['Dokumentasi1'] = await uploadKeImgBB(f1);
+      const url1 = await uploadKeImgBB(f1);
+      if (!url1) {
+        showToast('Upload Foto 1 gagal! Cek koneksi internet dan coba lagi.','error');
+        document.getElementById('loadingOverlay').classList.remove('show');
+        document.getElementById('btnSave').disabled = false;
+        return;
+      }
+      payload['Dokumentasi1'] = url1;
     }
     if (f2) {
       document.getElementById('loadingText').textContent='Mengupload foto 2...';
-      payload['Dokumentasi2'] = await uploadKeImgBB(f2);
+      const url2 = await uploadKeImgBB(f2);
+      if (!url2) {
+        showToast('Upload Foto 2 gagal! Cek koneksi internet dan coba lagi.','error');
+        document.getElementById('loadingOverlay').classList.remove('show');
+        document.getElementById('btnSave').disabled = false;
+        return;
+      }
+      payload['Dokumentasi2'] = url2;
     }
     document.getElementById('loadingText').textContent='Menyimpan & mengirim WA...';
     const res = await fetch(API_URL, { method:'POST', body:JSON.stringify(payload) });
