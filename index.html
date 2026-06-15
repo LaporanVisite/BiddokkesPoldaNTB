@@ -455,7 +455,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height
             <option value="1">1 Minggu</option>
             <option value="2">2 Minggu</option>
             <option value="3">3 Minggu</option>
-            <option value="4">1 Bulan (4 Minggu)</option>
+            <option value="bulan">1 Bulan (Kalender)</option>
           </select>
         </div>
         <div style="flex:1;min-width:200px">
@@ -1077,10 +1077,24 @@ const URUTAN_FKTP = [
 ];
 
 function getMingguList() {
-  const jumlahMinggu = parseInt((document.getElementById('pilihanRentang')||{}).value) || 1;
-  // Generate daftar periode dari sekarang mundur, kelipatan jumlahMinggu
+  const rentang = (document.getElementById('pilihanRentang')||{}).value || '1';
   const mingguList = [];
   const now = new Date();
+
+  if (rentang === 'bulan') {
+    // Mode bulan kalender: tanggal 1 s.d. akhir bulan
+    for (let i = 0; i < 12; i++) {
+      const senin = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      senin.setHours(0,0,0,0);
+      const minggu = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+      minggu.setHours(23,59,59,999);
+      mingguList.push({ senin, minggu });
+    }
+    return mingguList;
+  }
+
+  // Mode minggu: kelipatan jumlahMinggu
+  const jumlahMinggu = parseInt(rentang) || 1;
   const jumlahPeriode = Math.ceil(12 / jumlahMinggu) || 1;
   for (let i = 0; i < jumlahPeriode; i++) {
     const senin = new Date(now);
@@ -1489,6 +1503,31 @@ async function eksporRekapExcel() {
 
     rowIdx++;
   });
+
+  // Baris TOTAL - sum semua kolom
+  const totalHV  = rows.reduce((sum, r) => sum + (r.hv || 0), 0);
+  const totalMon = rows.reduce((sum, r) => sum + (r.mon || 0), 0);
+  const totalPen = rows.reduce((sum, r) => sum + (r.pen || 0), 0);
+  const totalTel = rows.reduce((sum, r) => sum + (r.tel || 0), 0);
+  const totalAll = rows.reduce((sum, r) => sum + (r.total || 0), 0);
+
+  const totalRow = ws.getRow(rowIdx);
+  ws.mergeCells(`A${rowIdx}:B${rowIdx}`);
+  totalRow.getCell(1).value = 'TOTAL';
+  totalRow.getCell(3).value = totalHV || '';
+  totalRow.getCell(4).value = totalMon || '';
+  totalRow.getCell(5).value = totalPen || '';
+  totalRow.getCell(6).value = totalTel || '';
+  totalRow.getCell(7).value = totalAll;
+
+  for (let c = 1; c <= 9; c++) {
+    const cell = totalRow.getCell(c);
+    cell.border = allBorder;
+    cell.alignment = centerWrap;
+    cell.font = { bold: true };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2EFDA' } };
+  }
+  rowIdx++;
 
   await Promise.all(imagePromises);
 
