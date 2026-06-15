@@ -198,6 +198,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height
 .empty-state p{font-size:14px}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 </head>
 <body>
 
@@ -1302,7 +1303,7 @@ async function eksporRekapExcel() {
       return;
     }
   }
-  if (typeof XLSX === 'undefined') {
+  if (typeof ExcelJS === 'undefined') {
     showToast('Library Excel belum siap, coba lagi sebentar...', 'error');
     return;
   }
@@ -1341,6 +1342,8 @@ async function eksporRekapExcel() {
   infoEl.style.display = 'block';
   infoEl.textContent = `📊 ${formatTglPendek(senin)} — ${formatTglPendek(minggu)}: ${totalLaporan} laporan dari ${Object.keys(dataFKTP).length} FKTP`;
 
+  showToast('Menyiapkan file Excel & foto...', 'info');
+
   // Nama FKTP lengkap untuk kolom "TIM PELAYANAN KESEHATAN"
   const namaFKTPLengkap = {
     'Polda NTB':            'FKTP BIDDOKKES POLDA NTB',
@@ -1358,7 +1361,7 @@ async function eksporRekapExcel() {
     'Polres Bima Kota':     'FKTP POLRES BIMA KOTA',
   };
 
-  // Header
+  // Header tanggal
   const namaBulan = ['','JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'];
   let headerTanggal;
   if (senin.getMonth() === minggu.getMonth() && senin.getFullYear() === minggu.getFullYear()) {
@@ -1367,12 +1370,8 @@ async function eksporRekapExcel() {
     headerTanggal = `TANGGAL ${senin.getDate()} ${namaBulan[senin.getMonth()+1]} ${senin.getFullYear()} S.D ${minggu.getDate()} ${namaBulan[minggu.getMonth()+1]} ${minggu.getFullYear()}`;
   }
 
-  const aoa = [];
-  aoa.push([headerTanggal]);
-  aoa.push([]);
-  aoa.push(['NO','TIM PELAYANAN KESEHATAN','JENIS PELAYANAN KESEHATAN','','','','TOTAL','DOKUMENTASI','']);
-  aoa.push(['','','HOME VISIT','MONITORING','PENDAMPINGAN','TELEMEDICINE','','FOTO 1','FOTO 2']);
-
+  // Susun data per FKTP + pilih 2 foto wakil
+  const rows = [];
   let no = 1;
   URUTAN_FKTP.forEach(fktp => {
     const laporan = dataFKTP[fktp] || [];
@@ -1382,20 +1381,16 @@ async function eksporRekapExcel() {
     const tel = laporan.filter(r => r['JenisPelayanan'] === 'Telemedicine').length;
     const total = hv + mon + pen + tel;
 
-    // Pilih 2 foto wakil: prioritaskan dari jenis pelayanan berbeda
     let foto1 = '', foto2 = '';
     if (laporan.length > 0) {
       const dgnFoto = laporan.filter(r => r['Dokumentasi1'] || r['Dokumentasi2']);
       if (dgnFoto.length > 0) {
-        // Cari laporan pertama dengan foto
         const lp1 = dgnFoto[0];
         foto1 = lp1['Dokumentasi1'] || lp1['Dokumentasi2'] || '';
-        // Cari laporan dengan jenis berbeda dari lp1 untuk foto2
         const lp2 = dgnFoto.find(r => r['JenisPelayanan'] !== lp1['JenisPelayanan'] && (r['Dokumentasi1']||r['Dokumentasi2']));
         if (lp2) {
           foto2 = lp2['Dokumentasi2'] || lp2['Dokumentasi1'] || '';
         } else {
-          // Jenis sama saja - ambil foto kedua dari laporan yang sama atau laporan lain
           if (lp1['Dokumentasi1'] && lp1['Dokumentasi2']) {
             foto2 = lp1['Dokumentasi2'];
           } else if (dgnFoto.length > 1) {
@@ -1406,45 +1401,132 @@ async function eksporRekapExcel() {
       }
     }
 
-    aoa.push([
-      no, namaFKTPLengkap[fktp] || fktp.toUpperCase(),
-      hv || '', mon || '', pen || '', tel || '',
-      total,
-      foto1, foto2
-    ]);
+    rows.push({ no, nama: namaFKTPLengkap[fktp] || fktp.toUpperCase(), hv, mon, pen, tel, total, foto1, foto2 });
     no++;
   });
 
-  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  // Buat workbook
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('LAPORAN');
 
-  // Merge cells untuk header
-  ws['!merges'] = [
-    { s: {r:0,c:0}, e: {r:0,c:8} }, // judul tanggal
-    { s: {r:2,c:0}, e: {r:3,c:0} }, // NO
-    { s: {r:2,c:1}, e: {r:3,c:1} }, // TIM PELAYANAN KESEHATAN
-    { s: {r:2,c:2}, e: {r:2,c:5} }, // JENIS PELAYANAN KESEHATAN
-    { s: {r:2,c:6}, e: {r:3,c:6} }, // TOTAL
-    { s: {r:2,c:7}, e: {r:2,c:8} }, // DOKUMENTASI
+  ws.columns = [
+    { width: 4 }, { width: 28 }, { width: 11 }, { width: 11 },
+    { width: 12 }, { width: 12 }, { width: 7 }, { width: 22 }, { width: 22 }
   ];
 
-  // Lebar kolom
-  ws['!cols'] = [
-    { wch: 4 },  // NO
-    { wch: 28 }, // TIM PELAYANAN
-    { wch: 10 }, // HOME VISIT
-    { wch: 11 }, // MONITORING
-    { wch: 12 }, // PENDAMPINGAN
-    { wch: 12 }, // TELEMEDICINE
-    { wch: 7 },  // TOTAL
-    { wch: 30 }, // FOTO 1
-    { wch: 30 }, // FOTO 2
-  ];
+  const thinBorder = { style: 'thin', color: { argb: 'FF000000' } };
+  const allBorder = { top: thinBorder, left: thinBorder, bottom: thinBorder, right: thinBorder };
+  const centerWrap = { horizontal: 'center', vertical: 'middle', wrapText: true };
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'LAPORAN');
+  // Row 1: Judul
+  ws.mergeCells('A1:I1');
+  const titleCell = ws.getCell('A1');
+  titleCell.value = headerTanggal;
+  titleCell.font = { bold: true, size: 12 };
+  titleCell.alignment = centerWrap;
 
-  XLSX.writeFile(wb, `Rekap_Mingguan_Biddokkes_${formatTglPendek(senin).replace(/ /g,'_')}-${formatTglPendek(minggu).replace(/ /g,'_')}.xlsx`);
+  // Row 2: kosong
+  ws.addRow([]);
+
+  // Row 3-4: Header tabel
+  ws.getCell('A3').value = 'NO';
+  ws.getCell('B3').value = 'TIM PELAYANAN KESEHATAN';
+  ws.getCell('C3').value = 'JENIS PELAYANAN KESEHATAN';
+  ws.getCell('G3').value = 'TOTAL';
+  ws.getCell('H3').value = 'DOKUMENTASI';
+  ws.getCell('C4').value = 'HOME VISIT';
+  ws.getCell('D4').value = 'MONITORING';
+  ws.getCell('E4').value = 'PENDAMPINGAN';
+  ws.getCell('F4').value = 'TELEMEDICINE';
+  ws.getCell('H4').value = 'FOTO 1';
+  ws.getCell('I4').value = 'FOTO 2';
+
+  ws.mergeCells('A3:A4');
+  ws.mergeCells('B3:B4');
+  ws.mergeCells('C3:F3');
+  ws.mergeCells('G3:G4');
+  ws.mergeCells('H3:I3');
+
+  [3,4].forEach(r => {
+    for (let c = 1; c <= 9; c++) {
+      const cell = ws.getCell(r, c);
+      cell.font = { bold: true };
+      cell.alignment = centerWrap;
+      cell.border = allBorder;
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2EFDA' } };
+    }
+  });
+
+  // Tinggi baris foto
+  const fotoRowHeight = 90;
+
+  // Data rows mulai baris 5
+  let rowIdx = 5;
+  const imagePromises = [];
+
+  rows.forEach(r => {
+    const row = ws.getRow(rowIdx);
+    row.height = fotoRowHeight;
+    row.getCell(1).value = r.no;
+    row.getCell(2).value = r.nama;
+    row.getCell(3).value = r.hv || '';
+    row.getCell(4).value = r.mon || '';
+    row.getCell(5).value = r.pen || '';
+    row.getCell(6).value = r.tel || '';
+    row.getCell(7).value = r.total;
+    row.getCell(8).value = '';
+    row.getCell(9).value = '';
+
+    for (let c = 1; c <= 9; c++) {
+      const cell = row.getCell(c);
+      cell.border = allBorder;
+      cell.alignment = c === 2 ? { vertical: 'middle', wrapText: true } : centerWrap;
+    }
+
+    // Embed foto jika ada
+    if (r.foto1) imagePromises.push(embedFoto(wb, ws, r.foto1, rowIdx, 7)); // kolom H = index 7
+    if (r.foto2) imagePromises.push(embedFoto(wb, ws, r.foto2, rowIdx, 8)); // kolom I = index 8
+
+    rowIdx++;
+  });
+
+  await Promise.all(imagePromises);
+
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Rekap_Mingguan_Biddokkes_${formatTglPendek(senin).replace(/ /g,'_')}-${formatTglPendek(minggu).replace(/ /g,'_')}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+
   showToast('Rekap Excel berhasil didownload! 🎉', 'success');
+}
+
+// Fetch foto dari Cloudinary dan embed ke cell Excel
+async function embedFoto(wb, ws, url, rowIdx, colIdx) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return;
+    const blob = await res.blob();
+    const arrayBuffer = await blob.arrayBuffer();
+    let ext = 'jpeg';
+    if (blob.type.includes('png')) ext = 'png';
+    else if (blob.type.includes('gif')) ext = 'gif';
+
+    const imageId = wb.addImage({ buffer: arrayBuffer, extension: ext });
+    // col/row 0-based; beri sedikit padding di dalam cell
+    ws.addImage(imageId, {
+      tl: { col: colIdx + 0.05, row: (rowIdx - 1) + 0.05 },
+      ext: { width: 130, height: 110 },
+      editAs: 'oneCell'
+    });
+  } catch(e) {
+    console.error('Gagal embed foto:', e);
+  }
 }
 
 function filterPasien(val) {
