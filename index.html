@@ -448,17 +448,28 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height
         <button onclick="keluarRekap()" style="background:#fee2e2;border:none;color:#dc2626;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">Keluar</button>
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="min-width:140px">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:4px">Rentang:</div>
+          <select id="pilihanRentang" onchange="isiPilihanMinggu()" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;color:var(--text);background:#f8fafc;outline:none">
+            <option value="1">1 Minggu</option>
+            <option value="2">2 Minggu</option>
+            <option value="3">3 Minggu</option>
+            <option value="4">1 Bulan (4 Minggu)</option>
+          </select>
+        </div>
         <div style="flex:1;min-width:200px">
-          <div style="font-size:12px;color:var(--text3);margin-bottom:4px">Pilih minggu:</div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:4px">Pilih periode:</div>
           <select id="pilihanMinggu" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;color:var(--text);background:#f8fafc;outline:none">
           </select>
         </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px">
         <button onclick="eksporRekapMingguan()"
-          style="background:#1a7a3c;border:none;color:white;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;margin-top:18px">
+          style="background:#1a7a3c;border:none;color:white;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">
           📄 Download Word
         </button>
         <button onclick="eksporRekapExcel()"
-          style="background:#15803d;border:none;color:white;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;margin-top:18px">
+          style="background:#15803d;border:none;color:white;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">
           📊 Download Excel
         </button>
       </div>
@@ -1065,17 +1076,18 @@ const URUTAN_FKTP = [
 ];
 
 function getMingguList() {
-  // Generate daftar minggu dari data pertama hingga sekarang
+  const jumlahMinggu = parseInt((document.getElementById('pilihanRentang')||{}).value) || 1;
+  // Generate daftar periode dari sekarang mundur, kelipatan jumlahMinggu
   const mingguList = [];
   const now = new Date();
-  // Mulai dari minggu ini mundur 12 minggu
-  for (let i = 0; i < 12; i++) {
+  const jumlahPeriode = Math.ceil(12 / jumlahMinggu) || 1;
+  for (let i = 0; i < jumlahPeriode; i++) {
     const senin = new Date(now);
     const hari = senin.getDay() === 0 ? 6 : senin.getDay() - 1;
-    senin.setDate(senin.getDate() - hari - (i * 7));
+    senin.setDate(senin.getDate() - hari - (i * jumlahMinggu * 7));
     senin.setHours(0,0,0,0);
     const minggu = new Date(senin);
-    minggu.setDate(minggu.getDate() + 6);
+    minggu.setDate(minggu.getDate() + (jumlahMinggu * 7) - 1);
     minggu.setHours(23,59,59,999);
     mingguList.push({ senin, minggu });
   }
@@ -1092,7 +1104,7 @@ function isiPilihanMinggu() {
   if (!sel) return;
   const list = getMingguList();
   sel.innerHTML = list.map((m, i) => {
-    const label = (i === 0 ? '📅 Minggu ini: ' : '') +
+    const label = (i === 0 ? '📅 Periode ini: ' : '') +
       formatTglPendek(m.senin) + ' — ' + formatTglPendek(m.minggu);
     return `<option value="${i}">${label}</option>`;
   }).join('');
@@ -1259,7 +1271,7 @@ ${seksi('Dokter DPJP :', dpjpArr)}
 </style>
 </head>
 <body>
-${p('REKAP LAPORAN MINGGUAN BIDDOKKES POLDA NTB', 'center')}
+${p('REKAP LAPORAN BIDDOKKES POLDA NTB', 'center')}
 ${p('Periode: ' + formatTglPendek(senin) + ' — ' + formatTglPendek(minggu), 'center')}
 ${p('Total: ' + totalLaporan + ' Laporan dari ' + Object.keys(dataFKTP).length + ' FKTP', 'center')}
 <hr style="border:2px solid #1a7a3c;margin:8pt 0">
@@ -1345,7 +1357,13 @@ async function eksporRekapExcel() {
   };
 
   // Header
-  const headerTanggal = `TANGGAL ${senin.getDate()} S.D ${minggu.getDate()} ${['','JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'][minggu.getMonth()+1]} ${minggu.getFullYear()}`;
+  const namaBulan = ['','JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'];
+  let headerTanggal;
+  if (senin.getMonth() === minggu.getMonth() && senin.getFullYear() === minggu.getFullYear()) {
+    headerTanggal = `TANGGAL ${senin.getDate()} S.D ${minggu.getDate()} ${namaBulan[minggu.getMonth()+1]} ${minggu.getFullYear()}`;
+  } else {
+    headerTanggal = `TANGGAL ${senin.getDate()} ${namaBulan[senin.getMonth()+1]} ${senin.getFullYear()} S.D ${minggu.getDate()} ${namaBulan[minggu.getMonth()+1]} ${minggu.getFullYear()}`;
+  }
 
   const aoa = [];
   aoa.push([headerTanggal]);
