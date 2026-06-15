@@ -1072,7 +1072,7 @@ const URUTAN_FKTP = [
   'Polres Sumbawa Barat',
   'Polres Dompu',
   'Polres Bima',
-  'Polresta Bima'
+  'Polres Bima Kota'
 ];
 
 function getMingguList() {
@@ -1147,12 +1147,13 @@ async function eksporRekapMingguan() {
     const tgl = parseDate(r['Tanggal']);
     if (!tgl || tgl < senin || tgl > minggu) return;
 
-    // Cari FKTP yang cocok
+    // Cari FKTP yang cocok - exact match dulu, baru substring
     const fktpData = (r['FKTP'] || '').trim();
-    let fktpKey = URUTAN_FKTP.find(f =>
-      fktpData.toLowerCase().includes(f.toLowerCase()) ||
-      f.toLowerCase().includes(fktpData.toLowerCase())
-    ) || fktpData || 'Lainnya';
+    let fktpKey = URUTAN_FKTP.find(f => f.toLowerCase() === fktpData.toLowerCase())
+      || URUTAN_FKTP.find(f =>
+        fktpData.toLowerCase().includes(f.toLowerCase()) ||
+        f.toLowerCase().includes(fktpData.toLowerCase())
+      ) || fktpData || 'Lainnya';
 
     if (!dataFKTP[fktpKey]) dataFKTP[fktpKey] = [];
     dataFKTP[fktpKey].push(r);
@@ -1319,10 +1320,11 @@ async function eksporRekapExcel() {
     if (!tgl || tgl < senin || tgl > minggu) return;
 
     const fktpData = (r['FKTP'] || '').trim();
-    let fktpKey = URUTAN_FKTP.find(f =>
-      fktpData.toLowerCase().includes(f.toLowerCase()) ||
-      f.toLowerCase().includes(fktpData.toLowerCase())
-    ) || fktpData || 'Lainnya';
+    let fktpKey = URUTAN_FKTP.find(f => f.toLowerCase() === fktpData.toLowerCase())
+      || URUTAN_FKTP.find(f =>
+        fktpData.toLowerCase().includes(f.toLowerCase()) ||
+        f.toLowerCase().includes(fktpData.toLowerCase())
+      ) || fktpData || 'Lainnya';
 
     if (!dataFKTP[fktpKey]) dataFKTP[fktpKey] = [];
     dataFKTP[fktpKey].push(r);
@@ -1353,7 +1355,7 @@ async function eksporRekapExcel() {
     'Polres Sumbawa Barat': 'FKTP POLRES SUMBAWA BARAT',
     'Polres Dompu':         'FKTP POLRES DOMPU',
     'Polres Bima':          'FKTP POLRES BIMA',
-    'Polresta Bima':        'FKTP POLRESTA BIMA',
+    'Polres Bima Kota':     'FKTP POLRES BIMA KOTA',
   };
 
   // Header
