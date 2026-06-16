@@ -950,8 +950,18 @@ async function muatSemuaData() {
   const rmList = document.getElementById('rmList');
   if (rmList) rmList.innerHTML = '<div class="empty-state"><div class="es-icon">⏳</div><p>Memuat data...</p></div>';
   try {
-    const res = await fetch(API_URL + '?action=getAll');
-    const raw = await res.json();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const res = await fetch(API_URL + '?action=getAll', { signal: controller.signal });
+    clearTimeout(timeoutId);
+    const text = await res.text();
+    let raw;
+    try { raw = JSON.parse(text); }
+    catch(parseErr) {
+      console.error('JSON parse error:', parseErr, 'Response:', text.substring(0,200));
+      if (rmList) rmList.innerHTML = '<div class="empty-state"><div class="es-icon">❌</div><p>Gagal memuat data (parse error)</p></div>';
+      return;
+    }
     allData = raw.map(r => ({
       ...r,
       'Nama Pasien': r['Nama Pasien'] || '',
@@ -982,12 +992,13 @@ async function muatSemuaData() {
       'Dokumentasi2':r['Dokumentasi 2']||r['Dokumentasi2']||'',
       'JenisPelayanan': r['Jenis Pelayanan']||r['JenisPelayanan']||'',
     }));
-    // Hanya tampilkan rekam medis kalau sedang di halaman rekam
     if (rmList) tampilRekamMedis(allData);
     isiPilihanMinggu();
   } catch(e) {
-    if (rmList) rmList.innerHTML = '<div class="empty-state"><div class="es-icon">❌</div><p>Gagal memuat data</p></div>';
-    else showToast('Gagal memuat data!', 'error');
+    console.error('muatSemuaData error:', e);
+    const msg = e.name === 'AbortError' ? 'Koneksi timeout, coba lagi' : 'Gagal memuat data';
+    if (rmList) rmList.innerHTML = `<div class="empty-state"><div class="es-icon">❌</div><p>${msg}</p><button onclick="muatSemuaData()" style="margin-top:12px;background:#1a7a3c;color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px">🔄 Coba Lagi</button></div>`;
+    else showToast(msg, 'error');
   }
 }
 
