@@ -1202,7 +1202,6 @@ async function eksporRekapMingguan() {
   const kap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
 
   let isi = '';
-  let nomorUrut = 1;
 
   // Urutkan FKTP sesuai urutan resmi
   const fktpUrut = [...URUTAN_FKTP.filter(f => dataFKTP[f]), ...Object.keys(dataFKTP).filter(f => !URUTAN_FKTP.includes(f))];
@@ -1210,6 +1209,7 @@ async function eksporRekapMingguan() {
   fktpUrut.forEach(fktp => {
     const laporan = dataFKTP[fktp];
     if (!laporan || !laporan.length) return;
+    let nomorUrut = 1; // Reset nomor tiap FKTP
 
     // Header FKTP
     isi += `
@@ -1257,11 +1257,6 @@ ${p('Pangkat/NRP : ' + pangkat + '/' + nipnrp)}
 ${p('Jabatan        : ' + jabatan)}
 ${p('Kesatuan       : ' + kesatuan)}
 ${tempat && tempat !== '-' ? p('Tempat         : ' + tempat) : ''}
-<br>
-${p('Kondisi Terkini')}
-${p('K/U.     : ' + kondisiUmum)}
-${vitalSection}
-${r['Keterangan'] ? p(kap(r['Keterangan'])) : ''}
 <br>
 ${seksi('Keluhan :', keluhanArr)}
 ${seksi('Diagnosa', diagnosaArr)}
@@ -1722,11 +1717,6 @@ ${p(b, 'Pangkat/NRP : ' + pangkat + '/' + nipnrp)}
 ${p(b, 'Jabatan        : ' + jabatan)}
 ${p(b, 'Kesatuan       : ' + kesatuan)}
 ${tempat && tempat !== '-' ? p(b, 'Tempat         : ' + tempat) : ''}
-<br>
-${p(b, 'Kondisi Terkini')}
-${p(b, 'K/U.     : ' + kondisiUmum)}
-${vitalSection}
-${r['Keterangan'] ? p(b, kapital(r['Keterangan'])) : ''}
 <br>
 ${seksi('Keluhan :', keluhanArr)}
 ${seksi('Diagnosa', diagnosaArr)}
