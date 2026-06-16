@@ -965,35 +965,36 @@ async function muatSemuaData() {
       if (rmList) rmList.innerHTML = '<div class="empty-state"><div class="es-icon">❌</div><p>Gagal memuat data (parse error)</p></div>';
       return;
     }
+    const str = v => v === null || v === undefined ? '' : String(v);
     allData = raw.map(r => ({
       ...r,
-      'Nama Pasien': r['Nama Pasien'] || '',
-      'NIPNRP':      r['NIP/NRP']    || r['NIPNRP']    || '',
-      'KondisiUmum': r['Kondisi Umum']|| r['KondisiUmum']|| '',
-      'Keluhan1':    r['Keluhan 1']  || r['Keluhan1']  || '',
-      'Keluhan2':    r['Keluhan 2']  || r['Keluhan2']  || '',
-      'Keluhan3':    r['Keluhan 3']  || r['Keluhan3']  || '',
-      'Keluhan4':    r['Keluhan 4']  || r['Keluhan4']  || '',
-      'Diagnosa1':   r['Diagnosa 1'] || r['Diagnosa1'] || '',
-      'Diagnosa2':   r['Diagnosa 2'] || r['Diagnosa2'] || '',
-      'Diagnosa3':   r['Diagnosa 3'] || r['Diagnosa3'] || '',
-      'Diagnosa4':   r['Diagnosa 4'] || r['Diagnosa4'] || '',
-      'Tindakan1':   r['Tindakan 1'] || r['Tindakan1'] || '',
-      'Tindakan2':   r['Tindakan 2'] || r['Tindakan2'] || '',
-      'Tindakan3':   r['Tindakan 3'] || r['Tindakan3'] || '',
-      'Tindakan4':   r['Tindakan 4'] || r['Tindakan4'] || '',
-      'Rencana1':    r['Rencana 1']  || r['Rencana1']  || '',
-      'Rencana2':    r['Rencana 2']  || r['Rencana2']  || '',
-      'Rencana3':    r['Rencana 3']  || r['Rencana3']  || '',
-      'Rencana4':    r['Rencana 4']  || r['Rencana4']  || '',
-      'DokterDPJP1': r['Dokter DPJP 1']||r['DokterDPJP1']||'',
-      'DokterDPJP2': r['Dokter DPJP 2']||r['DokterDPJP2']||'',
-      'DokterDPJP3': r['Dokter DPJP 3']||r['DokterDPJP3']||'',
-      'DokterDPJP4': r['Dokter DPJP 4']||r['DokterDPJP4']||'',
-      'FKTP':        r['FKTP Yang Melaksanakan']||r['FKTP']||'',
-      'Dokumentasi1':r['Dokumentasi 1']||r['Dokumentasi1']||'',
-      'Dokumentasi2':r['Dokumentasi 2']||r['Dokumentasi2']||'',
-      'JenisPelayanan': r['Jenis Pelayanan']||r['JenisPelayanan']||'',
+      'Nama Pasien': str(r['Nama Pasien']),
+      'NIPNRP':      str(r['NIP/NRP']    || r['NIPNRP']),
+      'KondisiUmum': str(r['Kondisi Umum']|| r['KondisiUmum']),
+      'Keluhan1':    str(r['Keluhan 1']  || r['Keluhan1']),
+      'Keluhan2':    str(r['Keluhan 2']  || r['Keluhan2']),
+      'Keluhan3':    str(r['Keluhan 3']  || r['Keluhan3']),
+      'Keluhan4':    str(r['Keluhan 4']  || r['Keluhan4']),
+      'Diagnosa1':   str(r['Diagnosa 1'] || r['Diagnosa1']),
+      'Diagnosa2':   str(r['Diagnosa 2'] || r['Diagnosa2']),
+      'Diagnosa3':   str(r['Diagnosa 3'] || r['Diagnosa3']),
+      'Diagnosa4':   str(r['Diagnosa 4'] || r['Diagnosa4']),
+      'Tindakan1':   str(r['Tindakan 1'] || r['Tindakan1']),
+      'Tindakan2':   str(r['Tindakan 2'] || r['Tindakan2']),
+      'Tindakan3':   str(r['Tindakan 3'] || r['Tindakan3']),
+      'Tindakan4':   str(r['Tindakan 4'] || r['Tindakan4']),
+      'Rencana1':    str(r['Rencana 1']  || r['Rencana1']),
+      'Rencana2':    str(r['Rencana 2']  || r['Rencana2']),
+      'Rencana3':    str(r['Rencana 3']  || r['Rencana3']),
+      'Rencana4':    str(r['Rencana 4']  || r['Rencana4']),
+      'DokterDPJP1': str(r['Dokter DPJP 1']||r['DokterDPJP1']),
+      'DokterDPJP2': str(r['Dokter DPJP 2']||r['DokterDPJP2']),
+      'DokterDPJP3': str(r['Dokter DPJP 3']||r['DokterDPJP3']),
+      'DokterDPJP4': str(r['Dokter DPJP 4']||r['DokterDPJP4']),
+      'FKTP':        str(r['FKTP Yang Melaksanakan']||r['FKTP']),
+      'Dokumentasi1':str(r['Dokumentasi 1']||r['Dokumentasi1']),
+      'Dokumentasi2':str(r['Dokumentasi 2']||r['Dokumentasi2']),
+      'JenisPelayanan': str(r['Jenis Pelayanan']||r['JenisPelayanan']),
     }));
     if (rmList) tampilRekamMedis(allData);
     isiPilihanMinggu();
@@ -1055,7 +1056,7 @@ function tampilRekamMedis(data) {
                   style="background:#1a7a3c;border:none;color:white;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap">
                   📄 Word
                 </button>
-                <button onclick="event.stopPropagation();hapusLangsung(${k._rowIndex||0},'${(k['Nama Pasien']||'').replace(/'/g,"")}')"
+                <button onclick="event.stopPropagation();hapusLangsung(${k._rowIndex||0},'${String(k['Nama Pasien']||'').replace(/'/g,"")}')"
                   style="background:#fee2e2;border:none;color:#dc2626;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap">
                   🗑️
                 </button>
