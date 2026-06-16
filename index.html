@@ -775,7 +775,10 @@ function muatData(r) {
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function getInisial(nama) { return nama.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
+function getInisial(nama) {
+  if (!nama || typeof nama !== 'string') return '?';
+  return nama.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase() || '?';
+}
 
 // ── UPLOAD FOTO ──
 function previewImg(input, previewId) {
