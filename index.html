@@ -504,7 +504,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height
         <option>Polres Sumbawa Barat</option>
         <option>Polres Dompu</option>
         <option>Polres Bima</option>
-        <option>Polresta Bima</option>
+        <option>Polres Bima Kota</option>
       </select>
     </div>
     <!-- Info jumlah hasil filter -->
@@ -965,37 +965,53 @@ async function muatSemuaData() {
       if (rmList) rmList.innerHTML = '<div class="empty-state"><div class="es-icon">❌</div><p>Gagal memuat data (parse error)</p></div>';
       return;
     }
-    const str = v => v === null || v === undefined ? '' : String(v);
-    allData = raw.map(r => ({
-      ...r,
-      'Nama Pasien': str(r['Nama Pasien']),
-      'NIPNRP':      str(r['NIP/NRP']    || r['NIPNRP']),
-      'KondisiUmum': str(r['Kondisi Umum']|| r['KondisiUmum']),
-      'Keluhan1':    str(r['Keluhan 1']  || r['Keluhan1']),
-      'Keluhan2':    str(r['Keluhan 2']  || r['Keluhan2']),
-      'Keluhan3':    str(r['Keluhan 3']  || r['Keluhan3']),
-      'Keluhan4':    str(r['Keluhan 4']  || r['Keluhan4']),
-      'Diagnosa1':   str(r['Diagnosa 1'] || r['Diagnosa1']),
-      'Diagnosa2':   str(r['Diagnosa 2'] || r['Diagnosa2']),
-      'Diagnosa3':   str(r['Diagnosa 3'] || r['Diagnosa3']),
-      'Diagnosa4':   str(r['Diagnosa 4'] || r['Diagnosa4']),
-      'Tindakan1':   str(r['Tindakan 1'] || r['Tindakan1']),
-      'Tindakan2':   str(r['Tindakan 2'] || r['Tindakan2']),
-      'Tindakan3':   str(r['Tindakan 3'] || r['Tindakan3']),
-      'Tindakan4':   str(r['Tindakan 4'] || r['Tindakan4']),
-      'Rencana1':    str(r['Rencana 1']  || r['Rencana1']),
-      'Rencana2':    str(r['Rencana 2']  || r['Rencana2']),
-      'Rencana3':    str(r['Rencana 3']  || r['Rencana3']),
-      'Rencana4':    str(r['Rencana 4']  || r['Rencana4']),
-      'DokterDPJP1': str(r['Dokter DPJP 1']||r['DokterDPJP1']),
-      'DokterDPJP2': str(r['Dokter DPJP 2']||r['DokterDPJP2']),
-      'DokterDPJP3': str(r['Dokter DPJP 3']||r['DokterDPJP3']),
-      'DokterDPJP4': str(r['Dokter DPJP 4']||r['DokterDPJP4']),
-      'FKTP':        str(r['FKTP Yang Melaksanakan']||r['FKTP']),
-      'Dokumentasi1':str(r['Dokumentasi 1']||r['Dokumentasi1']),
-      'Dokumentasi2':str(r['Dokumentasi 2']||r['Dokumentasi2']),
-      'JenisPelayanan': str(r['Jenis Pelayanan']||r['JenisPelayanan']),
-    }));
+    const str = v => (v === null || v === undefined) ? '' : String(v);
+    allData = raw.map(r => {
+      const norm = {
+        'Nama Pasien':    str(r['Nama Pasien']),
+        'NIPNRP':         str(r['NIP/NRP']    || r['NIPNRP']),
+        'Pangkat':        str(r['Pangkat']     || ''),
+        'Jabatan':        str(r['Jabatan']     || ''),
+        'Kesatuan':       str(r['Kesatuan']    || ''),
+        'Tanggal':        str(r['Tanggal']     || ''),
+        'Hari':           str(r['Hari']        || ''),
+        'Waktu':          str(r['Waktu']       || ''),
+        'Tempat':         str(r['Tempat']      || ''),
+        'KondisiUmum':    str(r['Kondisi Umum']|| r['KondisiUmum'] || ''),
+        'Tensi':          str(r['Tensi']       || ''),
+        'Nadi':           str(r['Nadi']        || ''),
+        'RR':             str(r['RR']          || ''),
+        'SpO2':           str(r['SpO2']        || ''),
+        'Keterangan':     str(r['Keterangan']  || ''),
+        'Keluhan1':       str(r['Keluhan 1']   || r['Keluhan1']  || ''),
+        'Keluhan2':       str(r['Keluhan 2']   || r['Keluhan2']  || ''),
+        'Keluhan3':       str(r['Keluhan 3']   || r['Keluhan3']  || ''),
+        'Keluhan4':       str(r['Keluhan 4']   || r['Keluhan4']  || ''),
+        'Diagnosa1':      str(r['Diagnosa 1']  || r['Diagnosa1'] || ''),
+        'Diagnosa2':      str(r['Diagnosa 2']  || r['Diagnosa2'] || ''),
+        'Diagnosa3':      str(r['Diagnosa 3']  || r['Diagnosa3'] || ''),
+        'Diagnosa4':      str(r['Diagnosa 4']  || r['Diagnosa4'] || ''),
+        'Tindakan1':      str(r['Tindakan 1']  || r['Tindakan1'] || ''),
+        'Tindakan2':      str(r['Tindakan 2']  || r['Tindakan2'] || ''),
+        'Tindakan3':      str(r['Tindakan 3']  || r['Tindakan3'] || ''),
+        'Tindakan4':      str(r['Tindakan 4']  || r['Tindakan4'] || ''),
+        'Rencana1':       str(r['Rencana 1']   || r['Rencana1']  || ''),
+        'Rencana2':       str(r['Rencana 2']   || r['Rencana2']  || ''),
+        'Rencana3':       str(r['Rencana 3']   || r['Rencana3']  || ''),
+        'Rencana4':       str(r['Rencana 4']   || r['Rencana4']  || ''),
+        'DokterDPJP1':    str(r['Dokter DPJP 1']||r['DokterDPJP1']||''),
+        'DokterDPJP2':    str(r['Dokter DPJP 2']||r['DokterDPJP2']||''),
+        'DokterDPJP3':    str(r['Dokter DPJP 3']||r['DokterDPJP3']||''),
+        'DokterDPJP4':    str(r['Dokter DPJP 4']||r['DokterDPJP4']||''),
+        'FKTP':           str(r['FKTP Yang Melaksanakan']||r['FKTP']||''),
+        'Dokumentasi1':   str(r['Dokumentasi 1']||r['Dokumentasi1']||''),
+        'Dokumentasi2':   str(r['Dokumentasi 2']||r['Dokumentasi2']||''),
+        'JenisPelayanan': str(r['Jenis Pelayanan']||r['JenisPelayanan']||''),
+        '_rowIndex':      r._rowIndex || 0,
+      };
+      // Copy semua field asli lalu timpa dengan versi ternormalisasi
+      return Object.assign({}, r, norm);
+    });
     if (rmList) tampilRekamMedis(allData);
     isiPilihanMinggu();
   } catch(e) {
@@ -1587,9 +1603,9 @@ function filterPasien(val) {
     filtered = filtered.filter(r => (r['Nama Pasien']||'').toLowerCase().includes(val.toLowerCase()));
   }
 
-  // Filter FKTP
+  // Filter FKTP - exact match agar Polres Sumbawa tidak menangkap Polres Sumbawa Barat
   if (fktp) {
-    filtered = filtered.filter(r => (r['FKTP']||'').toLowerCase().includes(fktp.toLowerCase()));
+    filtered = filtered.filter(r => (r['FKTP']||'').toLowerCase().trim() === fktp.toLowerCase().trim());
   }
 
   // Tampilkan info jumlah hasil filter
