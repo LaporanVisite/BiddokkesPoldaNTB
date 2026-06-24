@@ -761,10 +761,14 @@ function muatData(r) {
     const el = document.getElementById(k);
     if (el) el.value = k === 'SpO2' ? fixSpO2(r[k] || '') : (r[k] || '');
   });
-  // Tempat ikut dari history, NoHP dan PersonelTerlibat dikosongkan
-  ['NoHP','PersonelTerlibat'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
+  // Tempat ikut dari history, PersonelTerlibat dikosongkan
+  // NoHP dipertahankan jika sudah dipilih dari dropdown petugas
+  const noHPPilihEl = document.getElementById('NoHPPilih');
+  const noHPInputEl = document.getElementById('NoHP');
+  const noHPSudahDipilih = noHPPilihEl && noHPPilihEl.value && noHPPilihEl.value !== '__manual__';
+  if (!noHPSudahDipilih && noHPInputEl) noHPInputEl.value = '';
+  const personalEl = document.getElementById('PersonelTerlibat');
+  if (personalEl) personalEl.value = '';
   // Isi Tempat dari history
   const tempatEl = document.getElementById('Tempat');
   if (tempatEl) tempatEl.value = r['Tempat'] || '';
