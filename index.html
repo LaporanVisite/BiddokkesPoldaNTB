@@ -193,6 +193,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height
 .pw-btn{flex:1;padding:11px;border-radius:var(--radius2);font-size:14px;font-weight:600;cursor:pointer;border:none;font-family:inherit}
 .pw-btn.confirm{background:var(--green);color:white}
 .pw-btn.cancel{background:var(--bg);color:var(--text2);border:1.5px solid var(--border)}
+.field input[readonly]{background:var(--green3);color:var(--green);font-weight:600;border-color:var(--green4)}
 .empty-state{text-align:center;padding:40px 20px;color:var(--text3)}
 .empty-state .es-icon{font-size:48px;margin-bottom:12px}
 .empty-state p{font-size:14px}
@@ -282,7 +283,18 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height
   <!-- DATA PETUGAS -->
   <div class="card">
     <div class="card-title"><div class="ct-icon">👮</div> Data Petugas</div>
-    <div class="field"><label>No HP <span class="req">*</span></label><input type="text" id="NoHP" placeholder="08xxxxxxxxxx"></div>
+    <div class="field">
+      <label>No HP (WA Aktif) <span class="req">*</span></label>
+      <select id="NoHPPilih" onchange="pilihanNoHP(this.value)" style="margin-bottom:8px">
+        <option value="">— Pilih Petugas atau Isi Manual —</option>
+        <option value="089671383332">Aditya (089671383332)</option>
+        <option value="082236069785">Albar (082236069785)</option>
+        <option value="081237572137">Agus Supriyanto (081237572137)</option>
+        <option value="081238066029">Lili KSB (081238066029)</option>
+        <option value="__manual__">✏️ Isi Manual...</option>
+      </select>
+      <input type="text" id="NoHP" placeholder="08xxxxxxxxxx" inputmode="numeric">
+    </div>
     <div class="field"><label>FKTP Yang Melaksanakan <span class="req">*</span></label>
       <select id="FKTP">
         <option value="">— Pilih FKTP —</option>
@@ -944,6 +956,11 @@ function resetForm() {
   document.getElementById('fileDoc1').value = '';
   document.getElementById('fileDoc2').value = '';
   document.getElementById('cardDPJP').style.display = 'none';
+  // Reset dropdown No HP
+  const noHPPilih = document.getElementById('NoHPPilih');
+  if (noHPPilih) noHPPilih.value = '';
+  const noHPInput = document.getElementById('NoHP');
+  if (noHPInput) noHPInput.readOnly = false;
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -1919,6 +1936,19 @@ function showToast(msg, type) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.className = 'toast '+type+' show';
   setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── PILIHAN NO HP PETUGAS ──
+function pilihanNoHP(val) {
+  const input = document.getElementById('NoHP');
+  if (!val || val === '__manual__') {
+    input.value = '';
+    input.readOnly = false;
+    input.focus();
+  } else {
+    input.value = val;
+    input.readOnly = true;
+  }
 }
 
 // ── INIT ──
