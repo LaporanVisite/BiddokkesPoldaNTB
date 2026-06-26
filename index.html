@@ -337,11 +337,11 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height
     <div class="card-title"><div class="ct-icon">💊</div> Kondisi & Vital Sign</div>
     <div class="field"><label>Kondisi Umum <span class="req">*</span></label><input type="text" id="KondisiUmum" placeholder="Baik / Sedang / Buruk"></div>
     <div id="vitalsGrid" class="vitals-grid">
-      <div class="field"><label>Tensi <span class="req">*</span></label><input type="text" id="Tensi" placeholder="120/80"></div>
-      <div class="field"><label>Nadi <span class="req">*</span></label><input type="text" id="Nadi" placeholder="80x/mnt"></div>
-      <div class="field"><label>RR <span class="req">*</span></label><input type="text" id="RR" placeholder="20x/mnt"></div>
-      <div class="field"><label>SpO2 <span class="req">*</span></label><input type="text" id="SpO2" placeholder="98%"></div>
-      <div class="field"><label>Suhu <span class="req">*</span></label><input type="text" id="Suhu" placeholder="36,5°C"></div>
+      <div class="field"><label>Tensi <span class="req">*</span></label><input type="text" id="Tensi" placeholder="120/80" data-suffix=" mmHg" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
+      <div class="field"><label>Nadi <span class="req">*</span></label><input type="text" id="Nadi" placeholder="80" data-suffix=" x/mnt" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
+      <div class="field"><label>RR <span class="req">*</span></label><input type="text" id="RR" placeholder="20" data-suffix=" x/mnt" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
+      <div class="field"><label>SpO2 <span class="req">*</span></label><input type="text" id="SpO2" placeholder="98" data-suffix="%" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
+      <div class="field"><label>Suhu <span class="req">*</span></label><input type="text" id="Suhu" placeholder="36,5" data-suffix="°C" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
     </div>
     <div class="field"><label>Keterangan</label><input type="text" id="Keterangan" placeholder="Catatan tambahan"></div>
   </div>
@@ -760,7 +760,10 @@ function muatData(r) {
    'Rencana1','Rencana2','Rencana3','Rencana4',
    'DokterDPJP1','DokterDPJP2','DokterDPJP3','DokterDPJP4'].forEach(k => {
     const el = document.getElementById(k);
-    if (el) el.value = k === 'SpO2' ? fixSpO2(r[k] || '') : (r[k] || '');
+    if (el) {
+      el.value = k === 'SpO2' ? fixSpO2(r[k] || '') : (r[k] || '');
+      if (el.dataset && el.dataset.suffix) autoSuffix(el);
+    }
   });
   // Tempat ikut dari history, PersonelTerlibat dikosongkan
   // NoHP dipertahankan jika sudah dipilih dari dropdown petugas
@@ -1297,12 +1300,13 @@ ${arr.map(x => p('- ' + x)).join('')}
       const isTelemedicine = jenis === 'Telemedicine';
       const spo2 = fixSpO2(r['SpO2']);
 
+      const fv = (val, sfx) => { if (!val||val==='-') return '-'; const s=String(val).trim(); return s.endsWith(sfx)?s:s+sfx; };
       const vitalSection = isTelemedicine ? '' : `
-${p('Td       : ' + (r['Tensi'] || '-'))}
-${p('N.        : ' + (r['Nadi'] || '-'))}
-${p('RR       : ' + (r['RR'] || '-'))}
-${p('SpO2   : ' + spo2)}
-${p('Suhu    : ' + (r['Suhu'] || '-'))}`;
+${p('Td       : ' + fv(r['Tensi'],' mmHg'))}
+${p('N.        : ' + fv(r['Nadi'],' x/mnt'))}
+${p('RR       : ' + fv(r['RR'],' x/mnt'))}
+${p('SpO2   : ' + fv(spo2,'%'))}
+${p('Suhu    : ' + fv(r['Suhu'],'°C'))}`;
 
       isi += `
 ${p(nomorUrut + '. ' + ((jenis==='Home Visit'||jenis==='Telemedicine')?'<i>'+jenis+'</i>':jenis) + ' Kepada Anggota pada Hari/Tanggal : ' + hari + ', ' + tglP)}
@@ -1675,12 +1679,19 @@ function formatWaktu(val) {
 function formatSpO2(val) {
   if (!val) return '-';
   const str = String(val).trim();
-  // Sudah ada % atau teks normal
   if (str.includes('%') || isNaN(parseFloat(str))) return str;
   const num = parseFloat(str);
-  // Kalau angka desimal < 2 (misal 0.98), kalikan 100
   if (num > 0 && num <= 1) return Math.round(num * 100) + '%';
   return str;
+}
+
+// Tambahkan satuan ke nilai vital jika belum ada
+function fmtVital(val, suffix) {
+  if (!val) return '-';
+  const s = String(val).trim();
+  if (!s || s === '-') return '-';
+  if (s.endsWith(suffix)) return s;
+  return s + suffix;
 }
 
 // Format tanggal panjang: DD/MM/YYYY atau YYYY-MM-DD → "30 Mei 2026"
@@ -1746,12 +1757,13 @@ ${arr.map(x => p(b, '- ' + x)).join('')}
   const isTelemedicine = jenis === 'Telemedicine';
   const spo2 = fixSpO2(r['SpO2']);
 
+  const fvW = (val, sfx) => { if (!val||val==='-') return '-'; const s=String(val).trim(); return s.endsWith(sfx)?s:s+sfx; };
   const vitalSection = isTelemedicine ? '' : `
-${p(b, 'Td       : ' + (r['Tensi'] || '-'))}
-${p(b, 'N.        : ' + (r['Nadi'] || '-'))}
-${p(b, 'RR       : ' + (r['RR'] || '-'))}
-${p(b, 'SpO2   : ' + spo2)}
-${p(b, 'Suhu    : ' + (r['Suhu'] || '-'))}`;
+${p(b, 'Td       : ' + fvW(r['Tensi'],' mmHg'))}
+${p(b, 'N.        : ' + fvW(r['Nadi'],' x/mnt'))}
+${p(b, 'RR       : ' + fvW(r['RR'],' x/mnt'))}
+${p(b, 'SpO2   : ' + fvW(spo2,'%'))}
+${p(b, 'Suhu    : ' + fvW(r['Suhu'],'°C'))}`;
 
   const html = `
 <html xmlns:o='urn:schemas-microsoft-com:office:office'
@@ -1853,11 +1865,11 @@ function bukaDetail(r) {
         <div class="rm-section-title">💊 Kondisi & Vital Sign</div>
         ${field('Kondisi Umum', r['KondisiUmum'])}
         <div class="rm-vitals" style="margin-top:8px">
-          <div class="vital-box"><div class="vb-val">${r['Tensi']||'-'}</div><div class="vb-label">Tensi</div></div>
-          <div class="vital-box"><div class="vb-val">${r['Nadi']||'-'}</div><div class="vb-label">Nadi</div></div>
-          <div class="vital-box"><div class="vb-val">${r['RR']||'-'}</div><div class="vb-label">RR</div></div>
+          <div class="vital-box"><div class="vb-val">${fmtVital(r['Tensi'],' mmHg')}</div><div class="vb-label">Tensi</div></div>
+          <div class="vital-box"><div class="vb-val">${fmtVital(r['Nadi'],' x/mnt')}</div><div class="vb-label">Nadi</div></div>
+          <div class="vital-box"><div class="vb-val">${fmtVital(r['RR'],' x/mnt')}</div><div class="vb-label">RR</div></div>
           <div class="vital-box"><div class="vb-val">${formatSpO2(r['SpO2'])}</div><div class="vb-label">SpO2</div></div>
-          <div class="vital-box"><div class="vb-val">${r['Suhu']||'-'}</div><div class="vb-label">Suhu</div></div>
+          <div class="vital-box"><div class="vb-val">${fmtVital(r['Suhu'],'°C')}</div><div class="vb-label">Suhu</div></div>
         </div>
         ${r['Keterangan'] ? `<div style="margin-top:8px">${field('Keterangan', r['Keterangan'])}</div>` : ''}
       </div>
@@ -1946,6 +1958,29 @@ function showToast(msg, type) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.className = 'toast '+type+' show';
   setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── AUTO-SUFFIX VITAL SIGN ──
+function autoSuffix(el) {
+  const suffix = el.dataset.suffix || "";
+  let val = el.value.trim();
+  if (!val) return;
+  const suffixes = [" mmHg", " x/mnt", "%", "°C"];
+  suffixes.forEach(s => { if (val.endsWith(s)) val = val.slice(0, -s.length).trim(); });
+  el.value = val + suffix;
+}
+function stripSuffix(el) {
+  const suffix = el.dataset.suffix || "";
+  let val = el.value.trim();
+  if (suffix && val.endsWith(suffix)) el.value = val.slice(0, -suffix.length).trim();
+}
+function cleanVital(id) {
+  const el = document.getElementById(id);
+  if (!el) return "";
+  const suffix = el.dataset.suffix || "";
+  let val = el.value.trim();
+  if (suffix && val.endsWith(suffix)) val = val.slice(0, -suffix.length).trim();
+  return val;
 }
 
 // ── PILIHAN NO HP PETUGAS ──
