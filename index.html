@@ -17,12 +17,12 @@
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --green:#1a7a3c;--green2:#22a050;--green3:#e8f5ee;--green4:#d0ead9;
-  --white:#ffffff;--bg:#f4f7f5;--border:#e0e8e3;
+  --white:#ffffff;--bg:#f0f2f5;--border:#e2e6ea;
   --text:#1a2e22;--text2:#4a6557;--text3:#8aa898;
-  --shadow:0 2px 12px rgba(26,122,60,0.08);--shadow2:0 4px 24px rgba(26,122,60,0.13);
+  --shadow:0 2px 8px rgba(0,0,0,0.07),0 1px 3px rgba(0,0,0,0.05);--shadow2:0 6px 24px rgba(0,0,0,0.11);
   --radius:14px;--radius2:10px;
 }
-body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height:100vh;color:var(--text)}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135deg,#0d1b2a 0%,#1a3a4a 40%,#0d2d1a 100%);background-attachment:fixed;min-height:100vh;color:var(--text)}
 
 /* ── HEADER ── */
 .header{background:linear-gradient(135deg,var(--green) 0%,var(--green2) 100%);color:white;padding:0;position:sticky;top:0;z-index:200;box-shadow:0 2px 16px rgba(26,122,60,0.18)}
@@ -36,7 +36,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height
 .btn-rekam:hover{background:rgba(255,255,255,0.28)}
 
 /* ── NAV TABS ── */
-.nav-tabs{background:white;border-bottom:1px solid var(--border);position:sticky;top:66px;z-index:190}
+.nav-tabs{background:rgba(255,255,255,0.97);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);position:sticky;top:66px;z-index:190}
 .nav-tabs-inner{max-width:720px;margin:0 auto;display:flex}
 .nav-tab{flex:1;padding:12px;text-align:center;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s}
 .nav-tab.active{color:var(--green);border-bottom-color:var(--green)}
@@ -45,7 +45,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height
 .container{max-width:720px;margin:0 auto;padding:20px 16px}
 
 /* ── CARD ── */
-.card{background:white;border-radius:var(--radius);padding:20px;margin-bottom:16px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.card{background:#ffffff;border-radius:var(--radius);padding:20px;margin-bottom:16px;box-shadow:0 4px 20px rgba(0,0,0,0.25),0 1px 4px rgba(0,0,0,0.15);border:1px solid #e8eaed}
 .card-title{font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:16px;display:flex;align-items:center;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--green3)}
 .card-title .ct-icon{width:26px;height:26px;background:var(--green3);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px}
 
@@ -195,6 +195,29 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height
 .pw-btn.cancel{background:var(--bg);color:var(--text2);border:1.5px solid var(--border)}
 .field input[readonly]{background:var(--green3);color:var(--green);font-weight:600;border-color:var(--green4)}
 .empty-state{text-align:center;padding:40px 20px;color:var(--text3)}
+
+/* ── PROGRESSIVE FIELDS ── */
+/* ── TIMELINE CLINICAL CARD ── */
+.card-clinical{padding:0;overflow:hidden}
+.tl-section{padding:20px 20px 16px}
+.tl-divider{height:1px;background:var(--border);margin:0 20px}
+.tl-header{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.tl-icon{font-size:16px;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tl-red{background:#fff0f0}.tl-blue{background:#f0f4ff}.tl-green{background:#f0faf4}.tl-purple{background:#f5f0ff}
+.tl-title{font-size:14px;font-weight:700;color:var(--text);letter-spacing:.3px;flex:1}
+.tl-req{font-size:11px;font-weight:600;color:var(--green);background:var(--green3);padding:2px 8px;border-radius:20px}
+.tl-body{display:flex;flex-direction:column;gap:0;padding-left:4px}
+.tl-line{display:flex;align-items:center;gap:12px;position:relative;padding:5px 0}
+.tl-line:not(:last-child)::after{content:'';position:absolute;left:9px;top:34px;width:2px;height:calc(100% - 14px);background:var(--border)}
+.tl-dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);background:var(--bg);flex-shrink:0;z-index:1;transition:all .3s}
+.tl-dot.tl-dot-active{border-color:var(--green);background:var(--green)}
+.tl-dot.tl-dot-last{border-style:dashed}
+.tl-input{flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14.5px;background:var(--bg2);color:var(--text);transition:border-color .2s,box-shadow .2s;outline:none}
+.tl-input:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green3)}
+.tl-input:not(:placeholder-shown){border-color:var(--green4)}
+.tl-line.tl-hidden{overflow:hidden;max-height:0;opacity:0;pointer-events:none;padding:0}
+.tl-line.tl-hidden::after{display:none}
+.tl-line.tl-visible{max-height:60px;opacity:1;pointer-events:auto;padding:5px 0;transition:max-height .35s ease,opacity .3s ease,padding .3s ease}
 .empty-state .es-icon{font-size:48px;margin-bottom:12px}
 .empty-state p{font-size:14px}
 </style>
@@ -346,58 +369,150 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height
     <div class="field"><label>Keterangan</label><input type="text" id="Keterangan" placeholder="Catatan tambahan"></div>
   </div>
 
-  <!-- KELUHAN -->
-  <div class="card">
-    <div class="card-title"><div class="ct-icon">🩺</div> Keluhan</div>
-    <div class="grid2">
-      <div class="field"><label>Keluhan 1 <span class="req">*</span></label><input type="text" id="Keluhan1" placeholder="Keluhan pertama"></div>
-      <div class="field"><label>Keluhan 2</label><input type="text" id="Keluhan2" placeholder="Keluhan kedua"></div>
-      <div class="field"><label>Keluhan 3</label><input type="text" id="Keluhan3" placeholder="Keluhan ketiga"></div>
-      <div class="field"><label>Keluhan 4</label><input type="text" id="Keluhan4" placeholder="Keluhan keempat"></div>
-    </div>
-  </div>
+  <!-- KELUHAN + DIAGNOSA + TINDAKAN + RENCANA — 1 CARD TIMELINE -->
+  <div class="card card-clinical">
 
-  <!-- DIAGNOSA -->
-  <div class="card">
-    <div class="card-title"><div class="ct-icon">🔬</div> Diagnosa</div>
-    <div class="grid2">
-      <div class="field"><label>Diagnosa 1 <span class="req">*</span></label><input type="text" id="Diagnosa1" placeholder="Diagnosa pertama"></div>
-      <div class="field"><label>Diagnosa 2</label><input type="text" id="Diagnosa2" placeholder="Diagnosa kedua"></div>
-      <div class="field"><label>Diagnosa 3</label><input type="text" id="Diagnosa3" placeholder="Diagnosa ketiga"></div>
-      <div class="field"><label>Diagnosa 4</label><input type="text" id="Diagnosa4" placeholder="Diagnosa keempat"></div>
+    <!-- KELUHAN -->
+    <div class="tl-section">
+      <div class="tl-header">
+        <span class="tl-icon tl-red">🩺</span>
+        <span class="tl-title">Keluhan</span>
+        <span class="tl-req">wajib</span>
+      </div>
+      <div class="tl-body">
+        <div class="tl-line">
+          <div class="tl-dot tl-dot-active"></div>
+          <input type="text" id="Keluhan1" placeholder="Keluhan utama..." class="tl-input" oninput="progReveal('Keluhan',this,1)">
+        </div>
+        <div class="tl-line tl-hidden" id="Keluhan2-row">
+          <div class="tl-dot"></div>
+          <input type="text" id="Keluhan2" placeholder="Keluhan tambahan..." class="tl-input" oninput="progReveal('Keluhan',this,2)">
+        </div>
+        <div class="tl-line tl-hidden" id="Keluhan3-row">
+          <div class="tl-dot"></div>
+          <input type="text" id="Keluhan3" placeholder="Keluhan tambahan..." class="tl-input" oninput="progReveal('Keluhan',this,3)">
+        </div>
+        <div class="tl-line tl-hidden" id="Keluhan4-row">
+          <div class="tl-dot tl-dot-last"></div>
+          <input type="text" id="Keluhan4" placeholder="Keluhan tambahan..." class="tl-input">
+        </div>
+      </div>
     </div>
-  </div>
 
-  <!-- TINDAKAN -->
-  <div class="card">
-    <div class="card-title"><div class="ct-icon">💉</div> Tindakan</div>
-    <div class="grid2">
-      <div class="field"><label>Tindakan 1 <span class="req">*</span></label><input type="text" id="Tindakan1" placeholder="Tindakan pertama"></div>
-      <div class="field"><label>Tindakan 2</label><input type="text" id="Tindakan2" placeholder="Tindakan kedua"></div>
-      <div class="field"><label>Tindakan 3</label><input type="text" id="Tindakan3" placeholder="Tindakan ketiga"></div>
-      <div class="field"><label>Tindakan 4</label><input type="text" id="Tindakan4" placeholder="Tindakan keempat"></div>
-    </div>
-  </div>
+    <div class="tl-divider"></div>
 
-  <!-- RENCANA -->
-  <div class="card">
-    <div class="card-title"><div class="ct-icon">📅</div> Rencana Tindak Lanjut</div>
-    <div class="grid2">
-      <div class="field"><label>Rencana 1 <span class="req">*</span></label><input type="text" id="Rencana1" placeholder="Rencana pertama"></div>
-      <div class="field"><label>Rencana 2</label><input type="text" id="Rencana2" placeholder="Rencana kedua"></div>
-      <div class="field"><label>Rencana 3</label><input type="text" id="Rencana3" placeholder="Rencana ketiga"></div>
-      <div class="field"><label>Rencana 4</label><input type="text" id="Rencana4" placeholder="Rencana keempat"></div>
+    <!-- DIAGNOSA -->
+    <div class="tl-section">
+      <div class="tl-header">
+        <span class="tl-icon tl-blue">🔬</span>
+        <span class="tl-title">Diagnosa</span>
+        <span class="tl-req">wajib</span>
+      </div>
+      <div class="tl-body">
+        <div class="tl-line">
+          <div class="tl-dot tl-dot-active"></div>
+          <input type="text" id="Diagnosa1" placeholder="Diagnosa utama..." class="tl-input" oninput="progReveal('Diagnosa',this,1)">
+        </div>
+        <div class="tl-line tl-hidden" id="Diagnosa2-row">
+          <div class="tl-dot"></div>
+          <input type="text" id="Diagnosa2" placeholder="Diagnosa tambahan..." class="tl-input" oninput="progReveal('Diagnosa',this,2)">
+        </div>
+        <div class="tl-line tl-hidden" id="Diagnosa3-row">
+          <div class="tl-dot"></div>
+          <input type="text" id="Diagnosa3" placeholder="Diagnosa tambahan..." class="tl-input" oninput="progReveal('Diagnosa',this,3)">
+        </div>
+        <div class="tl-line tl-hidden" id="Diagnosa4-row">
+          <div class="tl-dot tl-dot-last"></div>
+          <input type="text" id="Diagnosa4" placeholder="Diagnosa tambahan..." class="tl-input">
+        </div>
+      </div>
     </div>
+
+    <div class="tl-divider"></div>
+
+    <!-- TINDAKAN -->
+    <div class="tl-section">
+      <div class="tl-header">
+        <span class="tl-icon tl-green">💉</span>
+        <span class="tl-title">Tindakan</span>
+        <span class="tl-req">wajib</span>
+      </div>
+      <div class="tl-body">
+        <div class="tl-line">
+          <div class="tl-dot tl-dot-active"></div>
+          <input type="text" id="Tindakan1" placeholder="Tindakan utama..." class="tl-input" oninput="progReveal('Tindakan',this,1)">
+        </div>
+        <div class="tl-line tl-hidden" id="Tindakan2-row">
+          <div class="tl-dot"></div>
+          <input type="text" id="Tindakan2" placeholder="Tindakan tambahan..." class="tl-input" oninput="progReveal('Tindakan',this,2)">
+        </div>
+        <div class="tl-line tl-hidden" id="Tindakan3-row">
+          <div class="tl-dot"></div>
+          <input type="text" id="Tindakan3" placeholder="Tindakan tambahan..." class="tl-input" oninput="progReveal('Tindakan',this,3)">
+        </div>
+        <div class="tl-line tl-hidden" id="Tindakan4-row">
+          <div class="tl-dot tl-dot-last"></div>
+          <input type="text" id="Tindakan4" placeholder="Tindakan tambahan..." class="tl-input">
+        </div>
+      </div>
+    </div>
+
+    <div class="tl-divider"></div>
+
+    <!-- RENCANA -->
+    <div class="tl-section">
+      <div class="tl-header">
+        <span class="tl-icon tl-purple">📅</span>
+        <span class="tl-title">Rencana Tindak Lanjut</span>
+        <span class="tl-req">wajib</span>
+      </div>
+      <div class="tl-body">
+        <div class="tl-line">
+          <div class="tl-dot tl-dot-active"></div>
+          <input type="text" id="Rencana1" placeholder="Rencana utama..." class="tl-input" oninput="progReveal('Rencana',this,1)">
+        </div>
+        <div class="tl-line tl-hidden" id="Rencana2-row">
+          <div class="tl-dot"></div>
+          <input type="text" id="Rencana2" placeholder="Rencana tambahan..." class="tl-input" oninput="progReveal('Rencana',this,2)">
+        </div>
+        <div class="tl-line tl-hidden" id="Rencana3-row">
+          <div class="tl-dot"></div>
+          <input type="text" id="Rencana3" placeholder="Rencana tambahan..." class="tl-input" oninput="progReveal('Rencana',this,3)">
+        </div>
+        <div class="tl-line tl-hidden" id="Rencana4-row">
+          <div class="tl-dot tl-dot-last"></div>
+          <input type="text" id="Rencana4" placeholder="Rencana tambahan..." class="tl-input">
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- DOKTER DPJP -->
-  <div class="card" id="cardDPJP" style="display:none">
-    <div class="card-title"><div class="ct-icon">👨‍⚕️</div> Dokter DPJP</div>
-    <div class="grid2">
-      <div class="field"><label>Dokter DPJP 1</label><input type="text" id="DokterDPJP1" placeholder="Nama dokter 1"></div>
-      <div class="field"><label>Dokter DPJP 2</label><input type="text" id="DokterDPJP2" placeholder="Nama dokter 2"></div>
-      <div class="field"><label>Dokter DPJP 3</label><input type="text" id="DokterDPJP3" placeholder="Nama dokter 3"></div>
-      <div class="field"><label>Dokter DPJP 4</label><input type="text" id="DokterDPJP4" placeholder="Nama dokter 4"></div>
+  <div class="card card-clinical" id="cardDPJP" style="display:none">
+    <div class="tl-section">
+      <div class="tl-header">
+        <span class="tl-icon" style="background:#fff8e6">👨‍⚕️</span>
+        <span class="tl-title">Dokter DPJP</span>
+      </div>
+      <div class="tl-body">
+        <div class="tl-line">
+          <div class="tl-dot tl-dot-active"></div>
+          <input type="text" id="DokterDPJP1" placeholder="Nama dokter utama..." class="tl-input" oninput="progReveal('DokterDPJP',this,1)">
+        </div>
+        <div class="tl-line tl-hidden" id="DokterDPJP2-row">
+          <div class="tl-dot"></div>
+          <input type="text" id="DokterDPJP2" placeholder="Dokter tambahan..." class="tl-input" oninput="progReveal('DokterDPJP',this,2)">
+        </div>
+        <div class="tl-line tl-hidden" id="DokterDPJP3-row">
+          <div class="tl-dot"></div>
+          <input type="text" id="DokterDPJP3" placeholder="Dokter tambahan..." class="tl-input" oninput="progReveal('DokterDPJP',this,3)">
+        </div>
+        <div class="tl-line tl-hidden" id="DokterDPJP4-row">
+          <div class="tl-dot tl-dot-last"></div>
+          <input type="text" id="DokterDPJP4" placeholder="Dokter tambahan..." class="tl-input">
+        </div>
+      </div>
     </div>
   </div>
 
@@ -791,6 +906,7 @@ function muatData(r) {
   document.getElementById('dropdown').style.display = 'none';
   document.getElementById('loadedNama').textContent = r['Nama Pasien'] || '';
   document.getElementById('loadedBanner').style.display = 'flex';
+  progRestoreAll();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -970,6 +1086,18 @@ function resetForm() {
   if (noHPPilih) noHPPilih.value = '';
   const noHPInput = document.getElementById('NoHP');
   if (noHPInput) noHPInput.readOnly = false;
+  // Sembunyikan kembali field 2-4 pada timeline sections
+  ['Keluhan','Diagnosa','Tindakan','Rencana','DokterDPJP'].forEach(prefix => {
+    for (let i = 2; i <= 4; i++) {
+      const row = document.getElementById(prefix + i + '-row');
+      if (row) {
+        row.classList.add('tl-hidden');
+        row.classList.remove('tl-visible');
+        const dot = row.querySelector('.tl-dot');
+        if (dot) dot.classList.remove('tl-dot-active');
+      }
+    }
+  });
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -1958,6 +2086,41 @@ function showToast(msg, type) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.className = 'toast '+type+' show';
   setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── PROGRESSIVE FIELDS (TIMELINE) ──
+function progReveal(prefix, el, num) {
+  if (el.value.trim()) {
+    const nextRow = document.getElementById(prefix + (num+1) + '-row');
+    if (nextRow) {
+      nextRow.classList.remove('tl-hidden');
+      nextRow.classList.add('tl-visible');
+      // Dot menjadi aktif saat baris muncul
+      const dot = nextRow.querySelector('.tl-dot');
+      if (dot) dot.classList.add('tl-dot-active');
+    }
+  }
+}
+
+function progRestoreAll() {
+  ['Keluhan','Diagnosa','Tindakan','Rencana','DokterDPJP'].forEach(prefix => {
+    for (let i = 1; i <= 3; i++) {
+      const el = document.getElementById(prefix + i);
+      const nextRow = document.getElementById(prefix + (i+1) + '-row');
+      if (el && nextRow) {
+        const dot = nextRow.querySelector('.tl-dot');
+        if (el.value.trim()) {
+          nextRow.classList.remove('tl-hidden');
+          nextRow.classList.add('tl-visible');
+          if (dot) dot.classList.add('tl-dot-active');
+        } else {
+          nextRow.classList.add('tl-hidden');
+          nextRow.classList.remove('tl-visible');
+          if (dot) dot.classList.remove('tl-dot-active');
+        }
+      }
+    }
+  });
 }
 
 // ── AUTO-SUFFIX VITAL SIGN ──
