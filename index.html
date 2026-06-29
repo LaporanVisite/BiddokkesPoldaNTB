@@ -218,6 +218,8 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135d
 .tl-line.tl-hidden{overflow:hidden;max-height:0;opacity:0;pointer-events:none;padding:0}
 .tl-line.tl-hidden::after{display:none}
 .tl-line.tl-visible{max-height:60px;opacity:1;pointer-events:auto;padding:5px 0;transition:max-height .35s ease,opacity .3s ease,padding .3s ease}
+/* Datalist styling */
+input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%231a7a3c' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
 .empty-state .es-icon{font-size:48px;margin-bottom:12px}
 .empty-state p{font-size:14px}
 </style>
@@ -440,19 +442,19 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135d
       <div class="tl-body">
         <div class="tl-line">
           <div class="tl-dot tl-dot-active"></div>
-          <input type="text" id="Tindakan1" placeholder="Tindakan utama..." class="tl-input" oninput="progReveal('Tindakan',this,1)">
+          <input type="text" id="Tindakan1" placeholder="Tindakan utama..." class="tl-input" list="tindakanList" autocomplete="off" oninput="progReveal('Tindakan',this,1)">
         </div>
         <div class="tl-line tl-hidden" id="Tindakan2-row">
           <div class="tl-dot"></div>
-          <input type="text" id="Tindakan2" placeholder="Tindakan tambahan..." class="tl-input" oninput="progReveal('Tindakan',this,2)">
+          <input type="text" id="Tindakan2" placeholder="Tindakan tambahan..." class="tl-input" list="tindakanList" autocomplete="off" oninput="progReveal('Tindakan',this,2)">
         </div>
         <div class="tl-line tl-hidden" id="Tindakan3-row">
           <div class="tl-dot"></div>
-          <input type="text" id="Tindakan3" placeholder="Tindakan tambahan..." class="tl-input" oninput="progReveal('Tindakan',this,3)">
+          <input type="text" id="Tindakan3" placeholder="Tindakan tambahan..." class="tl-input" list="tindakanList" autocomplete="off" oninput="progReveal('Tindakan',this,3)">
         </div>
         <div class="tl-line tl-hidden" id="Tindakan4-row">
           <div class="tl-dot tl-dot-last"></div>
-          <input type="text" id="Tindakan4" placeholder="Tindakan tambahan..." class="tl-input">
+          <input type="text" id="Tindakan4" placeholder="Tindakan tambahan..." class="tl-input" list="tindakanList" autocomplete="off">
         </div>
       </div>
     </div>
@@ -548,6 +550,16 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135d
     <button class="btn btn-save" id="btnSave" onclick="simpanLaporan()">💾 Simpan & Kirim WA</button>
   </div>
   <div style="height:32px"></div>
+
+  <!-- DATALIST TINDAKAN -->
+  <datalist id="tindakanList">
+    <option value="Pemeriksaan TTV">
+    <option value="Memeriksa perkembangan Kondisi Pasien">
+    <option value="KIE Aktivitas dan Pengobatan Lanjutan">
+    <option value="Pemberian Vitamin">
+    <option value="Cek Lab">
+    <option value="Terapi sesuai instruksi dokter">
+  </datalist>
 
 </div>
 </div>
