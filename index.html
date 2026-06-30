@@ -220,6 +220,25 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135d
 .tl-line.tl-visible{max-height:60px;opacity:1;pointer-events:auto;padding:5px 0;transition:max-height .35s ease,opacity .3s ease,padding .3s ease}
 /* Datalist styling */
 input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%231a7a3c' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
+
+/* ── CUSTOM SUGGEST DROPDOWN ── */
+.tl-input-wrap{position:relative;flex:1}
+.tl-input.tl-suggest{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%231a7a3c' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px;width:100%}
+.tl-suggest-panel{
+  position:absolute;top:calc(100% + 4px);left:0;right:0;
+  background:#ffffff;border:1.5px solid var(--green4);border-radius:10px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.15);
+  max-height:220px;overflow-y:auto;z-index:300;
+  display:none;
+}
+.tl-suggest-panel.show{display:block}
+.tl-suggest-item{
+  padding:11px 14px;font-size:14.5px;color:var(--text);cursor:pointer;
+  border-bottom:1px solid var(--green3);transition:background .15s;
+}
+.tl-suggest-item:last-child{border-bottom:none}
+.tl-suggest-item:hover,.tl-suggest-item.active{background:var(--green3);color:var(--green)}
+.tl-suggest-empty{padding:11px 14px;font-size:13.5px;color:var(--text3);font-style:italic}
 .empty-state .es-icon{font-size:48px;margin-bottom:12px}
 .empty-state p{font-size:14px}
 </style>
@@ -442,19 +461,31 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
       <div class="tl-body">
         <div class="tl-line">
           <div class="tl-dot tl-dot-active"></div>
-          <input type="text" id="Tindakan1" placeholder="Tindakan utama..." class="tl-input" list="tindakanList" autocomplete="off" oninput="progReveal('Tindakan',this,1)">
+          <div class="tl-input-wrap">
+            <input type="text" id="Tindakan1" placeholder="Tindakan utama..." class="tl-input tl-suggest" autocomplete="off" oninput="progReveal('Tindakan',this,1);filterSuggest(this)" onfocus="showSuggest(this)" onblur="hideSuggest(this)">
+            <div class="tl-suggest-panel" id="Tindakan1-panel"></div>
+          </div>
         </div>
         <div class="tl-line tl-hidden" id="Tindakan2-row">
           <div class="tl-dot"></div>
-          <input type="text" id="Tindakan2" placeholder="Tindakan tambahan..." class="tl-input" list="tindakanList" autocomplete="off" oninput="progReveal('Tindakan',this,2)">
+          <div class="tl-input-wrap">
+            <input type="text" id="Tindakan2" placeholder="Tindakan tambahan..." class="tl-input tl-suggest" autocomplete="off" oninput="progReveal('Tindakan',this,2);filterSuggest(this)" onfocus="showSuggest(this)" onblur="hideSuggest(this)">
+            <div class="tl-suggest-panel" id="Tindakan2-panel"></div>
+          </div>
         </div>
         <div class="tl-line tl-hidden" id="Tindakan3-row">
           <div class="tl-dot"></div>
-          <input type="text" id="Tindakan3" placeholder="Tindakan tambahan..." class="tl-input" list="tindakanList" autocomplete="off" oninput="progReveal('Tindakan',this,3)">
+          <div class="tl-input-wrap">
+            <input type="text" id="Tindakan3" placeholder="Tindakan tambahan..." class="tl-input tl-suggest" autocomplete="off" oninput="progReveal('Tindakan',this,3);filterSuggest(this)" onfocus="showSuggest(this)" onblur="hideSuggest(this)">
+            <div class="tl-suggest-panel" id="Tindakan3-panel"></div>
+          </div>
         </div>
         <div class="tl-line tl-hidden" id="Tindakan4-row">
           <div class="tl-dot tl-dot-last"></div>
-          <input type="text" id="Tindakan4" placeholder="Tindakan tambahan..." class="tl-input" list="tindakanList" autocomplete="off">
+          <div class="tl-input-wrap">
+            <input type="text" id="Tindakan4" placeholder="Tindakan tambahan..." class="tl-input tl-suggest" autocomplete="off" oninput="filterSuggest(this)" onfocus="showSuggest(this)" onblur="hideSuggest(this)">
+            <div class="tl-suggest-panel" id="Tindakan4-panel"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -551,15 +582,7 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
   </div>
   <div style="height:32px"></div>
 
-  <!-- DATALIST TINDAKAN -->
-  <datalist id="tindakanList">
-    <option value="Pemeriksaan TTV">
-    <option value="Memeriksa perkembangan Kondisi Pasien">
-    <option value="KIE Aktivitas dan Pengobatan Lanjutan">
-    <option value="Pemberian Vitamin">
-    <option value="Cek Lab">
-    <option value="Terapi sesuai instruksi dokter">
-  </datalist>
+
 
 </div>
 </div>
@@ -2098,6 +2121,67 @@ function showToast(msg, type) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.className = 'toast '+type+' show';
   setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── CUSTOM SUGGEST DROPDOWN (Tindakan) ──
+const TINDAKAN_OPTIONS = [
+  "Pemeriksaan TTV",
+  "Memeriksa perkembangan Kondisi Pasien",
+  "KIE Aktivitas dan Pengobatan Lanjutan",
+  "Pemberian Vitamin",
+  "Cek Lab",
+  "Terapi sesuai instruksi dokter"
+];
+
+function getSuggestPanel(el) {
+  return document.getElementById(el.id + '-panel');
+}
+
+function renderSuggestList(el, list) {
+  const panel = getSuggestPanel(el);
+  if (!panel) return;
+  if (list.length === 0) {
+    panel.innerHTML = '<div class="tl-suggest-empty">Tidak ada pilihan cocok — ketik manual</div>';
+  } else {
+    panel.innerHTML = list.map(opt =>
+      `<div class="tl-suggest-item" onmousedown="pickSuggest('${el.id}', '${opt.replace(/'/g, "\\'")}')">${opt}</div>`
+    ).join('');
+  }
+}
+
+function showSuggest(el) {
+  renderSuggestList(el, TINDAKAN_OPTIONS);
+  const panel = getSuggestPanel(el);
+  if (panel) panel.classList.add('show');
+}
+
+function hideSuggest(el) {
+  // delay agar onmousedown sempat jalan sebelum panel hilang
+  setTimeout(() => {
+    const panel = getSuggestPanel(el);
+    if (panel) panel.classList.remove('show');
+  }, 150);
+}
+
+function filterSuggest(el) {
+  const val = el.value.trim().toLowerCase();
+  const filtered = val
+    ? TINDAKAN_OPTIONS.filter(o => o.toLowerCase().includes(val))
+    : TINDAKAN_OPTIONS;
+  renderSuggestList(el, filtered);
+  const panel = getSuggestPanel(el);
+  if (panel) panel.classList.add('show');
+}
+
+function pickSuggest(id, value) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.value = value;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.focus();
+  }
+  const panel = document.getElementById(id + '-panel');
+  if (panel) panel.classList.remove('show');
 }
 
 // ── PROGRESSIVE FIELDS (TIMELINE) ──
