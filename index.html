@@ -1231,9 +1231,11 @@ function tampilRekamMedis(data) {
     const info = g.info;
     const jml = g.kunjungan.length;
     const terbaru = g.kunjungan[g.kunjungan.length-1];
+    const dalamSebulan = hitungKunjunganSebulan(g.kunjungan);
+    const groupJson = JSON.stringify(g.kunjungan).replace(/"/g,'&quot;');
     return `
-    <div class="pasien-card" onclick="toggleKunjungan('kv-${idx}')">
-      <div class="pasien-card-header">
+    <div class="pasien-card">
+      <div class="pasien-card-header" onclick="toggleKunjungan('kv-${idx}')" style="cursor:pointer">
         <div class="pasien-avatar">${getInisial(info['Nama Pasien']||'?')}</div>
         <div class="pasien-info">
           <div class="pasien-name">${info['Nama Pasien']||'-'}</div>
@@ -1242,6 +1244,13 @@ function tampilRekamMedis(data) {
         </div>
         <span class="pasien-count">${jml} kunjungan</span>
       </div>
+      ${dalamSebulan.length >= 1 ? `
+      <div style="padding:0 14px 14px">
+        <button onclick="event.stopPropagation();generateLaporanVisite(${groupJson})"
+          style="width:100%;background:linear-gradient(135deg,#1a7a3c,#22a050);border:none;color:white;border-radius:10px;padding:10px 14px;font-size:13px;cursor:pointer;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px">
+          📄 Generate Laporan Visite (${dalamSebulan.length} kunjungan dalam 30 hari)
+        </button>
+      </div>` : ''}
       <div class="kunjungan-list" id="kv-${idx}">
         ${g.kunjungan.slice().reverse().map((k,i) => {
           const kJson = JSON.stringify(k).replace(/"/g,'&quot;');
@@ -1274,6 +1283,22 @@ function tampilRekamMedis(data) {
   }).join('');
 }
 
+// Hitung kunjungan dalam 30 hari terakhir (dihitung mundur dari kunjungan terbaru pasien)
+function hitungKunjunganSebulan(kunjunganArr) {
+  const parseTgl = (s) => {
+    if (!s) return null;
+    const m = String(s).match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+    if (m) return new Date(parseInt(m[3]), parseInt(m[2])-1, parseInt(m[1]));
+    const d = new Date(s);
+    return isNaN(d) ? null : d;
+  };
+  const withDate = kunjunganArr.map(k => ({ k, d: parseTgl(k['Tanggal']) })).filter(x => x.d);
+  if (!withDate.length) return [];
+  withDate.sort((a,b) => b.d - a.d);
+  const acuan = withDate[0].d;
+  const batasAwal = new Date(acuan); batasAwal.setDate(batasAwal.getDate() - 30);
+  return withDate.filter(x => x.d >= batasAwal && x.d <= acuan).map(x => x.k).reverse();
+}
 function toggleKunjungan(id) {
   const el = document.getElementById(id);
   el.classList.toggle('open');
@@ -1891,6 +1916,266 @@ function kapital(str) {
 }
 
 // Export ke Word (.doc) — format sesuai template resmi
+// ── GENERATE LAPORAN VISITE (multi-kunjungan) ──
+function generateLaporanVisite(allKunjungan) {
+  // Ambil kunjungan dalam 30 hari terakhir, urut kronologis
+  const records = hitungKunjunganSebulan(allKunjungan);
+  if (!records.length) { showToast('Tidak ada data kunjungan dalam 30 hari terakhir','error'); return; }
+
+  const r0 = records[0]; // kunjungan pertama (untuk identitas pasien)
+  const rN = records[records.length-1]; // kunjungan terakhir (untuk DPJP terakhir)
+
+  // ── HELPER ──
+  const kap = v => v ? String(v).charAt(0).toUpperCase()+String(v).slice(1) : '';
+  const fv  = (val,sfx) => { if(!val||val==='-') return '-'; const s=String(val).trim(); return s.endsWith(sfx)?s:s+sfx; };
+  const B   = 'font-family:"Arial Narrow",Arial,sans-serif;font-size:11pt;';
+  const BOLD= B+'font-weight:bold;';
+  const p   = (style,txt) => `<p style="margin:3pt 0;${style}">${txt}</p>`;
+  const br  = () => `<p style="margin:6pt 0">&nbsp;</p>`;
+
+  // ── IDENTITAS ──
+  const nama      = r0['Nama Pasien'] || r0['NamaPasien'] || '-';
+  const pangkat   = r0['Pangkat'] || '-';
+  const nipnrp    = r0['NIPNRP']  || '-';
+  const jabatan   = r0['Jabatan'] || '-';
+  const kesatuan  = r0['Kesatuan']|| '-';
+  const fktp      = (r0['FKTP']   || '-').toUpperCase();
+
+  // ── BULAN LAPORAN (dari kunjungan terbaru) ──
+  const bulanNama = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const parseTgl  = (s) => {
+    if (!s) return null;
+    const m = String(s).match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+    if (m) return new Date(parseInt(m[3]),parseInt(m[2])-1,parseInt(m[1]));
+    const d = new Date(s); return isNaN(d)?null:d;
+  };
+  const tglTerakhir = parseTgl(rN['Tanggal']) || new Date();
+  const bulanLaporan= bulanNama[tglTerakhir.getMonth()];
+  const tahunLaporan= tglTerakhir.getFullYear();
+
+  // ── DPJP terakhir ──
+  const dpjpList = [rN['DokterDPJP1'],rN['DokterDPJP2'],rN['DokterDPJP3'],rN['DokterDPJP4']].filter(Boolean);
+  const dpjpStr  = dpjpList.length ? dpjpList.join(', ') : '[NAMA DOKTER]';
+
+  // ── RANGKUM semua diagnosa & rencana unik untuk Analisa ──
+  const semuaDiagnosa = [];
+  const semuaTindakan = [];
+  const semuaRencana  = [];
+  records.forEach(r => {
+    [r['Diagnosa1'],r['Diagnosa2'],r['Diagnosa3'],r['Diagnosa4']].filter(Boolean).forEach(d => {
+      if (!semuaDiagnosa.includes(d)) semuaDiagnosa.push(d);
+    });
+    [r['Tindakan1'],r['Tindakan2'],r['Tindakan3'],r['Tindakan4']].filter(Boolean).forEach(t => {
+      if (!semuaTindakan.includes(t)) semuaTindakan.push(t);
+    });
+    [r['Rencana1'],r['Rencana2'],r['Rencana3'],r['Rencana4']].filter(Boolean).forEach(n => {
+      if (!semuaRencana.includes(n)) semuaRencana.push(n);
+    });
+  });
+
+  // ── ANALISA & EVALUASI (draft otomatis) ──
+  const analisaTeks = `Berdasarkan hasil ${records.length} kali kunjungan yang dilaksanakan selama bulan ${bulanLaporan} ${tahunLaporan}, ` +
+    `anggota atas nama ${nama} pangkat ${pangkat} dengan diagnosa ${semuaDiagnosa.map(d=>kap(d)).join(', ')||'[diagnosa]'} ` +
+    `telah mendapatkan pelayanan kesehatan secara berkesinambungan. ` +
+    `Tindakan yang telah dilaksanakan meliputi ${semuaTindakan.map(t=>kap(t)).join(', ')||'[tindakan]'}. ` +
+    `Kondisi anggota secara umum ${kap(rN['KondisiUmum'])||'[kondisi]'} dengan vital sign terakhir: ` +
+    `TD ${fv(rN['Tensi'],' mmHg')}, Nadi ${fv(rN['Nadi'],' x/mnt')}, RR ${fv(rN['RR'],' x/mnt')}, ` +
+    `SpO2 ${fv(fixSpO2(rN['SpO2']),'%')}, Suhu ${fv(rN['Suhu'],'°C')}.`;
+
+  const kesimpulanTeks = `Berdasarkan hasil pemantauan dan tindak lanjut pelayanan kesehatan yang telah dilaksanakan, ` +
+    `disarankan agar ${nama} ${semuaRencana.length ? semuaRencana.map(n=>kap(n)).join(', ') : 'melanjutkan pengobatan sesuai instruksi dokter DPJP'}. ` +
+    `Demikian laporan ini dibuat untuk dapat dipergunakan sebagaimana mestinya.`;
+
+  // ── BAGIAN TINDAK LANJUT per kunjungan ──
+  const tindakLanjutHtml = records.map((r, i) => {
+    const tgl   = formatTanggalPanjang(r['Tanggal']);
+    const hari  = r['Hari'] || '';
+    const waktu = (r['Waktu']||'-').substring(0,5);
+    const jenis = r['JenisPelayanan'] || '-';
+    const tempat= r['Tempat'] || '-';
+    const ku    = kap(r['KondisiUmum']||'-');
+    const isTele= jenis === 'Telemedicine';
+
+    const kelArr  = [r['Keluhan1'],r['Keluhan2'],r['Keluhan3'],r['Keluhan4']].filter(Boolean).map(kap);
+    const diaArr  = [r['Diagnosa1'],r['Diagnosa2'],r['Diagnosa3'],r['Diagnosa4']].filter(Boolean).map(kap);
+    const tinArr  = [r['Tindakan1'],r['Tindakan2'],r['Tindakan3'],r['Tindakan4']].filter(Boolean).map(kap);
+    const renArr  = [r['Rencana1'],r['Rencana2'],r['Rencana3'],r['Rencana4']].filter(Boolean).map(kap);
+    const dpArr   = [r['DokterDPJP1'],r['DokterDPJP2'],r['DokterDPJP3'],r['DokterDPJP4']].filter(Boolean);
+    const showDP  = (jenis==='Pendampingan'||jenis==='Monitoring');
+
+    const vitals = isTele ? `<br>Kondisi Umum : ${ku}` :
+      `TD : ${fv(r['Tensi'],' mmHg')} &nbsp;|&nbsp; N : ${fv(r['Nadi'],' x/mnt')} &nbsp;|&nbsp; RR : ${fv(r['RR'],' x/mnt')} &nbsp;|&nbsp; SpO2 : ${fv(fixSpO2(r['SpO2']),'%')} &nbsp;|&nbsp; Suhu : ${fv(r['Suhu'],'°C')}`;
+
+    return `
+${p(BOLD, `${i+1}. ${jenis} – ${hari}, ${tgl}`)}
+${p(B, `&nbsp;&nbsp;&nbsp;Pukul   : ${waktu} WIB`)}
+${p(B, `&nbsp;&nbsp;&nbsp;Tempat  : ${tempat}`)}
+${p(B, `&nbsp;&nbsp;&nbsp;K/U     : ${ku}`)}
+${!isTele ? p(B, `&nbsp;&nbsp;&nbsp;Vital Sign : ${vitals}`) : ''}
+${kelArr.length ? p(B, `&nbsp;&nbsp;&nbsp;Keluhan : ${kelArr.join(', ')}`) : ''}
+${diaArr.length ? p(B, `&nbsp;&nbsp;&nbsp;Diagnosa : ${diaArr.join(', ')}`) : ''}
+${tinArr.length ? p(B, `&nbsp;&nbsp;&nbsp;Tindakan : ${tinArr.join(', ')}`) : ''}
+${renArr.length ? p(B, `&nbsp;&nbsp;&nbsp;Rencana  : ${renArr.join(', ')}`) : ''}
+${showDP && dpArr.length ? p(B, `&nbsp;&nbsp;&nbsp;Dokter DPJP : ${dpArr.join(', ')}`) : ''}
+${br()}`;
+  }).join('');
+
+  // ── DOKUMENTASI per kunjungan ──
+  const dokumentasiHtml = records.map((r, i) => {
+    const tgl  = formatTanggalPanjang(r['Tanggal']);
+    const jenis= r['JenisPelayanan']||'-';
+    const f1   = r['Dokumentasi1']||'';
+    const f2   = r['Dokumentasi2']||'';
+    let fotoHtml = '';
+    if (f1) fotoHtml += `<img src="${f1}" style="width:220px;height:165px;object-fit:cover;margin:4pt 6pt 4pt 0;border-radius:4pt">`;
+    if (f2) fotoHtml += `<img src="${f2}" style="width:220px;height:165px;object-fit:cover;margin:4pt 6pt 4pt 0;border-radius:4pt">`;
+    return fotoHtml ? `
+${p(BOLD, `Kunjungan ${i+1} – ${jenis} (${tgl})`)}
+<div style="margin:4pt 0 10pt 0">${fotoHtml}</div>` : '';
+  }).join('');
+
+  // ── SUSUN HTML LAPORAN LENGKAP ──
+  const html = `
+<html xmlns:o='urn:schemas-microsoft-com:office:office'
+      xmlns:w='urn:schemas-microsoft-com:office:word'
+      xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset='utf-8'>
+<style>
+  body { font-family:"Arial Narrow",Arial,sans-serif; font-size:11pt; margin:2.5cm 2cm 2cm 2cm; }
+  p    { margin:3pt 0; font-size:11pt; line-height:1.4; }
+  h1,h2,h3 { font-family:"Arial Narrow",Arial,sans-serif; }
+  .center { text-align:center; }
+  .bold   { font-weight:bold; }
+  hr      { border:none; border-top:2px solid #000; margin:6pt 0; }
+  .divider-thin { border:none; border-top:1px solid #000; margin:4pt 0; }
+</style>
+</head>
+<body>
+
+<!-- KOP SURAT -->
+<table width="100%" style="border-collapse:collapse;margin-bottom:4pt">
+  <tr>
+    <td width="15%" style="text-align:center;vertical-align:middle">
+      <div style="font-size:36pt;font-weight:bold;line-height:1">⚖</div>
+    </td>
+    <td style="text-align:center;vertical-align:middle">
+      ${p('font-weight:bold;font-size:11pt;text-align:center', 'KEPOLISIAN NEGARA REPUBLIK INDONESIA')}
+      ${p('font-weight:bold;font-size:11pt;text-align:center', 'DAERAH NUSA TENGGARA BARAT')}
+      ${p('font-weight:bold;font-size:11pt;text-align:center', 'BIDANG KEDOKTERAN DAN KESEHATAN')}
+    </td>
+    <td width="15%"></td>
+  </tr>
+</table>
+<hr>
+<div class="divider-thin"></div>
+${br()}
+
+<!-- JUDUL -->
+${p('font-weight:bold;text-align:center;font-size:12pt;text-decoration:underline', 'LAPORAN')}
+${p('font-weight:bold;text-align:center;font-size:11pt', 'KEGIATAN PELAYANAN KESEHATAN ANGGOTA POLRI PNPP')}
+${p('font-weight:bold;text-align:center;font-size:11pt', 'BULAN ' + bulanLaporan.toUpperCase() + ' ' + tahunLaporan)}
+${br()}
+
+<!-- I. PENDAHULUAN -->
+${p(BOLD, 'I.&nbsp;&nbsp;&nbsp;PENDAHULUAN')}
+${br()}
+${p(B+'text-align:justify', '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Dalam rangka memelihara dan meningkatkan derajat kesehatan Anggota Polri Penyandang Penyakit Parah (PNPP) Polda NTB, Biddokkes Polda NTB melaksanakan kegiatan pelayanan kesehatan berupa kunjungan langsung, pendampingan, monitoring kondisi, maupun telemedicine kepada anggota yang sedang dalam perawatan.')}
+${br()}
+
+<!-- II. MAKSUD DAN TUJUAN -->
+${p(BOLD, 'II.&nbsp;&nbsp;MAKSUD DAN TUJUAN')}
+${br()}
+${p(B, '&nbsp;&nbsp;&nbsp;&nbsp;a.&nbsp;&nbsp;Maksud')}
+${p(B+'text-align:justify', '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Laporan ini dimaksudkan sebagai pertanggungjawaban kegiatan pelayanan kesehatan anggota PNPP yang dilaksanakan oleh Biddokkes Polda NTB.')}
+${br()}
+${p(B, '&nbsp;&nbsp;&nbsp;&nbsp;b.&nbsp;&nbsp;Tujuan')}
+${p(B+'text-align:justify', '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tujuan laporan ini adalah agar pimpinan mengetahui perkembangan kondisi kesehatan anggota serta tindakan yang telah dilakukan dalam rangka peningkatan derajat kesehatannya.')}
+${br()}
+
+<!-- III. DASAR -->
+${p(BOLD, 'III.&nbsp;DASAR')}
+${br()}
+${p(B, '&nbsp;&nbsp;&nbsp;&nbsp;a.&nbsp;&nbsp;Nota Dinas Kapolda NTB No. [ISI NOMOR NOTA DINAS] tanggal [ISI TANGGAL] tentang [ISI PERIHAL];')}
+${p(B, '&nbsp;&nbsp;&nbsp;&nbsp;b.&nbsp;&nbsp;Program Kerja Biddokkes Polda NTB Tahun ' + tahunLaporan + '.')}
+${br()}
+
+<!-- IV. IDENTITAS PASIEN -->
+${p(BOLD, 'IV.&nbsp;&nbsp;IDENTITAS ANGGOTA')}
+${br()}
+${p(B, '&nbsp;&nbsp;&nbsp;&nbsp;Nama&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: ' + nama)}
+${p(B, '&nbsp;&nbsp;&nbsp;&nbsp;Pangkat/NRP : ' + pangkat + ' / ' + nipnrp)}
+${p(B, '&nbsp;&nbsp;&nbsp;&nbsp;Jabatan&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: ' + jabatan)}
+${p(B, '&nbsp;&nbsp;&nbsp;&nbsp;Satuan&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: ' + kesatuan)}
+${p(B, '&nbsp;&nbsp;&nbsp;&nbsp;FKTP&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: ' + fktp)}
+${br()}
+${p(B, '&nbsp;&nbsp;&nbsp;&nbsp;Riwayat Penyakit Sekarang&nbsp;&nbsp;&nbsp;: [ISI MANUAL]')}
+${p(B, '&nbsp;&nbsp;&nbsp;&nbsp;Riwayat Penyakit Terdahulu : [ISI MANUAL]')}
+${p(B, '&nbsp;&nbsp;&nbsp;&nbsp;Riwayat Pengobatan&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: [ISI MANUAL]')}
+${br()}
+
+<!-- V. TINDAK LANJUT -->
+${p(BOLD, 'V.&nbsp;&nbsp;&nbsp;TINDAK LANJUT')}
+${br()}
+${p(B+'text-align:justify', '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Dalam rangka pemantauan dan peningkatan derajat kesehatan anggota, telah dilaksanakan ' + records.length + ' kali kunjungan/pelayanan kesehatan sebagai berikut:')}
+${br()}
+${tindakLanjutHtml}
+
+<!-- VI. ANALISA DAN EVALUASI -->
+${p(BOLD, 'VI.&nbsp;&nbsp;ANALISA DAN EVALUASI')}
+${br()}
+${p(B+'text-align:justify', '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + analisaTeks)}
+${br()}
+
+<!-- VII. KESIMPULAN DAN SARAN -->
+${p(BOLD, 'VII. KESIMPULAN DAN SARAN')}
+${br()}
+${p(B+'text-align:justify', '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + kesimpulanTeks)}
+${br()}
+
+<!-- VIII. PENUTUP -->
+${p(BOLD, 'VIII. PENUTUP')}
+${br()}
+${p(B+'text-align:justify', '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Demikian laporan ini dibuat untuk menjadi bahan pertimbangan pimpinan dalam mengambil kebijakan lebih lanjut. Apabila terdapat kekurangan dalam laporan ini, kami mohon petunjuk dan arahan dari pimpinan.')}
+${br()}
+${br()}
+
+<!-- TTD -->
+<table width="100%" style="border-collapse:collapse">
+  <tr>
+    <td width="60%"></td>
+    <td style="text-align:center">
+      ${p(B, 'Mataram, &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + tahunLaporan)}
+      ${p(B, 'Dokter Pemeriksa,')}
+      ${p('margin:50pt 0 0 0;'+B+'text-decoration:underline', dpjpStr)}
+      ${p(B, '[PANGKAT/NIP]')}
+    </td>
+  </tr>
+</table>
+${br()}
+
+<!-- DOKUMENTASI -->
+${dokumentasiHtml ? `
+<hr>
+${p(BOLD+'text-align:center', 'DOKUMENTASI KEGIATAN')}
+${p(B+'text-align:center', bulanLaporan.toUpperCase() + ' ' + tahunLaporan)}
+${br()}
+${dokumentasiHtml}` : ''}
+
+</body></html>`;
+
+  const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `Laporan_Visite_${nama.replace(/ /g,'_')}_${bulanLaporan}_${tahunLaporan}.doc`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast(`Laporan Visite ${nama} berhasil digenerate!`, 'success');
+}
+
+
 function exportWord(r) {
   const fktp = (r['FKTP'] || '-').toUpperCase();
   const jenis = r['JenisPelayanan'] || '-';
