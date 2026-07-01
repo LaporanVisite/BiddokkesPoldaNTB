@@ -384,8 +384,8 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
       <div class="field"><label>Tensi <span class="req">*</span></label><input type="text" id="Tensi" placeholder="120/80" data-suffix=" mmHg" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
       <div class="field"><label>Nadi <span class="req">*</span></label><input type="text" id="Nadi" placeholder="80" data-suffix=" x/mnt" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
       <div class="field"><label>RR <span class="req">*</span></label><input type="text" id="RR" placeholder="20" data-suffix=" x/mnt" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
-      <div class="field"><label>SpO2 <span class="req">*</span></label><input type="text" id="SpO2" placeholder="98" data-suffix="%" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
-      <div class="field"><label>Suhu <span class="req">*</span></label><input type="text" id="Suhu" placeholder="36,5" data-suffix="°C" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
+      <div class="field"><label>SpO2</label><input type="text" id="SpO2" placeholder="98" data-suffix="%" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
+      <div class="field"><label>Suhu</label><input type="text" id="Suhu" placeholder="36,5" data-suffix="°C" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
     </div>
     <div class="field"><label>Keterangan</label><input type="text" id="Keterangan" placeholder="Catatan tambahan"></div>
   </div>
@@ -1052,8 +1052,7 @@ async function simpanLaporan() {
     if (!document.getElementById('Tensi').value.trim()) { showToast('Tensi wajib diisi!','error'); return; }
     if (!document.getElementById('Nadi').value.trim()) { showToast('Nadi wajib diisi!','error'); return; }
     if (!document.getElementById('RR').value.trim()) { showToast('RR wajib diisi!','error'); return; }
-    if (!document.getElementById('SpO2').value.trim()) { showToast('SpO2 wajib diisi!','error'); return; }
-    if (!document.getElementById('Suhu').value.trim()) { showToast('Suhu wajib diisi!','error'); return; }
+    // SpO2 dan Suhu tidak wajib
   }
   if (!document.getElementById('Keluhan1').value.trim()) { showToast('Keluhan 1 wajib diisi!','error'); return; }
   if (!document.getElementById('Diagnosa1').value.trim()) { showToast('Diagnosa 1 wajib diisi!','error'); return; }
