@@ -387,38 +387,35 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
       <div class="field"><label>SpO2</label><input type="text" id="SpO2" placeholder="98" data-suffix="%" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
       <div class="field"><label>Suhu</label><input type="text" id="Suhu" placeholder="36,5" data-suffix="°C" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
     </div>
+    <!-- KETERANGAN timeline di bawah vital sign -->
+    <div class="tl-divider" style="margin:14px 0"></div>
+    <div class="tl-header" style="margin-bottom:10px">
+      <span class="tl-icon" style="background:#fff8e6">📝</span>
+      <span class="tl-title">Keterangan</span>
+      <span style="font-size:11px;color:var(--text3);font-style:italic">(Tidak Wajib)</span>
+    </div>
+    <div class="tl-body">
+      <div class="tl-line">
+        <div class="tl-dot tl-dot-active"></div>
+        <input type="text" id="Keterangan" placeholder="Keterangan tambahan..." class="tl-input" oninput="progReveal('Keterangan',this,1)">
+      </div>
+      <div class="tl-line tl-hidden" id="Keterangan2-row">
+        <div class="tl-dot"></div>
+        <input type="text" id="Keterangan2" placeholder="Keterangan tambahan..." class="tl-input" oninput="progReveal('Keterangan',this,2)">
+      </div>
+      <div class="tl-line tl-hidden" id="Keterangan3-row">
+        <div class="tl-dot"></div>
+        <input type="text" id="Keterangan3" placeholder="Keterangan tambahan..." class="tl-input" oninput="progReveal('Keterangan',this,3)">
+      </div>
+      <div class="tl-line tl-hidden" id="Keterangan4-row">
+        <div class="tl-dot tl-dot-last"></div>
+        <input type="text" id="Keterangan4" placeholder="Keterangan tambahan..." class="tl-input">
+      </div>
+    </div>
   </div>
 
   <!-- KELUHAN + DIAGNOSA + TINDAKAN + RENCANA — 1 CARD TIMELINE -->
   <div class="card card-clinical">
-
-    <!-- KETERANGAN -->
-    <div class="tl-section">
-      <div class="tl-header">
-        <span class="tl-icon" style="background:#fff8e6">📝</span>
-        <span class="tl-title">Keterangan</span>
-      </div>
-      <div class="tl-body">
-        <div class="tl-line">
-          <div class="tl-dot tl-dot-active"></div>
-          <input type="text" id="Keterangan" placeholder="Keterangan tambahan..." class="tl-input" oninput="progReveal('Keterangan',this,1)">
-        </div>
-        <div class="tl-line tl-hidden" id="Keterangan2-row">
-          <div class="tl-dot"></div>
-          <input type="text" id="Keterangan2" placeholder="Keterangan tambahan..." class="tl-input" oninput="progReveal('Keterangan',this,2)">
-        </div>
-        <div class="tl-line tl-hidden" id="Keterangan3-row">
-          <div class="tl-dot"></div>
-          <input type="text" id="Keterangan3" placeholder="Keterangan tambahan..." class="tl-input" oninput="progReveal('Keterangan',this,3)">
-        </div>
-        <div class="tl-line tl-hidden" id="Keterangan4-row">
-          <div class="tl-dot tl-dot-last"></div>
-          <input type="text" id="Keterangan4" placeholder="Keterangan tambahan..." class="tl-input">
-        </div>
-      </div>
-    </div>
-
-    <div class="tl-divider"></div>
 
     <!-- KELUHAN -->
     <div class="tl-section">
