@@ -1272,7 +1272,18 @@ function tampilRekamMedis(data) {
     grup[key].kunjungan.push(r);
   });
 
-  const keys = Object.keys(grup);
+  // Urutkan pasien berdasarkan tanggal kunjungan terbaru (terbaru di atas)
+  const parseTglSort = (s) => {
+    if (!s) return 0;
+    const m = String(s).match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+    if (m) return new Date(parseInt(m[3]), parseInt(m[2])-1, parseInt(m[1])).getTime();
+    const d = new Date(s); return isNaN(d) ? 0 : d.getTime();
+  };
+  const keys = Object.keys(grup).sort((a, b) => {
+    const tglA = parseTglSort(grup[a].kunjungan[grup[a].kunjungan.length-1]['Tanggal']);
+    const tglB = parseTglSort(grup[b].kunjungan[grup[b].kunjungan.length-1]['Tanggal']);
+    return tglB - tglA; // terbaru di atas
+  });
   if (!keys.length) {
     document.getElementById('rmList').innerHTML = '<div class="empty-state"><div class="es-icon">📭</div><p>Belum ada data laporan</p></div>';
     return;
