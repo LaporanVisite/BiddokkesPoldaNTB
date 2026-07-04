@@ -1176,19 +1176,31 @@ function resetForm() {
 // ── REKAM MEDIS ──
 async function muatSemuaData() {
   const rmList = document.getElementById('rmList');
-  if (rmList) rmList.innerHTML = '<div class="empty-state"><div class="es-icon">⏳</div><p>Memuat data...</p></div>';
+  if (rmList) rmList.innerHTML = '<div class="empty-state"><div class="es-icon">⏳</div><p>Memuat data terbaru...</p></div>';
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // naik jadi 45 detik
     const res = await fetch(API_URL + '?action=getAll', { signal: controller.signal });
     clearTimeout(timeoutId);
     const text = await res.text();
-    let raw;
-    try { raw = JSON.parse(text); }
+    let parsed;
+    try { parsed = JSON.parse(text); }
     catch(parseErr) {
       console.error('JSON parse error:', parseErr, 'Response:', text.substring(0,200));
       if (rmList) rmList.innerHTML = '<div class="empty-state"><div class="es-icon">❌</div><p>Gagal memuat data (parse error)</p></div>';
       return;
+    }
+    // Support format baru {data, total, loaded} maupun format lama array langsung
+    const raw = Array.isArray(parsed) ? parsed : (parsed.data || []);
+    const total = parsed.total || raw.length;
+    const loaded = parsed.loaded || raw.length;
+    if (total > loaded && rmList) {
+      const sisa = total - loaded;
+      rmList.insertAdjacentHTML('beforeend',
+        `<div style="text-align:center;padding:10px;color:var(--text3);font-size:13px">
+          Menampilkan ${loaded} data terbaru dari total ${total} data.
+          Gunakan pencarian untuk menemukan data lama.
+        </div>`);
     }
     const str = v => (v === null || v === undefined) ? '' : String(v);
     allData = raw.map(r => {
