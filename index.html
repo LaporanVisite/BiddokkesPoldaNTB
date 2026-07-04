@@ -2088,17 +2088,12 @@ function bukaDetail(r) {
           ${r['SpO2'] ? `<div class="vital-box"><div class="vb-val">${formatSpO2(r['SpO2'])}</div><div class="vb-label">SpO2</div></div>` : ''}
           ${r['Suhu'] ? `<div class="vital-box"><div class="vb-val">${fmtVital(r['Suhu'],'°C')}</div><div class="vb-label">Suhu</div></div>` : ''}
         </div>
-        ${(r['Keterangan']||r['Keterangan2']||r['Keterangan3']||r['Keterangan4']) ? `
-        <div style="margin-top:8px">
-          <div class="rm-field-label">KETERANGAN</div>
-          <div class="rm-field-value">
-            ${[r['Keterangan'],r['Keterangan2'],r['Keterangan3'],r['Keterangan4']]
-              .filter(Boolean)
-              .map(k => `<div style="padding:2px 0">• ${k}</div>`)
-              .join('')}
-          </div>
-        </div>` : ''}
       </div>
+      ${(r['Keterangan']||r['Keterangan2']||r['Keterangan3']||r['Keterangan4']) ? `
+      <div class="rm-section">
+        <div class="rm-section-title">📝 Keterangan</div>
+        <div class="rm-list">${list([r['Keterangan'],r['Keterangan2'],r['Keterangan3'],r['Keterangan4']])||'<span style="color:var(--text3);font-size:13px">-</span>'}</div>
+      </div>` : ''}
       <div class="rm-section">
         <div class="rm-section-title">🩺 Keluhan</div>
         <div class="rm-list">${list([r['Keluhan1'],r['Keluhan2'],r['Keluhan3'],r['Keluhan4']])||'<span style="color:var(--text3);font-size:13px">-</span>'}</div>
