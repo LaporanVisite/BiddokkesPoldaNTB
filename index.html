@@ -1306,7 +1306,18 @@ function tampilRekamMedis(data) {
         <span class="pasien-count">${jml} kunjungan</span>
       </div>
       <div class="kunjungan-list" id="kv-${idx}">
-        ${g.kunjungan.slice().reverse().map((k,i) => {
+        ${g.kunjungan.slice().sort((a,b) => {
+          // Sort by tanggal + waktu terbaru di atas
+          const parseTgl = (s) => {
+            if (!s) return 0;
+            const m = String(s).match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+            if (m) return new Date(parseInt(m[3]),parseInt(m[2])-1,parseInt(m[1])).getTime();
+            return new Date(s).getTime()||0;
+          };
+          const tA = parseTgl(a['Tanggal']) + (a['Waktu']||'').replace(':','');
+          const tB = parseTgl(b['Tanggal']) + (b['Waktu']||'').replace(':','');
+          return tB > tA ? 1 : tB < tA ? -1 : 0;
+        }).map((k,i) => {
           const kJson = JSON.stringify(k).replace(/"/g,'&quot;');
           return `
           <div class="kunjungan-item">
