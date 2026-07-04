@@ -1221,6 +1221,9 @@ async function muatSemuaData() {
         'SpO2':           str(r['SpO2']        || ''),
         'Suhu':           str(r['Suhu']         || ''),
         'Keterangan':     str(r['Keterangan']  || ''),
+        'Keterangan2':    str(r['Keterangan2'] || ''),
+        'Keterangan3':    str(r['Keterangan3'] || ''),
+        'Keterangan4':    str(r['Keterangan4'] || ''),
         'Keluhan1':       str(r['Keluhan 1']   || r['Keluhan1']  || ''),
         'Keluhan2':       str(r['Keluhan 2']   || r['Keluhan2']  || ''),
         'Keluhan3':       str(r['Keluhan 3']   || r['Keluhan3']  || ''),
@@ -2085,7 +2088,16 @@ function bukaDetail(r) {
           ${r['SpO2'] ? `<div class="vital-box"><div class="vb-val">${formatSpO2(r['SpO2'])}</div><div class="vb-label">SpO2</div></div>` : ''}
           ${r['Suhu'] ? `<div class="vital-box"><div class="vb-val">${fmtVital(r['Suhu'],'°C')}</div><div class="vb-label">Suhu</div></div>` : ''}
         </div>
-        ${r['Keterangan'] ? `<div style="margin-top:8px">${field('Keterangan', r['Keterangan'])}</div>` : ''}
+        ${(r['Keterangan']||r['Keterangan2']||r['Keterangan3']||r['Keterangan4']) ? `
+        <div style="margin-top:8px">
+          <div class="rm-field-label">KETERANGAN</div>
+          <div class="rm-field-value">
+            ${[r['Keterangan'],r['Keterangan2'],r['Keterangan3'],r['Keterangan4']]
+              .filter(Boolean)
+              .map(k => `<div style="padding:2px 0">• ${k}</div>`)
+              .join('')}
+          </div>
+        </div>` : ''}
       </div>
       <div class="rm-section">
         <div class="rm-section-title">🩺 Keluhan</div>
