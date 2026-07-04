@@ -1119,10 +1119,24 @@ async function simpanLaporan() {
       payload['Dokumentasi2'] = url2;
     }
     document.getElementById('loadingText').textContent='Menyimpan & mengirim WA...';
-    const res = await fetch(API_URL, { method:'POST', body:JSON.stringify(payload) });
-    const result = await res.json();
-    if (result.status==='ok') { showToast('Laporan berhasil disimpan! WA terkirim ✓','success'); resetForm(); }
-    else showToast('Gagal menyimpan, coba lagi','error');
+    // Timeout 90 detik — Apps Script kadang butuh waktu lebih lama
+    const saveController = new AbortController();
+    const saveTimeout = setTimeout(() => saveController.abort(), 90000);
+    try {
+      const res = await fetch(API_URL, { method:'POST', body:JSON.stringify(payload), signal: saveController.signal });
+      clearTimeout(saveTimeout);
+      const result = await res.json();
+      if (result.status==='ok') { showToast('Laporan berhasil disimpan! WA terkirim ✓','success'); resetForm(); }
+      else showToast('Gagal menyimpan, coba lagi','error');
+    } catch(e) {
+      clearTimeout(saveTimeout);
+      if (e.name === 'AbortError') {
+        // Timeout tapi kemungkinan data sudah tersimpan di server
+        showToast('Proses berlangsung lama — data kemungkinan sudah tersimpan. Cek Rekam Medis untuk memastikan.','error');
+      } else {
+        showToast('Koneksi bermasalah, coba lagi','error');
+      }
+    }
   } catch(e) { showToast('Koneksi bermasalah, coba lagi','error'); }
   document.getElementById('loadingOverlay').classList.remove('show');
   document.getElementById('btnSave').disabled = false;
