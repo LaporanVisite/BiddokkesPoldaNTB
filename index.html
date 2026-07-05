@@ -576,24 +576,46 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
   <!-- DOKUMENTASI -->
   <div class="card">
     <div class="card-title"><div class="ct-icon">📷</div> Dokumentasi</div>
+    <!-- Input hidden: kamera -->
+    <input type="file" id="fileDoc1" accept="image/*" capture="environment" onchange="previewImg(this,'prev1')" style="display:none">
+    <input type="file" id="fileDoc2" accept="image/*" capture="environment" onchange="previewImg(this,'prev2')" style="display:none">
+    <!-- Input hidden: galeri -->
+    <input type="file" id="fileDoc1g" accept="image/*" onchange="previewImg(this,'prev1')" style="display:none">
+    <input type="file" id="fileDoc2g" accept="image/*" onchange="previewImg(this,'prev2')" style="display:none">
     <div class="grid2">
       <div class="field">
         <label>Foto 1 <span class="req">*</span></label>
-        <div class="upload-area" onclick="document.getElementById('fileDoc1').click()">
-          <input type="file" id="fileDoc1" accept="image/*" onchange="previewImg(this,'prev1')">
+        <div class="upload-area" style="cursor:default;padding:12px">
           <div class="u-icon">📷</div>
-          <div class="u-text">Tap untuk foto / pilih gambar</div>
-          <div class="u-sub">Kamera atau dari galeri</div>
+          <div class="u-text">Pilih sumber foto</div>
+          <div style="display:flex;gap:8px;margin-top:10px;justify-content:center">
+            <button type="button" onclick="document.getElementById('fileDoc1').click()"
+              style="flex:1;background:var(--green);color:white;border:none;border-radius:8px;padding:8px 6px;font-size:13px;cursor:pointer;font-weight:600">
+              📸 Kamera
+            </button>
+            <button type="button" onclick="document.getElementById('fileDoc1g').click()"
+              style="flex:1;background:var(--green3);color:var(--green);border:1.5px solid var(--green4);border-radius:8px;padding:8px 6px;font-size:13px;cursor:pointer;font-weight:600">
+              🖼️ Galeri
+            </button>
+          </div>
         </div>
         <div class="preview-imgs" id="prev1"></div>
       </div>
       <div class="field">
         <label>Foto 2 <span class="req">*</span></label>
-        <div class="upload-area" onclick="document.getElementById('fileDoc2').click()">
-          <input type="file" id="fileDoc2" accept="image/*" onchange="previewImg(this,'prev2')">
+        <div class="upload-area" style="cursor:default;padding:12px">
           <div class="u-icon">📷</div>
-          <div class="u-text">Tap untuk foto / pilih gambar</div>
-          <div class="u-sub">Kamera atau dari galeri</div>
+          <div class="u-text">Pilih sumber foto</div>
+          <div style="display:flex;gap:8px;margin-top:10px;justify-content:center">
+            <button type="button" onclick="document.getElementById('fileDoc2').click()"
+              style="flex:1;background:var(--green);color:white;border:none;border-radius:8px;padding:8px 6px;font-size:13px;cursor:pointer;font-weight:600">
+              📸 Kamera
+            </button>
+            <button type="button" onclick="document.getElementById('fileDoc2g').click()"
+              style="flex:1;background:var(--green3);color:var(--green);border:1.5px solid var(--green4);border-radius:8px;padding:8px 6px;font-size:13px;cursor:pointer;font-weight:600">
+              🖼️ Galeri
+            </button>
+          </div>
         </div>
         <div class="preview-imgs" id="prev2"></div>
       </div>
@@ -1082,8 +1104,8 @@ async function simpanLaporan() {
   if (!document.getElementById('Diagnosa1').value.trim()) { showToast('Diagnosa 1 wajib diisi!','error'); return; }
   if (!document.getElementById('Tindakan1').value.trim()) { showToast('Tindakan 1 wajib diisi!','error'); return; }
   if (!document.getElementById('Rencana1').value.trim()) { showToast('Rencana 1 wajib diisi!','error'); return; }
-  if (!document.getElementById('fileDoc1').files[0]) { showToast('Foto 1 wajib diupload!','error'); return; }
-  if (!document.getElementById('fileDoc2').files[0]) { showToast('Foto 2 wajib diupload!','error'); return; }
+  if (!document.getElementById('fileDoc1').files[0] && !document.getElementById('fileDoc1g').files[0]) { showToast('Foto 1 wajib diupload!','error'); return; }
+  if (!document.getElementById('fileDoc2').files[0] && !document.getElementById('fileDoc2g').files[0]) { showToast('Foto 2 wajib diupload!','error'); return; }
 
   document.getElementById('loadingOverlay').classList.add('show');
   document.getElementById('btnSave').disabled = true;
@@ -1094,8 +1116,8 @@ async function simpanLaporan() {
     payload['NIPNRP'] = String(document.getElementById('NIPNRP').value || '');
 
     // Upload foto langsung ke Cloudinary dari browser
-    const f1 = document.getElementById('fileDoc1').files[0];
-    const f2 = document.getElementById('fileDoc2').files[0];
+    const f1 = document.getElementById('fileDoc1').files[0] || document.getElementById('fileDoc1g').files[0];
+    const f2 = document.getElementById('fileDoc2').files[0] || document.getElementById('fileDoc2g').files[0];
     if (f1) {
       document.getElementById('loadingText').textContent='Mengupload foto 1...';
       const url1 = await uploadKeImgBB(f1);
@@ -1152,6 +1174,8 @@ function resetForm() {
   document.getElementById('prev2').innerHTML = '';
   document.getElementById('fileDoc1').value = '';
   document.getElementById('fileDoc2').value = '';
+  document.getElementById('fileDoc1g').value = '';
+  document.getElementById('fileDoc2g').value = '';
   document.getElementById('cardDPJP').style.display = 'none';
   // Reset dropdown No HP
   const noHPPilih = document.getElementById('NoHPPilih');
