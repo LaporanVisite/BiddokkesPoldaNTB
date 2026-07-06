@@ -201,7 +201,8 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135d
 .card-clinical{padding:0}
 .tl-section{padding:20px 20px 16px}
 .tl-divider{height:1px;background:var(--border);margin:0 20px}
-.tl-header{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.tl-header{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.tl-subtitle{font-size:11px;color:var(--text3);font-style:italic;margin:0 0 12px 36px}
 .tl-icon{font-size:16px;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .tl-red{background:#fff0f0}.tl-blue{background:#f0f4ff}.tl-green{background:#f0faf4}.tl-purple{background:#f5f0ff}
 .tl-title{font-size:14px;font-weight:700;color:var(--text);letter-spacing:.3px;flex:1}
@@ -348,7 +349,7 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
         <option>Polres Sumbawa Barat</option><option>Polres Dompu</option><option>Polres Bima</option><option>Polres Bima Kota</option>
       </select>
     </div>
-    <div class="field"><label>Personel Yang Terlibat</label><textarea id="PersonelTerlibat" placeholder="Nama-nama personel yang terlibat..."></textarea></div>
+    <div class="field"><label>Personel Yang Terlibat <span style="font-weight:400;color:var(--text3);font-size:11px">(Tidak Wajib)</span></label><textarea id="PersonelTerlibat" placeholder="Nama-nama personel yang terlibat..."></textarea></div>
   </div>
 
   <!-- HIDDEN FIELDS -->
@@ -384,8 +385,8 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
       <div class="field"><label>Tensi <span class="req">*</span></label><input type="text" id="Tensi" placeholder="120/80" data-suffix=" mmHg" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
       <div class="field"><label>Nadi <span class="req">*</span></label><input type="text" id="Nadi" placeholder="80" data-suffix=" x/mnt" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
       <div class="field"><label>RR <span class="req">*</span></label><input type="text" id="RR" placeholder="20" data-suffix=" x/mnt" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
-      <div class="field"><label>SpO2</label><input type="text" id="SpO2" placeholder="98" data-suffix="%" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
-      <div class="field"><label>Suhu</label><input type="text" id="Suhu" placeholder="36,5" data-suffix="°C" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
+      <div class="field"><label>SpO2 <span style="font-weight:400;color:var(--text3);font-size:11px">(Tidak Wajib)</span></label><input type="text" id="SpO2" placeholder="98" data-suffix="%" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
+      <div class="field"><label>Suhu <span style="font-weight:400;color:var(--text3);font-size:11px">(Tidak Wajib)</span></label><input type="text" id="Suhu" placeholder="36,5" data-suffix="°C" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
     </div>
     <!-- KETERANGAN timeline di bawah vital sign -->
     <div class="tl-divider" style="margin:14px 0"></div>
@@ -424,6 +425,7 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
         <span class="tl-title">Keluhan</span>
         <span class="tl-req">wajib</span>
       </div>
+      <div class="tl-subtitle">Keluhan Tambahan diisi apabila ada Keluhan lain</div>
       <div class="tl-body">
         <div class="tl-line">
           <div class="tl-dot tl-dot-active"></div>
@@ -453,6 +455,7 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
         <span class="tl-title">Diagnosa</span>
         <span class="tl-req">wajib</span>
       </div>
+      <div class="tl-subtitle">Diagnosa Tambahan diisi apabila ada Diagnosa lain</div>
       <div class="tl-body">
         <div class="tl-line">
           <div class="tl-dot tl-dot-active"></div>
@@ -482,6 +485,7 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
         <span class="tl-title">Tindakan</span>
         <span class="tl-req">wajib</span>
       </div>
+      <div class="tl-subtitle">Tindakan Tambahan diisi apabila ada Tindakan Tambahan</div>
       <div class="tl-body">
         <div class="tl-line">
           <div class="tl-dot tl-dot-active"></div>
@@ -523,6 +527,7 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
         <span class="tl-title">Rencana Tindak Lanjut</span>
         <span class="tl-req">wajib</span>
       </div>
+      <div class="tl-subtitle">Rencana Tambahan diisi apabila ada Rencana Tambahan</div>
       <div class="tl-body">
         <div class="tl-line">
           <div class="tl-dot tl-dot-active"></div>
