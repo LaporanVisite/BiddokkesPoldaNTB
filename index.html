@@ -1087,6 +1087,9 @@ async function simpanLaporan() {
   const nama = document.getElementById('NamaPasien').value.trim();
   const noHp = document.getElementById('NoHP').value.trim();
   if (!jenis) { showToast('Pilih jenis pelayanan dulu!','error'); return; }
+  if (!document.getElementById('Kepada').value.trim()) { showToast('Kepada wajib diisi!','error'); return; }
+  if (!document.getElementById('Dari').value.trim()) { showToast('Dari wajib diisi!','error'); return; }
+  if (!document.getElementById('Tembusan').value.trim()) { showToast('Tembusan wajib diisi!','error'); return; }
   if (!nama) { showToast('Nama pasien wajib diisi!','error'); return; }
   if (!document.getElementById('Pangkat').value.trim()) { showToast('Pangkat wajib diisi!','error'); return; }
   if (!document.getElementById('NIPNRP').value.trim()) { showToast('NIP/NRP wajib diisi!','error'); return; }
