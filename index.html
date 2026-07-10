@@ -765,24 +765,35 @@ let allData = [];
 
 // ── FKTP DATA ──
 const KESATUAN_DATA = {
+  "Polda NTB":            { tembusan5: "" },
   "Brimob Polda NTB":     { tembusan5: "Dansat Brimob Polda NTB" },
   "SPN Polda NTB":        { tembusan5: "Ka SPN Polda NTB" },
+  "Polresta Mataram":     { tembusan5: "Kapolresta Mataram" },
+  "Polres Lombok Barat":  { tembusan5: "Kapolres Lombok Barat" },
+  "Polres Lombok Tengah": { tembusan5: "Kapolres Lombok Tengah" },
+  "Polres Lombok Timur":  { tembusan5: "Kapolres Lombok Timur" },
+  "Polres Lombok Utara":  { tembusan5: "Kapolres Lombok Utara" },
+  "Polres Sumbawa":       { tembusan5: "Kapolres Sumbawa" },
+  "Polres Sumbawa Barat": { tembusan5: "Kapolres Sumbawa Barat" },
+  "Polres Dompu":         { tembusan5: "Kapolres Dompu" },
+  "Polres Bima":          { tembusan5: "Kapolres Bima" },
+  "Polres Bima Kota":     { tembusan5: "Kapolres Bima Kota" },
 };
 
 const FKTP_DATA = {
-  "Polda NTB":            { kepada:"BAPAK KAPOLDA NTB",       dari:"Kabid Dokkes Polda NTB",             mohonIjin:"Jenderal", tembusan5:"" },
-  "Brimob Polda NTB":     { kepada:"KABID DOKKES POLDA NTB",  dari:"Ka Poliklinik Brimob Polda NTB",     mohonIjin:"Komandan" },
-  "SPN Polda NTB":        { kepada:"KABID DOKKES POLDA NTB",  dari:"Ka Poliklinik SPN Polda NTB",        mohonIjin:"Komandan" },
-  "Polresta Mataram":     { kepada:"KABID DOKKES POLDA NTB",  dari:"Ka Poliklinik Polresta Mataram",     mohonIjin:"Komandan", tembusan5:"Kapolresta Mataram" },
-  "Polres Lombok Barat":  { kepada:"KABID DOKKES POLDA NTB",  dari:"KASI DOKKES POLRES LOMBOK BARAT",    mohonIjin:"Komandan", tembusan5:"Kapolres Lombok Barat" },
-  "Polres Lombok Tengah": { kepada:"KABID DOKKES POLDA NTB",  dari:"KASI DOKKES POLRES LOMBOK TENGAH",   mohonIjin:"Komandan", tembusan5:"Kapolres Lombok Tengah" },
-  "Polres Lombok Timur":  { kepada:"KABID DOKKES POLDA NTB",  dari:"KASI DOKKES POLRES LOMBOK TIMUR",    mohonIjin:"Komandan", tembusan5:"Kapolres Lombok Timur" },
-  "Polres Lombok Utara":  { kepada:"KABID DOKKES POLDA NTB",  dari:"KASI DOKKES POLRES LOMBOK UTARA",    mohonIjin:"Komandan", tembusan5:"Kapolres Lombok Utara" },
-  "Polres Sumbawa":       { kepada:"KABID DOKKES POLDA NTB",  dari:"KASI DOKKES POLRES SUMBAWA",         mohonIjin:"Komandan", tembusan5:"Kapolres Sumbawa" },
-  "Polres Sumbawa Barat": { kepada:"KABID DOKKES POLDA NTB",  dari:"KASI DOKKES POLRES SUMBAWA BARAT",   mohonIjin:"Komandan", tembusan5:"Kapolres Sumbawa Barat" },
-  "Polres Dompu":         { kepada:"KABID DOKKES POLDA NTB",  dari:"KASI DOKKES POLRES DOMPU",           mohonIjin:"Komandan", tembusan5:"Kapolres Dompu" },
-  "Polres Bima":          { kepada:"KABID DOKKES POLDA NTB",  dari:"KASI DOKKES POLRES BIMA",            mohonIjin:"Komandan", tembusan5:"Kapolres Bima" },
-  "Polres Bima Kota":     { kepada:"KABID DOKKES POLDA NTB",  dari:"KASI DOKKES POLRES BIMA KOTA",       mohonIjin:"Komandan", tembusan5:"Kapolres Bima Kota" },
+  "Polda NTB":            { kepada:"BAPAK KAPOLDA NTB",      dari:"Kabid Dokkes Polda NTB",            mohonIjin:"Jenderal" },
+  "Brimob Polda NTB":     { kepada:"KABID DOKKES POLDA NTB", dari:"Ka Poliklinik Brimob Polda NTB",    mohonIjin:"Komandan" },
+  "SPN Polda NTB":        { kepada:"KABID DOKKES POLDA NTB", dari:"Ka Poliklinik SPN Polda NTB",       mohonIjin:"Komandan" },
+  "Polresta Mataram":     { kepada:"KABID DOKKES POLDA NTB", dari:"Ka Poliklinik Polresta Mataram",    mohonIjin:"Komandan" },
+  "Polres Lombok Barat":  { kepada:"KABID DOKKES POLDA NTB", dari:"KASI DOKKES POLRES LOMBOK BARAT",   mohonIjin:"Komandan" },
+  "Polres Lombok Tengah": { kepada:"KABID DOKKES POLDA NTB", dari:"KASI DOKKES POLRES LOMBOK TENGAH",  mohonIjin:"Komandan" },
+  "Polres Lombok Timur":  { kepada:"KABID DOKKES POLDA NTB", dari:"KASI DOKKES POLRES LOMBOK TIMUR",   mohonIjin:"Komandan" },
+  "Polres Lombok Utara":  { kepada:"KABID DOKKES POLDA NTB", dari:"KASI DOKKES POLRES LOMBOK UTARA",   mohonIjin:"Komandan" },
+  "Polres Sumbawa":       { kepada:"KABID DOKKES POLDA NTB", dari:"KASI DOKKES POLRES SUMBAWA",        mohonIjin:"Komandan" },
+  "Polres Sumbawa Barat": { kepada:"KABID DOKKES POLDA NTB", dari:"KASI DOKKES POLRES SUMBAWA BARAT",  mohonIjin:"Komandan" },
+  "Polres Dompu":         { kepada:"KABID DOKKES POLDA NTB", dari:"KASI DOKKES POLRES DOMPU",          mohonIjin:"Komandan" },
+  "Polres Bima":          { kepada:"KABID DOKKES POLDA NTB", dari:"KASI DOKKES POLRES BIMA",           mohonIjin:"Komandan" },
+  "Polres Bima Kota":     { kepada:"KABID DOKKES POLDA NTB", dari:"KASI DOKKES POLRES BIMA KOTA",      mohonIjin:"Komandan" },
 };
 
 // ── NAVIGASI ──
@@ -905,25 +916,25 @@ function pilihJenis(jenis) {
 
 // ── FKTP AUTO-FILL ──
 function pilihFKTP(val) {
+  // FKTP hanya menentukan Kepada Yth dan Dari
   const d = FKTP_DATA[val];
   if (!d) return;
   document.getElementById('Kepada').value = d.kepada;
   document.getElementById('MohonIjin').value = d.mohonIjin;
   document.getElementById('Dari').value = d.dari;
-  // Tembusan: cek apakah Kesatuan override tembusan5
-  const kesatuan = document.getElementById('Kesatuan').value;
-  const dk = KESATUAN_DATA[kesatuan] || {};
-  const tembusan5 = dk.tembusan5 !== undefined ? dk.tembusan5 : (d.tembusan5 || "");
-  const tembusan = "1. Kapusdokkes Polri\n2. Wakapolda NTB\n3. Irwasda Polda NTB\n4. Karo SDM Polda NTB" + (tembusan5 ? "\n5. "+tembusan5 : "");
-  document.getElementById('Tembusan').value = tembusan;
+  // Tembusan diupdate berdasarkan Kesatuan yang sudah dipilih
+  updateTembusan();
 }
 
 function pilihKesatuan(val) {
-  // Kesatuan hanya override tembusan5, Kepada/Dari tetap dari FKTP
-  const fktp = document.getElementById('FKTP').value;
-  const d = FKTP_DATA[fktp] || {};
-  const dk = KESATUAN_DATA[val] || {};
-  const tembusan5 = dk.tembusan5 !== undefined ? dk.tembusan5 : (d.tembusan5 || "");
+  // Kesatuan hanya menentukan Tembusan no.5
+  updateTembusan();
+}
+
+function updateTembusan() {
+  const kesatuan = document.getElementById('Kesatuan').value;
+  const dk = KESATUAN_DATA[kesatuan] || {};
+  const tembusan5 = dk.tembusan5 || "";
   const tembusan = "1. Kapusdokkes Polri\n2. Wakapolda NTB\n3. Irwasda Polda NTB\n4. Karo SDM Polda NTB" + (tembusan5 ? "\n5. "+tembusan5 : "");
   document.getElementById('Tembusan').value = tembusan;
 }
