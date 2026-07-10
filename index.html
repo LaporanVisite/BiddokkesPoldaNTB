@@ -319,7 +319,7 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
     <div class="grid2">
       <div class="field"><label>Jabatan <span class="req">*</span></label><input type="text" id="Jabatan" placeholder="Jabatan pasien"></div>
       <div class="field"><label>Kesatuan <span class="req">*</span></label>
-        <select id="Kesatuan" onchange="pilihFKTP(this.value)">
+        <select id="Kesatuan" onchange="pilihKesatuan(this.value)">
           <option value="">— Pilih Kesatuan —</option>
           <option>Polda NTB</option><option>Brimob Polda NTB</option><option>SPN Polda NTB</option>
           <option>Polresta Mataram</option><option>Polres Lombok Barat</option><option>Polres Lombok Tengah</option>
@@ -347,7 +347,7 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
       <input type="text" id="NoHP" placeholder="08xxxxxxxxxx" inputmode="numeric">
     </div>
     <div class="field"><label>FKTP Yang Melaksanakan <span class="req">*</span></label>
-      <select id="FKTP">
+      <select id="FKTP" onchange="pilihFKTP(this.value)">
         <option value="">— Pilih FKTP —</option>
         <option>Polda NTB</option><option>Brimob Polda NTB</option><option>SPN Polda NTB</option>
         <option>Polresta Mataram</option><option>Polres Lombok Barat</option><option>Polres Lombok Tengah</option>
@@ -764,10 +764,15 @@ let adminUnlocked = false;
 let allData = [];
 
 // ── FKTP DATA ──
+const KESATUAN_DATA = {
+  "Brimob Polda NTB":     { tembusan5: "Dansat Brimob Polda NTB" },
+  "SPN Polda NTB":        { tembusan5: "Ka SPN Polda NTB" },
+};
+
 const FKTP_DATA = {
   "Polda NTB":            { kepada:"BAPAK KAPOLDA NTB",       dari:"Kabid Dokkes Polda NTB",             mohonIjin:"Jenderal", tembusan5:"" },
-  "Brimob Polda NTB":     { kepada:"KABID DOKKES POLDA NTB",  dari:"Ka Poliklinik Brimob Polda NTB",     mohonIjin:"Komandan", tembusan5:"Dansat Brimob Polda NTB" },
-  "SPN Polda NTB":        { kepada:"KABID DOKKES POLDA NTB",  dari:"Ka Poliklinik SPN Polda NTB",        mohonIjin:"Komandan", tembusan5:"" },
+  "Brimob Polda NTB":     { kepada:"KABID DOKKES POLDA NTB",  dari:"Ka Poliklinik Brimob Polda NTB",     mohonIjin:"Komandan" },
+  "SPN Polda NTB":        { kepada:"KABID DOKKES POLDA NTB",  dari:"Ka Poliklinik SPN Polda NTB",        mohonIjin:"Komandan" },
   "Polresta Mataram":     { kepada:"KABID DOKKES POLDA NTB",  dari:"Ka Poliklinik Polresta Mataram",     mohonIjin:"Komandan", tembusan5:"Kapolresta Mataram" },
   "Polres Lombok Barat":  { kepada:"KABID DOKKES POLDA NTB",  dari:"KASI DOKKES POLRES LOMBOK BARAT",    mohonIjin:"Komandan", tembusan5:"Kapolres Lombok Barat" },
   "Polres Lombok Tengah": { kepada:"KABID DOKKES POLDA NTB",  dari:"KASI DOKKES POLRES LOMBOK TENGAH",   mohonIjin:"Komandan", tembusan5:"Kapolres Lombok Tengah" },
@@ -905,7 +910,14 @@ function pilihFKTP(val) {
   document.getElementById('Kepada').value = d.kepada;
   document.getElementById('MohonIjin').value = d.mohonIjin;
   document.getElementById('Dari').value = d.dari;
-  const tembusan = "1. Kapusdokkes Polri\n2. Wakapolda NTB\n3. Irwasda Polda NTB\n4. Karo SDM Polda NTB" + (d.tembusan5 ? "\n5. "+d.tembusan5 : "");
+  // Tembusan tetap dari Kesatuan, trigger ulang
+  pilihKesatuan(document.getElementById('Kesatuan').value);
+}
+
+function pilihKesatuan(val) {
+  const dk = KESATUAN_DATA[val] || {};
+  const tembusan5 = dk.tembusan5 || "";
+  const tembusan = "1. Kapusdokkes Polri\n2. Wakapolda NTB\n3. Irwasda Polda NTB\n4. Karo SDM Polda NTB" + (tembusan5 ? "\n5. "+tembusan5 : "");
   document.getElementById('Tembusan').value = tembusan;
 }
 
@@ -956,9 +968,9 @@ function muatData(r) {
     if (el) el.value = r[key] || '';
   });
   // Kesatuan + trigger auto-fill
-  if (r['Kesatuan']) { document.getElementById('Kesatuan').value = r['Kesatuan']; pilihFKTP(r['Kesatuan']); }
+  if (r['Kesatuan']) { document.getElementById('Kesatuan').value = r['Kesatuan']; pilihKesatuan(r['Kesatuan']); }
   // FKTP
-  if (r['FKTP']) document.getElementById('FKTP').value = r['FKTP'];
+  if (r['FKTP']) { document.getElementById('FKTP').value = r['FKTP']; pilihFKTP(r['FKTP']); }
   // Vital + Klinis
   ['KondisiUmum','Tensi','Nadi','RR','SpO2','Suhu',
    'Keluhan1','Keluhan2','Keluhan3','Keluhan4',
