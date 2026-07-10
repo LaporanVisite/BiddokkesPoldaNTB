@@ -910,13 +910,20 @@ function pilihFKTP(val) {
   document.getElementById('Kepada').value = d.kepada;
   document.getElementById('MohonIjin').value = d.mohonIjin;
   document.getElementById('Dari').value = d.dari;
-  // Tembusan tetap dari Kesatuan, trigger ulang
-  pilihKesatuan(document.getElementById('Kesatuan').value);
+  // Tembusan: cek apakah Kesatuan override tembusan5
+  const kesatuan = document.getElementById('Kesatuan').value;
+  const dk = KESATUAN_DATA[kesatuan] || {};
+  const tembusan5 = dk.tembusan5 !== undefined ? dk.tembusan5 : (d.tembusan5 || "");
+  const tembusan = "1. Kapusdokkes Polri\n2. Wakapolda NTB\n3. Irwasda Polda NTB\n4. Karo SDM Polda NTB" + (tembusan5 ? "\n5. "+tembusan5 : "");
+  document.getElementById('Tembusan').value = tembusan;
 }
 
 function pilihKesatuan(val) {
+  // Kesatuan hanya override tembusan5, Kepada/Dari tetap dari FKTP
+  const fktp = document.getElementById('FKTP').value;
+  const d = FKTP_DATA[fktp] || {};
   const dk = KESATUAN_DATA[val] || {};
-  const tembusan5 = dk.tembusan5 || "";
+  const tembusan5 = dk.tembusan5 !== undefined ? dk.tembusan5 : (d.tembusan5 || "");
   const tembusan = "1. Kapusdokkes Polri\n2. Wakapolda NTB\n3. Irwasda Polda NTB\n4. Karo SDM Polda NTB" + (tembusan5 ? "\n5. "+tembusan5 : "");
   document.getElementById('Tembusan').value = tembusan;
 }
