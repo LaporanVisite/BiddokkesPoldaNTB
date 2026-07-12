@@ -244,6 +244,34 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 .tl-suggest-empty{padding:11px 14px;font-size:13.5px;color:var(--text3);font-style:italic}
 .empty-state .es-icon{font-size:48px;margin-bottom:12px}
 .empty-state p{font-size:14px}
+/* ── MODAL REKAM PASIEN ── */
+#modalRekamPasien{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;padding:16px;overflow-y:auto}
+#modalRekamPasienBox{background:var(--card);border-radius:18px;max-width:600px;margin:0 auto;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.25)}
+.mrp-header{background:linear-gradient(135deg,var(--green),var(--green2));color:white;padding:16px 20px;display:flex;align-items:center;justify-content:space-between}
+.mrp-header h3{font-size:15px;font-weight:700;margin:0}
+.mrp-close{background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.mrp-body{padding:16px;max-height:75vh;overflow-y:auto}
+.mrp-visit{border:1.5px solid var(--green4);border-radius:12px;margin-bottom:12px;overflow:hidden}
+.mrp-visit-header{background:#f0faf0;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;gap:8px}
+.mrp-visit-title{font-size:13px;font-weight:700;color:var(--green)}
+.mrp-visit-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.mrp-chevron{font-size:12px;color:var(--text3);transition:transform 0.2s;flex-shrink:0}
+.mrp-visit-body{padding:12px 14px;border-top:1px solid var(--green4);display:none}
+.mrp-visit-body.open{display:block}
+.mrp-vitals{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.mrp-vbox{background:#f0faf0;border-radius:8px;padding:6px 10px;text-align:center;min-width:60px}
+.mrp-vbox .val{font-size:13px;font-weight:700;color:var(--green)}
+.mrp-vbox .lbl{font-size:10px;color:var(--text3);margin-top:2px}
+.mrp-row{font-size:12px;margin-bottom:6px;color:var(--text)}
+.mrp-row b{color:var(--text2);font-size:11px;text-transform:uppercase;letter-spacing:0.4px}
+.mrp-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.mrp-tag{background:#f0faf0;color:var(--green);border:1px solid var(--green4);border-radius:99px;padding:3px 10px;font-size:11px;font-weight:600}
+.mrp-foto{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.mrp-foto img{width:90px;height:90px;object-fit:cover;border-radius:8px;border:2px solid var(--green4);cursor:pointer;transition:transform 0.2s}
+.mrp-foto img:hover{transform:scale(1.05)}
+.mrp-empty{text-align:center;color:var(--text3);font-size:13px;padding:24px}
+.btn-lihat-rm{display:none;width:100%;margin-top:8px;padding:8px;background:rgba(22,163,74,0.08);border:1.5px dashed var(--green);color:var(--green);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s}
+.btn-lihat-rm:hover{background:rgba(22,163,74,0.15)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
@@ -301,8 +329,15 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
   <div class="card">
     <div class="card-title"><div class="ct-icon">👤</div> Data Pasien</div>
     <div id="loadedBanner" class="loaded-banner" style="display:none">
-      <div class="check">✓</div>
-      Data <strong id="loadedNama" style="margin:0 4px"></strong> dimuat — silakan edit yang perlu diubah
+      <div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="check">✓</div>
+          Data <strong id="loadedNama" style="margin:0 4px"></strong> dimuat — silakan edit yang perlu diubah
+        </div>
+        <button id="btnLihatRekamPasien" class="btn-lihat-rm" onclick="bukaRekamPasienDariForm()" style="display:none;width:auto;margin:0">
+          📋 Lihat Rekam Medis
+        </button>
+      </div>
     </div>
     <div class="field">
       <label>Nama Pasien <span class="req">*</span></label>
@@ -1028,8 +1063,90 @@ function muatData(r) {
   document.getElementById('dropdown').style.display = 'none';
   document.getElementById('loadedNama').textContent = r['Nama Pasien'] || '';
   document.getElementById('loadedBanner').style.display = 'flex';
+  // Simpan nama untuk lihat rekam medis
+  window._loadedNamaPasien = r['Nama Pasien'] || '';
+  const btnRM = document.getElementById('btnLihatRekamPasien');
+  if (btnRM) { btnRM.style.display = 'block'; }
   progRestoreAll();
   window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function bukaRekamPasienDariForm() {
+  const nama = (window._loadedNamaPasien || '').trim().toLowerCase();
+  if (!nama) return;
+  document.getElementById('modalRekamPasien').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+  document.getElementById('mrpTitle').textContent = '📋 Rekam Medis — ' + (window._loadedNamaPasien || '');
+  document.getElementById('mrpBody').innerHTML = '<div class="mrp-empty">⏳ Memuat data...</div>';
+
+  // Filter dari allData
+  const allData = window._allPasienData || [];
+  const kunjungan = allData.filter(r => (r['Nama Pasien']||'').trim().toLowerCase() === nama)
+    .sort((a,b) => {
+      const da = new Date((b['Tanggal']||'') + ' ' + (b['Waktu']||''));
+      const db = new Date((a['Tanggal']||'') + ' ' + (a['Waktu']||''));
+      return da - db;
+    });
+
+  if (!kunjungan.length) {
+    document.getElementById('mrpBody').innerHTML = '<div class="mrp-empty">Tidak ada riwayat kunjungan ditemukan.</div>';
+    return;
+  }
+
+  const list = (arr) => arr.filter(Boolean).map(x => `<span class="mrp-tag">${x}</span>`).join('');
+  const fmtV = (v, suf) => v ? v.replace(suf,'').trim() + suf : '-';
+
+  document.getElementById('mrpBody').innerHTML = kunjungan.map((r, i) => {
+    const tgl = formatTanggal ? formatTanggal(r['Tanggal']) : (r['Tanggal']||'-');
+    const waktu = r['Waktu'] ? r['Waktu'] + ' sd Selesai' : '-';
+    const jenis = r['JenisPelayanan'] || '-';
+    const fktp = r['FKTP'] || '-';
+    const foto1 = r['Dokumentasi1'] ? fixImgBBUrl(r['Dokumentasi1']) : '';
+    const foto2 = r['Dokumentasi2'] ? fixImgBBUrl(r['Dokumentasi2']) : '';
+
+    return `<div class="mrp-visit">
+      <div class="mrp-visit-header" onclick="toggleMrpVisit(this)">
+        <div style="flex:1">
+          <div class="mrp-visit-title">${jenis} · ${tgl}</div>
+          <div class="mrp-visit-sub">${waktu} · 🏥 ${fktp}</div>
+        </div>
+        <span class="mrp-chevron">▼</span>
+      </div>
+      <div class="mrp-visit-body ${i===0?'open':''}">
+        ${r['KondisiUmum'] ? `<div class="mrp-row"><b>Kondisi Umum</b><br>${r['KondisiUmum']}</div>` : ''}
+        <div class="mrp-vitals">
+          <div class="mrp-vbox"><div class="val">${fmtV(r['Tensi'],' mmHg')}</div><div class="lbl">Tensi</div></div>
+          <div class="mrp-vbox"><div class="val">${fmtV(r['Nadi'],' x/mnt')}</div><div class="lbl">Nadi</div></div>
+          <div class="mrp-vbox"><div class="val">${fmtV(r['RR'],' x/mnt')}</div><div class="lbl">RR</div></div>
+          ${r['SpO2'] ? `<div class="mrp-vbox"><div class="val">${r['SpO2']}</div><div class="lbl">SpO2</div></div>` : ''}
+          ${r['Suhu'] ? `<div class="mrp-vbox"><div class="val">${fmtV(r['Suhu'],'°C')}</div><div class="lbl">Suhu</div></div>` : ''}
+        </div>
+        ${[r['Keluhan1'],r['Keluhan2'],r['Keluhan3'],r['Keluhan4']].filter(Boolean).length ? `<div class="mrp-row"><b>Keluhan</b><div class="mrp-tags">${list([r['Keluhan1'],r['Keluhan2'],r['Keluhan3'],r['Keluhan4']])}</div></div>` : ''}
+        ${[r['Diagnosa1'],r['Diagnosa2'],r['Diagnosa3'],r['Diagnosa4']].filter(Boolean).length ? `<div class="mrp-row"><b>Diagnosa</b><div class="mrp-tags">${list([r['Diagnosa1'],r['Diagnosa2'],r['Diagnosa3'],r['Diagnosa4']])}</div></div>` : ''}
+        ${[r['Tindakan1'],r['Tindakan2'],r['Tindakan3'],r['Tindakan4']].filter(Boolean).length ? `<div class="mrp-row"><b>Tindakan</b><div class="mrp-tags">${list([r['Tindakan1'],r['Tindakan2'],r['Tindakan3'],r['Tindakan4']])}</div></div>` : ''}
+        ${[r['Rencana1'],r['Rencana2'],r['Rencana3'],r['Rencana4']].filter(Boolean).length ? `<div class="mrp-row"><b>Rencana</b><div class="mrp-tags">${list([r['Rencana1'],r['Rencana2'],r['Rencana3'],r['Rencana4']])}</div></div>` : ''}
+        ${[r['Keterangan'],r['Keterangan2'],r['Keterangan3'],r['Keterangan4']].filter(Boolean).length ? `<div class="mrp-row"><b>Keterangan</b><div class="mrp-tags">${list([r['Keterangan'],r['Keterangan2'],r['Keterangan3'],r['Keterangan4']])}</div></div>` : ''}
+        ${(foto1||foto2) ? `<div class="mrp-row"><b>Dokumentasi</b>
+          <div class="mrp-foto">
+            ${foto1 ? `<img src="${foto1}" onclick="window.open('${foto1}','_blank')" title="Foto 1 — tap untuk perbesar">` : ''}
+            ${foto2 ? `<img src="${foto2}" onclick="window.open('${foto2}','_blank')" title="Foto 2 — tap untuk perbesar">` : ''}
+          </div></div>` : '<div class="mrp-row" style="color:var(--text3);font-size:12px">📷 Tidak ada dokumentasi</div>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleMrpVisit(header) {
+  const body = header.nextElementSibling;
+  const chevron = header.querySelector('.mrp-chevron');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
+function tutupModalRekamPasien() {
+  document.getElementById('modalRekamPasien').style.display = 'none';
+  document.body.style.overflow = '';
 }
 
 function getInisial(nama) {
@@ -1322,6 +1439,7 @@ async function muatSemuaData() {
       // Copy semua field asli lalu timpa dengan versi ternormalisasi
       return Object.assign({}, r, norm);
     });
+    window._allPasienData = allData; // untuk modal rekam medis dari form
     if (rmList) tampilRekamMedis(allData);
     isiPilihanMinggu();
   } catch(e) {
@@ -1654,6 +1772,18 @@ ${p('Total: ' + totalLaporan + ' Laporan dari ' + Object.keys(dataFKTP).length +
 <hr style="border:2px solid #1a7a3c;margin:8pt 0">
 <br>
 ${isi}
+<!-- Modal Rekam Medis Pasien dari Form -->
+<div id="modalRekamPasien" onclick="if(event.target===this)tutupModalRekamPasien()">
+  <div id="modalRekamPasienBox">
+    <div class="mrp-header">
+      <h3 id="mrpTitle">📋 Rekam Medis</h3>
+      <button class="mrp-close" onclick="tutupModalRekamPasien()">✕</button>
+    </div>
+    <div class="mrp-body" id="mrpBody">
+      <div class="mrp-empty">Memuat data...</div>
+    </div>
+  </div>
+</div>
 </body></html>`;
 
   const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
