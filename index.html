@@ -1779,18 +1779,6 @@ ${p('Total: ' + totalLaporan + ' Laporan dari ' + Object.keys(dataFKTP).length +
 ${isi}
 
 </div>
-<!-- Modal Rekam Medis Pasien dari Form -->
-<div id="modalRekamPasien" onclick="if(event.target===this)tutupModalRekamPasien()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:10000;padding:16px;overflow-y:auto">
-  <div id="modalRekamPasienBox" style="background:white;border-radius:18px;max-width:600px;margin:0 auto;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.25)">
-    <div class="mrp-header">
-      <h3 id="mrpTitle">📋 Rekam Medis</h3>
-      <button class="mrp-close" onclick="tutupModalRekamPasien()">✕</button>
-    </div>
-    <div class="mrp-body" id="mrpBody" style="padding:16px;max-height:75vh;overflow-y:auto">
-      <div class="mrp-empty">Memuat data...</div>
-    </div>
-  </div>
-</div>
 </body></html>`;
 
   const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
@@ -2603,6 +2591,19 @@ function tutupBanner() {
     Install
   </button>
   <button onclick="tutupBanner()" style="background:rgba(255,255,255,0.2);border:none;color:white;width:28px;height:28px;border-radius:50%;font-size:16px;cursor:pointer;flex-shrink:0">×</button>
+</div>
+
+<!-- Modal Rekam Medis Pasien dari Form -->
+<div id="modalRekamPasien" onclick="if(event.target===this)tutupModalRekamPasien()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:10000;padding:16px;overflow-y:auto">
+  <div id="modalRekamPasienBox" style="background:white;border-radius:18px;max-width:600px;margin:0 auto;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.25)">
+    <div class="mrp-header">
+      <h3 id="mrpTitle">📋 Rekam Medis</h3>
+      <button class="mrp-close" onclick="tutupModalRekamPasien()">✕</button>
+    </div>
+    <div class="mrp-body" id="mrpBody" style="padding:16px;max-height:75vh;overflow-y:auto">
+      <div class="mrp-empty">Memuat data...</div>
+    </div>
+  </div>
 </div>
 </body>
 </html>
