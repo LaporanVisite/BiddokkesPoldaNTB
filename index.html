@@ -245,7 +245,7 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 .empty-state .es-icon{font-size:48px;margin-bottom:12px}
 .empty-state p{font-size:14px}
 /* ── MODAL REKAM PASIEN ── */
-#modalRekamPasien{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;padding:16px;overflow-y:auto}
+#modalRekamPasien{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:10000;padding:16px;overflow-y:auto}
 #modalRekamPasienBox{background:var(--card);border-radius:18px;max-width:600px;margin:0 auto;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.25)}
 .mrp-header{background:linear-gradient(135deg,var(--green),var(--green2));color:white;padding:16px 20px;display:flex;align-items:center;justify-content:space-between}
 .mrp-header h3{font-size:15px;font-weight:700;margin:0}
@@ -334,7 +334,7 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
           <div class="check">✓</div>
           Data <strong id="loadedNama" style="margin:0 4px"></strong> dimuat — silakan edit yang perlu diubah
         </div>
-        <button id="btnLihatRekamPasien" class="btn-lihat-rm" onclick="bukaRekamPasienDariForm()" style="display:none;width:auto;margin:0">
+        <button id="btnLihatRekamPasien" class="btn-lihat-rm" onclick="event.stopPropagation();bukaRekamPasienDariForm()" style="display:none;width:auto;margin:0">
           📋 Lihat Rekam Medis
         </button>
       </div>
@@ -1073,8 +1073,12 @@ function muatData(r) {
 
 async function bukaRekamPasienDariForm() {
   const nama = (window._loadedNamaPasien || '').trim().toLowerCase();
-  if (!nama) return;
-  document.getElementById('modalRekamPasien').style.display = 'block';
+  console.log('[RekamPasien] nama:', nama, '| allData.length:', allData.length);
+  if (!nama) { console.warn('[RekamPasien] nama kosong, return'); return; }
+  const modalEl = document.getElementById('modalRekamPasien');
+  if (!modalEl) { console.error('[RekamPasien] modal element tidak ditemukan!'); return; }
+  modalEl.style.display = 'block';
+  modalEl.style.zIndex = '10000';
   document.body.style.overflow = 'hidden';
   document.getElementById('mrpTitle').textContent = '📋 Rekam Medis — ' + (window._loadedNamaPasien || '');
   document.getElementById('mrpBody').innerHTML = '<div class="mrp-empty">⏳ Memuat data...</div>';
@@ -1776,7 +1780,7 @@ ${p('Total: ' + totalLaporan + ' Laporan dari ' + Object.keys(dataFKTP).length +
 <br>
 ${isi}
 <!-- Modal Rekam Medis Pasien dari Form -->
-<div id="modalRekamPasien" onclick="if(event.target===this)tutupModalRekamPasien()">
+<div id="modalRekamPasien" onclick="if(event.target===this)tutupModalRekamPasien()" style="display:none">
   <div id="modalRekamPasienBox">
     <div class="mrp-header">
       <h3 id="mrpTitle">📋 Rekam Medis</h3>
