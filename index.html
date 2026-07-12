@@ -1073,12 +1073,10 @@ function muatData(r) {
 
 async function bukaRekamPasienDariForm() {
   const nama = (window._loadedNamaPasien || '').trim().toLowerCase();
-  console.log('[RekamPasien] nama:', nama, '| allData.length:', allData.length);
-  if (!nama) { console.warn('[RekamPasien] nama kosong, return'); return; }
+  if (!nama) return;
   const modalEl = document.getElementById('modalRekamPasien');
-  if (!modalEl) { console.error('[RekamPasien] modal element tidak ditemukan!'); return; }
+  if (!modalEl) return;
   modalEl.style.display = 'block';
-  modalEl.style.zIndex = '10000';
   document.body.style.overflow = 'hidden';
   document.getElementById('mrpTitle').textContent = '📋 Rekam Medis — ' + (window._loadedNamaPasien || '');
   document.getElementById('mrpBody').innerHTML = '<div class="mrp-empty">⏳ Memuat data...</div>';
@@ -1779,14 +1777,16 @@ ${p('Total: ' + totalLaporan + ' Laporan dari ' + Object.keys(dataFKTP).length +
 <hr style="border:2px solid #1a7a3c;margin:8pt 0">
 <br>
 ${isi}
+
+</div>
 <!-- Modal Rekam Medis Pasien dari Form -->
-<div id="modalRekamPasien" onclick="if(event.target===this)tutupModalRekamPasien()" style="display:none">
-  <div id="modalRekamPasienBox">
+<div id="modalRekamPasien" onclick="if(event.target===this)tutupModalRekamPasien()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:10000;padding:16px;overflow-y:auto">
+  <div id="modalRekamPasienBox" style="background:white;border-radius:18px;max-width:600px;margin:0 auto;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.25)">
     <div class="mrp-header">
       <h3 id="mrpTitle">📋 Rekam Medis</h3>
       <button class="mrp-close" onclick="tutupModalRekamPasien()">✕</button>
     </div>
-    <div class="mrp-body" id="mrpBody">
+    <div class="mrp-body" id="mrpBody" style="padding:16px;max-height:75vh;overflow-y:auto">
       <div class="mrp-empty">Memuat data...</div>
     </div>
   </div>
