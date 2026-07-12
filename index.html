@@ -1071,7 +1071,7 @@ function muatData(r) {
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function bukaRekamPasienDariForm() {
+async function bukaRekamPasienDariForm() {
   const nama = (window._loadedNamaPasien || '').trim().toLowerCase();
   if (!nama) return;
   document.getElementById('modalRekamPasien').style.display = 'block';
@@ -1079,13 +1079,17 @@ function bukaRekamPasienDariForm() {
   document.getElementById('mrpTitle').textContent = '📋 Rekam Medis — ' + (window._loadedNamaPasien || '');
   document.getElementById('mrpBody').innerHTML = '<div class="mrp-empty">⏳ Memuat data...</div>';
 
-  // Filter dari allData
-  const allData = window._allPasienData || [];
+  // Jika allData belum terisi, muat dulu baru tampilkan
+  if (!allData || allData.length === 0) {
+    document.getElementById('mrpBody').innerHTML = '<div class="mrp-empty">⏳ Memuat data dari server...</div>';
+    await muatSemuaData();
+  }
+
   const kunjungan = allData.filter(r => (r['Nama Pasien']||'').trim().toLowerCase() === nama)
     .sort((a,b) => {
-      const da = new Date((b['Tanggal']||'') + ' ' + (b['Waktu']||''));
-      const db = new Date((a['Tanggal']||'') + ' ' + (a['Waktu']||''));
-      return da - db;
+      const tA = new Date((b['Tanggal']||'').split('/').reverse().join('-') + 'T' + (b['Waktu']||'00:00'));
+      const tB = new Date((a['Tanggal']||'').split('/').reverse().join('-') + 'T' + (a['Waktu']||'00:00'));
+      return tA - tB;
     });
 
   if (!kunjungan.length) {
@@ -1363,10 +1367,9 @@ async function muatSemuaData() {
   const rmList = document.getElementById('rmList');
   if (rmList) rmList.innerHTML = '<div class="empty-state"><div class="es-icon">⏳</div><p>Memuat data terbaru...</p></div>';
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 45000); // naik jadi 45 detik
-    const res = await fetch(API_URL + '?action=getAll', { signal: controller.signal });
-    clearTimeout(timeoutId);
+    const fetchPromise = fetch(API_URL + '?action=getAll');
+    const timeoutPromise = new Promise((_,reject) => setTimeout(() => reject(new Error('Timeout')), 45000));
+    const res = await Promise.race([fetchPromise, timeoutPromise]);
     const text = await res.text();
     let parsed;
     try { parsed = JSON.parse(text); }
@@ -2546,6 +2549,8 @@ document.getElementById('Hari').value = days[new Date().getDay()];
 // ── PWA Service Worker ──
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
+    // Load data di background agar rekam medis pasien bisa dibuka dari form
+    setTimeout(() => { if (!allData || allData.length === 0) muatSemuaData(); }, 1000);
     navigator.serviceWorker.register('sw.js')
       .then(reg => console.log('SW registered:', reg.scope))
       .catch(err => console.log('SW error:', err));
