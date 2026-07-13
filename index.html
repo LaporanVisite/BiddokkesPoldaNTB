@@ -1972,50 +1972,83 @@ async function eksporRekapExcel() {
   const allBorder = { top: thinBorder, left: thinBorder, bottom: thinBorder, right: thinBorder };
   const centerWrap = { horizontal: 'center', vertical: 'middle', wrapText: true };
 
-  // Row 1: Judul
-  ws.mergeCells('A1:I1');
-  const titleCell = ws.getCell('A1');
-  titleCell.value = headerTanggal;
-  titleCell.font = { bold: true, size: 12 };
-  titleCell.alignment = centerWrap;
+  // ── KOP SURAT ──
+  // Row 1: KEPOLISIAN NEGARA REPUBLIK INDONESIA
+  ws.mergeCells('A1:C1');
+  const kop1 = ws.getCell('A1');
+  kop1.value = 'KEPOLISIAN NEGARA REPUBLIK INDONESIA';
+  kop1.font = { name: 'Calibri', size: 11 };
+  kop1.alignment = { horizontal: 'center' };
 
-  // Row 2: kosong
-  ws.addRow([]);
+  // Row 2: DAERAH NUSA TENGGARA BARAT
+  ws.mergeCells('A2:C2');
+  const kop2 = ws.getCell('A2');
+  kop2.value = 'DAERAH NUSA TENGGARA BARAT';
+  kop2.font = { name: 'Calibri', size: 11 };
+  kop2.alignment = { horizontal: 'center' };
 
-  // Row 3-4: Header tabel
-  ws.getCell('A3').value = 'NO';
-  ws.getCell('B3').value = 'TIM PELAYANAN KESEHATAN';
-  ws.getCell('C3').value = 'JENIS PELAYANAN KESEHATAN';
-  ws.getCell('G3').value = 'TOTAL';
-  ws.getCell('H3').value = 'DOKUMENTASI';
-  ws.getCell('C4').value = 'HOME VISIT';
-  ws.getCell('D4').value = 'MONITORING';
-  ws.getCell('E4').value = 'PENDAMPINGAN';
-  ws.getCell('F4').value = 'TELEMEDICINE';
-  ws.getCell('H4').value = 'FOTO 1';
-  ws.getCell('I4').value = 'FOTO 2';
+  // Row 3: BIDANG KEDOKTERAN DAN KESEHATAN
+  ws.mergeCells('A3:C3');
+  const kop3 = ws.getCell('A3');
+  kop3.value = 'BIDANG KEDOKTERAN DAN KESEHATAN';
+  kop3.font = { name: 'Calibri', size: 11 };
+  kop3.alignment = { horizontal: 'center' };
 
-  ws.mergeCells('A3:A4');
-  ws.mergeCells('B3:B4');
-  ws.mergeCells('C3:F3');
-  ws.mergeCells('G3:G4');
-  ws.mergeCells('H3:I3');
+  // Row 4: kosong
+  ws.getRow(4).height = 8;
 
-  [3,4].forEach(r => {
+  // Row 5: Judul Laporan
+  ws.mergeCells('A5:I5');
+  const judulCell = ws.getCell('A5');
+  judulCell.value = 'LAPORAN HOME VISIT, MONITORING, PENDAMPINGAN, DAN TELEMEDICINE';
+  judulCell.font = { bold: true, size: 12, name: 'Calibri' };
+  judulCell.alignment = centerWrap;
+
+  // Row 6: Sub judul tanggal
+  ws.mergeCells('A6:I6');
+  const subJudulCell = ws.getCell('A6');
+  subJudulCell.value = `BIDDOKKES POLDA NTB ${headerTanggal}`;
+  subJudulCell.font = { bold: true, size: 12, name: 'Calibri' };
+  subJudulCell.alignment = centerWrap;
+
+  // Row 7: kosong
+  ws.getRow(7).height = 8;
+
+  // Row 8 & 9: Header tabel
+  ws.getCell('A8').value = 'NO';
+  ws.getCell('B8').value = 'TIM PELAYANAN KESEHATAN';
+  ws.getCell('C8').value = 'JENIS PELAYANAN KESEHATAN';
+  ws.getCell('G8').value = 'TOTAL';
+  ws.getCell('H8').value = 'DOKUMENTASI';
+  ws.getCell('C9').value = 'HOME VISIT';
+  ws.getCell('D9').value = 'MONITORING';
+  ws.getCell('E9').value = 'PENDAMPINGAN';
+  ws.getCell('F9').value = 'TELEMEDICINE';
+  ws.getCell('H9').value = 'FOTO 1';
+  ws.getCell('I9').value = 'FOTO 2';
+
+  ws.mergeCells('A8:A9');
+  ws.mergeCells('B8:B9');
+  ws.mergeCells('C8:F8');
+  ws.mergeCells('G8:G9');
+  ws.mergeCells('H8:I8');
+
+  [8,9].forEach(r => {
     for (let c = 1; c <= 9; c++) {
       const cell = ws.getCell(r, c);
-      cell.font = { bold: true };
+      cell.font = { bold: true, name: 'Calibri', size: 11 };
       cell.alignment = centerWrap;
       cell.border = allBorder;
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2EFDA' } };
     }
   });
+  ws.getRow(9).height = 30.75;
 
   // Tinggi baris foto
   const fotoRowHeight = 90;
 
-  // Data rows mulai baris 5
-  let rowIdx = 5;
+  // Data rows mulai baris 10
+  let rowIdx = 10;
   const imagePromises = [];
 
   rows.forEach(r => {
@@ -2023,28 +2056,27 @@ async function eksporRekapExcel() {
     row.height = fotoRowHeight;
     row.getCell(1).value = r.no;
     row.getCell(2).value = r.nama;
-    row.getCell(3).value = r.hv || '';
-    row.getCell(4).value = r.mon || '';
-    row.getCell(5).value = r.pen || '';
-    row.getCell(6).value = r.tel || '';
+    row.getCell(3).value = r.hv || 0;
+    row.getCell(4).value = r.mon || 0;
+    row.getCell(5).value = r.pen || 0;
+    row.getCell(6).value = r.tel || 0;
     row.getCell(7).value = r.total;
     row.getCell(8).value = '';
     row.getCell(9).value = '';
 
     for (let c = 1; c <= 9; c++) {
       const cell = row.getCell(c);
+      cell.font = { name: 'Calibri', size: 11 };
       cell.border = allBorder;
       cell.alignment = c === 2 ? { vertical: 'middle', wrapText: true } : centerWrap;
     }
 
-    // Embed foto jika ada
-    if (r.foto1) imagePromises.push(embedFoto(wb, ws, r.foto1, rowIdx, 7)); // kolom H = index 7
-    if (r.foto2) imagePromises.push(embedFoto(wb, ws, r.foto2, rowIdx, 8)); // kolom I = index 8
-
+    if (r.foto1) imagePromises.push(embedFoto(wb, ws, r.foto1, rowIdx, 7));
+    if (r.foto2) imagePromises.push(embedFoto(wb, ws, r.foto2, rowIdx, 8));
     rowIdx++;
   });
 
-  // Baris TOTAL - sum semua kolom
+  // Baris TOTAL
   const totalHV  = rows.reduce((sum, r) => sum + (r.hv || 0), 0);
   const totalMon = rows.reduce((sum, r) => sum + (r.mon || 0), 0);
   const totalPen = rows.reduce((sum, r) => sum + (r.pen || 0), 0);
@@ -2059,15 +2091,57 @@ async function eksporRekapExcel() {
   totalRow.getCell(5).value = totalPen || '';
   totalRow.getCell(6).value = totalTel || '';
   totalRow.getCell(7).value = totalAll;
-
   for (let c = 1; c <= 9; c++) {
     const cell = totalRow.getCell(c);
     cell.border = allBorder;
     cell.alignment = centerWrap;
-    cell.font = { bold: true };
+    cell.font = { bold: true, name: 'Calibri', size: 11 };
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2EFDA' } };
   }
   rowIdx++;
+
+  // ── TTD (kanan bawah) ──
+  // Format tanggal akhir untuk TTD
+  const namaBulanTTD = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const tglTTD = `Mataram, ${minggu.getDate()} ${namaBulanTTD[minggu.getMonth()]} ${minggu.getFullYear()}`;
+
+  const ttdStartRow = rowIdx + 1;
+  // Kolom F-I untuk TTD kanan bawah
+  ws.mergeCells(`F${ttdStartRow}:I${ttdStartRow}`);
+  ws.getCell(`F${ttdStartRow}`).value = tglTTD;
+  ws.getCell(`F${ttdStartRow}`).alignment = { horizontal: 'center' };
+  ws.getCell(`F${ttdStartRow}`).font = { name: 'Calibri', size: 11 };
+
+  ws.mergeCells(`F${ttdStartRow+1}:I${ttdStartRow+1}`);
+  ws.getCell(`F${ttdStartRow+1}`).value = 'KASUBBAGRENMIN BIDDOKKES POLDA NTB';
+  ws.getCell(`F${ttdStartRow+1}`).alignment = { horizontal: 'center' };
+  ws.getCell(`F${ttdStartRow+1}`).font = { name: 'Calibri', size: 11 };
+
+  ws.mergeCells(`F${ttdStartRow+2}:I${ttdStartRow+2}`);
+  ws.getCell(`F${ttdStartRow+2}`).value = 'SELAKU';
+  ws.getCell(`F${ttdStartRow+2}`).alignment = { horizontal: 'center' };
+  ws.getCell(`F${ttdStartRow+2}`).font = { name: 'Calibri', size: 11 };
+
+  ws.mergeCells(`F${ttdStartRow+3}:I${ttdStartRow+3}`);
+  ws.getCell(`F${ttdStartRow+3}`).value = 'PEMBUAT LAPORAN';
+  ws.getCell(`F${ttdStartRow+3}`).alignment = { horizontal: 'center' };
+  ws.getCell(`F${ttdStartRow+3}`).font = { name: 'Calibri', size: 11 };
+
+  // Spasi tanda tangan (4 baris kosong)
+  for (let i = 4; i <= 7; i++) {
+    ws.mergeCells(`F${ttdStartRow+i}:I${ttdStartRow+i}`);
+    ws.getRow(ttdStartRow+i).height = 15;
+  }
+
+  ws.mergeCells(`F${ttdStartRow+8}:I${ttdStartRow+8}`);
+  ws.getCell(`F${ttdStartRow+8}`).value = 'MUNANDAR, S.H., M.H.';
+  ws.getCell(`F${ttdStartRow+8}`).alignment = { horizontal: 'center' };
+  ws.getCell(`F${ttdStartRow+8}`).font = { bold: true, name: 'Calibri', size: 11 };
+
+  ws.mergeCells(`F${ttdStartRow+9}:I${ttdStartRow+9}`);
+  ws.getCell(`F${ttdStartRow+9}`).value = 'PEMBINA NIP 198005232006041011';
+  ws.getCell(`F${ttdStartRow+9}`).alignment = { horizontal: 'center' };
+  ws.getCell(`F${ttdStartRow+9}`).font = { name: 'Calibri', size: 11 };
 
   await Promise.all(imagePromises);
 
