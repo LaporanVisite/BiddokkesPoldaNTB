@@ -1995,10 +1995,8 @@ async function eksporRekapExcel() {
   kop3.value = 'BIDANG KEDOKTERAN DAN KESEHATAN';
   kop3.font = { name: 'Calibri', size: 11 };
   kop3.alignment = { horizontal: 'center' };
-  // Garis bawah di A3:C3 (sesuai lebar KOP)
-  ['A3','B3','C3'].forEach(addr => {
-    ws.getCell(addr).border = { bottom: { style: 'medium', color: { argb: 'FF000000' } } };
-  });
+  // Garis bawah hanya di A3 (sepanjang tulisan KEPOLISIAN NEGARA REPUBLIK INDONESIA)
+  ws.getCell('A3').border = { bottom: { style: 'medium', color: { argb: 'FF000000' } } };
 
   // Row 4: kosong
   ws.getRow(4).height = 8;
@@ -2016,8 +2014,8 @@ async function eksporRekapExcel() {
   subJudulCell.value = `BIDDOKKES POLDA NTB ${headerTanggal}`;
   subJudulCell.font = { bold: true, size: 12, name: 'Calibri' };
   subJudulCell.alignment = centerWrap;
-  // Garis bawah di A6:I6 (sesuai lebar tabel)
-  for (let c = 1; c <= 9; c++) {
+  // Garis bawah di A6:F6 (sepanjang tulisan LAPORAN HOME VISIT...)
+  for (let c = 1; c <= 6; c++) {
     ws.getCell(6, c).border = { bottom: { style: 'medium', color: { argb: 'FF000000' } } };
   }
 
@@ -2142,8 +2140,8 @@ async function eksporRekapExcel() {
   try {
     const ttdImgId = wb.addImage({ base64: TTD_MUNANDAR_B64, extension: 'png' });
     ws.addImage(ttdImgId, {
-      tl: { col: 6.0, row: ttdStartRow + 3.2 },
-      br: { col: 8.2, row: ttdStartRow + 6.8 },
+      tl: { col: 6.3, row: ttdStartRow + 3.5 },
+      br: { col: 8.0, row: ttdStartRow + 7.8 },
       editAs: 'oneCell'
     });
   } catch(e) { console.warn('TTD image error:', e); }
@@ -2161,8 +2159,8 @@ async function eksporRekapExcel() {
   ws.mergeCells(`F${ttdStartRow+9}:I${ttdStartRow+9}`);
   setTTDCell(`F${ttdStartRow+9}`, 'PEMBINA NIP 198005232006041011');
   ws.getRow(ttdStartRow+9).height = 16;
-  // Garis atas di baris PEMBINA NIP (F s.d I)
-  for (let c = 6; c <= 9; c++) {
+  // Garis atas di baris PEMBINA NIP (F s.d H, sepanjang tulisan)
+  for (let c = 6; c <= 8; c++) {
     const cell = ws.getCell(ttdStartRow+9, c);
     cell.border = { top: { style: 'thin', color: { argb: 'FF000000' } } };
   }
