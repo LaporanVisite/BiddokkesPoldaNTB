@@ -1740,6 +1740,17 @@ async function eksporRekapMingguan() {
     if (!laporan || !laporan.length) return;
     let nomorUrut = 1; // Reset nomor tiap FKTP
 
+    // Sort ascending: tanggal terdahulu dulu
+    laporan.sort((a, b) => {
+      const parseTglW = (s) => {
+        if (!s) return 0;
+        const m = String(s).match(/(\d{2})\/(\d{2})\/(\d{4})/);
+        if (m) return new Date(parseInt(m[3]), parseInt(m[2])-1, parseInt(m[1])).getTime();
+        return new Date(s).getTime() || 0;
+      };
+      return parseTglW(a['Tanggal']) - parseTglW(b['Tanggal']);
+    });
+
     // Header FKTP
     isi += `
 <p style="text-align:center;font-family:Arial;font-size:12pt;font-weight:bold;margin:10pt 0 4pt 0">🔹 FKTP ${fktp.toUpperCase()}</p>
