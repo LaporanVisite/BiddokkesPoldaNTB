@@ -1824,12 +1824,41 @@ ${seksi('Dokter DPJP :', dpjpArr)}
 </style>
 </head>
 <body>
-${p('REKAP LAPORAN BIDDOKKES POLDA NTB', 'center')}
-${p('Periode: ' + formatTglPendek(senin) + ' — ' + formatTglPendek(minggu), 'center')}
-${p('Total: ' + totalLaporan + ' Laporan dari ' + Object.keys(dataFKTP).length + ' FKTP', 'center')}
-<hr style="border:2px solid #1a7a3c;margin:8pt 0">
+${(()=>{
+  const bln = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const tglMulai = `${senin.getDate()} ${bln[senin.getMonth()]} ${senin.getFullYear()}`;
+  const tglAkhir = `${minggu.getDate()} ${bln[minggu.getMonth()]} ${minggu.getFullYear()}`;
+  return `
+<p style="font-family:Arial;font-size:11pt;margin:2pt 0"><i>Assalamu'alaikum Wr Wb. Salam sejahtera, Shalom, Om Swastyastu</i></p>
 <br>
+<p style="font-family:Arial;font-size:11pt;margin:2pt 0">KEPADA YTH. : <b>BAPAK KAPOLDA NTB</b></p>
+<br>
+<p style="font-family:Arial;font-size:11pt;margin:2pt 0">Dari : KABIDDOKKES POLDA NTB</p>
+<br>
+<p style="font-family:Arial;font-size:11pt;margin:2pt 0">TEMBUSAN:</p>
+<p style="font-family:Arial;font-size:11pt;margin:2pt 0">1. AS SDM KAPOLRI</p>
+<p style="font-family:Arial;font-size:11pt;margin:2pt 0">2. KAPUSDOKKES POLRI</p>
+<p style="font-family:Arial;font-size:11pt;margin:2pt 0">3. KAROKESPOL PUSDOKKES POLRI</p>
+<p style="font-family:Arial;font-size:11pt;margin:2pt 0">4. WAKAPOLDA NTB</p>
+<p style="font-family:Arial;font-size:11pt;margin:2pt 0">5. IRWASDA POLDA NTB</p>
+<p style="font-family:Arial;font-size:11pt;margin:2pt 0">6. KARO SDM POLDA NTB</p>
+<p style="font-family:Arial;font-size:11pt;margin:2pt 0">7. KABIDPROPAM POLDA NTB</p>
+<p style="font-family:Arial;font-size:11pt;margin:2pt 0">8. KAPOLRES/TA JAJARAN POLDA NTB</p>
+<br>
+<p style="font-family:Arial;font-size:11pt;margin:2pt 0">Mohon izin <b>Jenderal,</b> melaporkan kegiatan Tim Reaksi Cepat penanganan kesehatan terhadap PNPP Polda NTB dan Urkes Jajaran dalam <i>Home Visite</i> / Pendampingan &amp; Monitoring&nbsp; Anggota Sakit Menahun dan Kronis Tanggal &nbsp;<b>${tglMulai} s.d. ${tglAkhir}.</b></p>
+<br>
+`;
+})()}
 ${isi}
+<br>
+<p style="font-family:Arial;font-size:11pt;margin:2pt 0">Dokumentasi giat terlampir.</p>
+<br>
+<p style="font-family:Arial;font-size:11pt;margin:2pt 0">Demikian yang dapat kami laporkan Jenderal, mohon petunjuk. Terima kasih.</p>
+<br>
+<p style="font-family:Arial;font-size:11pt;margin:2pt 0">Wassalmu'alaikum Wr Wb., Shaloom., Om Santi Santi Santi om</p>
+<br>
+<p style="font-family:Arial;font-size:11pt;margin:2pt 0">#BIDDOKKESPOLDANTB</p>
+<p style="font-family:Arial;font-size:11pt;margin:2pt 0"><i>_Together We Are Strong_</i></p>
 
 </div>
 </body></html>`;
