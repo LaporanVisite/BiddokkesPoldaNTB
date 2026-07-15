@@ -1743,8 +1743,7 @@ async function eksporRekapMingguan() {
     // Header FKTP
     isi += `
 <p style="text-align:center;font-family:Arial;font-size:12pt;font-weight:bold;margin:10pt 0 4pt 0">🔹 FKTP ${fktp.toUpperCase()}</p>
-<p style="text-align:center;font-family:Arial;font-size:10pt;color:#555;margin:0 0 8pt 0">${laporan.length} laporan · ${formatTglPendek(senin)} — ${formatTglPendek(minggu)}</p>
-<hr style="border:1px solid #1a7a3c;margin:4pt 0 8pt 0">`;
+`;
 
     laporan.forEach(r => {
       const jenis = r['JenisPelayanan'] || '-';
@@ -1758,7 +1757,7 @@ async function eksporRekapMingguan() {
       const tempat = r['Tempat'] || '-';
 
       const keluhanArr = [r['Keluhan1'],r['Keluhan2'],r['Keluhan3'],r['Keluhan4']].filter(Boolean).map(kap);
-      const diagnosaArr = [r['Diagnosa1'],r['Diagnosa2'],r['Diagnosa3'],r['Diagnosa4']].filter(Boolean).map(v => '<i>' + kap(v) + '</i>');
+      const diagnosaArr = [r['Diagnosa1'],r['Diagnosa2'],r['Diagnosa3'],r['Diagnosa4']].filter(Boolean).map(v => '<i><u>' + kap(v) + '</u></i>');
       const tindakanArr = [r['Tindakan1'],r['Tindakan2'],r['Tindakan3'],r['Tindakan4']].filter(Boolean).map(kap);
       const rencanaArr  = [r['Rencana1'],r['Rencana2'],r['Rencana3'],r['Rencana4']].filter(Boolean).map(kap);
       const dpjpArr     = [r['DokterDPJP1'],r['DokterDPJP2'],r['DokterDPJP3'],r['DokterDPJP4']].filter(Boolean);
@@ -1795,7 +1794,7 @@ ${seksi('Diagnosa', diagnosaArr)}
 ${seksi('Tindakan:', tindakanArr)}
 ${seksi('Rencana :', rencanaArr)}
 ${seksi('Dokter DPJP :', dpjpArr)}
-<br><hr style="border:0.5px solid #ccc;margin:6pt 0">`;
+`;
       nomorUrut++;
     });
 
@@ -2323,7 +2322,7 @@ function exportWord(r) {
   const tempat = r['Tempat'] || '-';
 
   const keluhanArr = [r['Keluhan1'],r['Keluhan2'],r['Keluhan3'],r['Keluhan4']].filter(Boolean).map(kapital);
-  const diagnosaArr = [r['Diagnosa1'],r['Diagnosa2'],r['Diagnosa3'],r['Diagnosa4']].filter(Boolean).map(v => '<i>' + kapital(v) + '</i>');
+  const diagnosaArr = [r['Diagnosa1'],r['Diagnosa2'],r['Diagnosa3'],r['Diagnosa4']].filter(Boolean).map(v => '<i><u>' + kapital(v) + '</u></i>');
   const tindakanArr = [r['Tindakan1'],r['Tindakan2'],r['Tindakan3'],r['Tindakan4']].filter(Boolean).map(kapital);
   const rencanaArr  = [r['Rencana1'],r['Rencana2'],r['Rencana3'],r['Rencana4']].filter(Boolean).map(kapital);
   const dpjpArr     = [r['DokterDPJP1'],r['DokterDPJP2'],r['DokterDPJP3'],r['DokterDPJP4']].filter(Boolean);
