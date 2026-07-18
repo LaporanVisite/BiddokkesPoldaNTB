@@ -1,0 +1,36 @@
+{
+  "name": "Laporan Visite Biddokkes Polda NTB",
+  "short_name": "Biddokkes NTB",
+  "description": "Aplikasi pelaporan Home Visit, Pendampingan, Monitoring & Telemedicine Biddokkes Polda NTB",
+  "start_url": "/BiddokkesPoldaNTB/",
+  "scope": "/BiddokkesPoldaNTB/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d1b2a",
+  "theme_color": "#1a7a3c",
+  "lang": "id",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["medical", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Input Laporan",
+      "short_name": "Input",
+      "description": "Buka form input laporan",
+      "url": "/BiddokkesPoldaNTB/",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
