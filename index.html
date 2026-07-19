@@ -57,6 +57,14 @@ body.dark-mode .rekap-tabel th{background:#1a3d2a}
 body.dark-mode .rekap-tabel td{background:#1e1e1e;border-color:#2a2a2a}
 body.dark-mode .rekap-tabel tr:hover td{background:#2a2a2a}
 /* ── END DARK MODE ── */
+/* ── iOS INSTALL POPUP ── */
+#iosInstallPopup{display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:white;border-radius:16px;padding:16px 20px;width:calc(100% - 40px);max-width:360px;box-shadow:0 8px 32px rgba(0,0,0,0.25);z-index:9999;text-align:center}
+#iosInstallPopup .ios-title{font-size:14px;font-weight:700;color:#1a2e22;margin-bottom:8px}
+#iosInstallPopup .ios-steps{text-align:left;font-size:12px;color:#444;line-height:1.8}
+#iosInstallPopup .ios-steps span{color:#1a7a3c;font-weight:700}
+#iosInstallPopup .ios-arrow{position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:12px solid white}
+#iosInstallPopup .ios-close{position:absolute;top:8px;right:12px;background:none;border:none;font-size:18px;color:#999;cursor:pointer;line-height:1}
+#iosInstallPopup .ios-icon{font-size:28px;margin-bottom:6px}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135deg,#0d1b2a 0%,#1a3a4a 40%,#0d2d1a 100%);background-attachment:fixed;min-height:100vh;color:var(--text)}
 
 /* ── HEADER ── */
@@ -1211,6 +1219,24 @@ function tutupModalRekamPasien() {
   document.body.style.overflow = '';
 }
 
+// ── iOS INSTALL POPUP ──
+function cekIOSInstall() {
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true;
+  const sudahDitutup = localStorage.getItem('iosPopupDitutup');
+  
+  if (isIOS && !isStandalone && !sudahDitutup) {
+    setTimeout(() => {
+      document.getElementById('iosInstallPopup').style.display = 'block';
+    }, 3000); // muncul 3 detik setelah buka
+  }
+}
+
+function tutupIOSPopup() {
+  document.getElementById('iosInstallPopup').style.display = 'none';
+  try { localStorage.setItem('iosPopupDitutup', '1'); } catch(e) {}
+}
+
 function toggleDarkMode() {
   const isDark = document.body.classList.toggle('dark-mode');
   const icon = document.getElementById('darkModeIcon');
@@ -1221,6 +1247,7 @@ function toggleDarkMode() {
 }
 
 // Auto-load dark mode preference
+cekIOSInstall();
 (function() {
   try {
     if (localStorage.getItem('darkMode') === '1') {
@@ -2852,6 +2879,19 @@ function tutupBanner() {
     Install
   </button>
   <button onclick="tutupBanner()" style="background:rgba(255,255,255,0.2);border:none;color:white;width:28px;height:28px;border-radius:50%;font-size:16px;cursor:pointer;flex-shrink:0">×</button>
+</div>
+
+<!-- iOS Install Popup -->
+<div id="iosInstallPopup">
+  <button class="ios-close" onclick="tutupIOSPopup()">✕</button>
+  <div class="ios-icon">📲</div>
+  <div class="ios-title">Install Aplikasi Biddokkes NTB</div>
+  <div class="ios-steps">
+    1. Tap ikon <span>Share</span> ⬆️ di bawah Safari<br>
+    2. Scroll → pilih <span>"Add to Home Screen"</span><br>
+    3. Tap <span>"Add"</span> — selesai! 🎉
+  </div>
+  <div class="ios-arrow"></div>
 </div>
 
 <!-- Modal Rekam Medis Pasien dari Form -->
