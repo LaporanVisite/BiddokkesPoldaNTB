@@ -1,5 +1,5 @@
 // ── Service Worker Biddokkes Polda NTB ──
-const CACHE_NAME = 'biddokkes-v1';
+const CACHE_NAME = 'biddokkes-v2';
 const BASE = '/BiddokkesPoldaNTB';
 
 // File yang di-cache untuk offline
