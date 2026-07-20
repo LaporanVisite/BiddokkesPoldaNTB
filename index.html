@@ -1257,7 +1257,7 @@ async function eksporKunjunganExcel() {
   a.download = 'Rekap_Kunjungan_' + mulai + '_sd_' + selesai + '.xlsx';
   a.click();
   URL.revokeObjectURL(url);
-  showToast('Excel berhasil didownload!', 'success');
+  showToastDownload('Excel');
 }
 
 async function eksporKunjunganWord() {
@@ -1314,7 +1314,7 @@ async function eksporKunjunganWord() {
   a.download = 'Rekap_Kunjungan_' + mulai + '_sd_' + selesai + '.doc';
   a.click();
   URL.revokeObjectURL(url);
-  showToast('Word berhasil didownload!', 'success');
+  showToastDownload('Word');
 }
 
 function keluarRekap() {
@@ -1632,6 +1632,45 @@ cekIOSInstall();
     }
   } catch(e) {}
 })();
+
+function showToastDownload(jenis) {
+  // Deteksi apakah dalam mode PWA standalone
+  const isPWA = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+  
+  // Buat modal notifikasi download
+  const existing = document.getElementById('downloadNotif');
+  if (existing) existing.remove();
+
+  const div = document.createElement('div');
+  div.id = 'downloadNotif';
+  div.style.cssText = `
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:#1a7a3c;color:white;border-radius:16px;
+    padding:16px 20px;z-index:99999;
+    box-shadow:0 8px 32px rgba(0,0,0,0.3);
+    max-width:320px;width:calc(100% - 40px);
+    font-family:'Segoe UI',system-ui,sans-serif;
+  `;
+  div.innerHTML = `
+    <div style="display:flex;align-items:flex-start;gap:12px">
+      <div style="font-size:28px;line-height:1">✅</div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px">File ${jenis} Berhasil!</div>
+        <div style="font-size:12px;opacity:0.9;line-height:1.5">
+          ${isPWA 
+            ? 'File tersimpan di folder <b>Downloads</b> HP kamu. Buka aplikasi <b>Files/File Manager</b> untuk melihatnya.' 
+            : 'File sudah didownload ke folder Downloads.'}
+        </div>
+      </div>
+      <button onclick="document.getElementById('downloadNotif').remove()" 
+        style="background:rgba(255,255,255,0.2);border:none;color:white;width:24px;height:24px;border-radius:50%;font-size:14px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0">✕</button>
+    </div>
+  `;
+  document.body.appendChild(div);
+
+  // Auto hilang setelah 6 detik
+  setTimeout(() => { if (div.parentNode) div.remove(); }, 6000);
+}
 
 function getInisial(nama) {
   if (!nama || typeof nama !== 'string') return '?';
@@ -2341,7 +2380,7 @@ ${isi}
   a.click();
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  showToast('Rekap berhasil didownload! 🎉', 'success');
+  showToastDownload('Word Rekap');
 }
 
 // ── EXPORT REKAP EXCEL ──
@@ -2686,7 +2725,7 @@ async function eksporRekapExcel() {
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-  showToast('Rekap Excel berhasil didownload! 🎉', 'success');
+  showToastDownload('Excel Rekap');
 }
 
 // Fetch foto dari Cloudinary dan embed ke cell Excel
