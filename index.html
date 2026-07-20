@@ -1256,8 +1256,8 @@ async function eksporKunjunganExcel() {
   const fname = 'Rekap_Kunjungan_' + mulai + '_sd_' + selesai + '.xlsx';
   const a = document.createElement('a');
   a.href = url; a.download = fname; a.click();
-  showToastDownload('Excel', url, fname);
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  showToastDownload('Excel', fname);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 async function eksporKunjunganWord() {
@@ -1312,8 +1312,8 @@ async function eksporKunjunganWord() {
   const fname = 'Rekap_Kunjungan_' + mulai + '_sd_' + selesai + '.doc';
   const a = document.createElement('a');
   a.href = url; a.download = fname; a.click();
-  showToastDownload('Word', url, fname);
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  showToastDownload('Word', fname);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function keluarRekap() {
@@ -1632,9 +1632,7 @@ cekIOSInstall();
   } catch(e) {}
 })();
 
-function showToastDownload(jenis, url, filename) {
-  const isPWA = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
-  
+function showToastDownload(jenis, filename) {
   const existing = document.getElementById('downloadNotif');
   if (existing) existing.remove();
 
@@ -1648,11 +1646,6 @@ function showToastDownload(jenis, url, filename) {
     max-width:320px;width:calc(100% - 40px);
     font-family:'Segoe UI',system-ui,sans-serif;
   `;
-  
-  const bukaTombol = url ? `<a href="${url}" download="${filename || ''}" 
-    style="display:block;margin-top:10px;background:white;color:#1a7a3c;border-radius:8px;
-    padding:8px 12px;font-size:12px;font-weight:700;text-decoration:none;text-align:center">
-    📂 Buka File</a>` : '';
 
   div.innerHTML = `
     <div style="display:flex;align-items:flex-start;gap:12px">
@@ -1660,11 +1653,8 @@ function showToastDownload(jenis, url, filename) {
       <div style="flex:1">
         <div style="font-size:14px;font-weight:700;margin-bottom:4px">File ${jenis} Berhasil!</div>
         <div style="font-size:12px;opacity:0.9;line-height:1.5">
-          ${isPWA 
-            ? 'Tersimpan di folder <b>Downloads</b>. Tap tombol di bawah untuk membuka.' 
-            : 'File sudah didownload ke folder Downloads.'}
+          File <b>${filename||''}</b> tersimpan di folder <b>Downloads</b> HP kamu.
         </div>
-        ${bukaTombol}
       </div>
       <button onclick="document.getElementById('downloadNotif').remove()" 
         style="background:rgba(255,255,255,0.2);border:none;color:white;width:24px;height:24px;
@@ -1672,7 +1662,7 @@ function showToastDownload(jenis, url, filename) {
     </div>
   `;
   document.body.appendChild(div);
-  setTimeout(() => { if (div.parentNode) div.remove(); }, 8000);
+  setTimeout(() => { if (div.parentNode) div.remove(); }, 6000);
 }
 
 function getInisial(nama) {
@@ -2382,8 +2372,8 @@ ${isi}
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  showToastDownload('Word Rekap', url, a.download);
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  showToastDownload('Word Rekap', a.download);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // ── EXPORT REKAP EXCEL ──
@@ -2726,8 +2716,8 @@ async function eksporRekapExcel() {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  showToastDownload('Excel Rekap', url, a.download);
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  showToastDownload('Excel Rekap', a.download);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // Fetch foto dari Cloudinary dan embed ke cell Excel
