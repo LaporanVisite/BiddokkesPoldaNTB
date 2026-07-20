@@ -69,12 +69,13 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135d
 
 /* ── HEADER ── */
 .header{background:linear-gradient(135deg,var(--green) 0%,var(--green2) 100%);color:white;padding:0;position:sticky;top:0;z-index:200;box-shadow:0 2px 16px rgba(26,122,60,0.18)}
-.header-inner{max-width:720px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.header-inner{max-width:720px;margin:0 auto;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
 .header-logo{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
 .header-logo .icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.25)}
 .header-logo .icon img{width:36px;height:36px;object-fit:contain}
-.header-logo h1{font-size:12px;font-weight:700;line-height:1.3}
-.header-logo p{font-size:10px;opacity:0.8;margin-top:1px}
+.header-logo h1{font-size:11px;font-weight:700;line-height:1.3}
+.header-logo p{font-size:9px;opacity:0.8;margin-top:1px}
+@media(min-width:480px){.header-logo h1{font-size:13px}.header-logo p{font-size:11px}}
 .header-actions{display:flex;gap:6px;align-items:center;flex-shrink:0}
 .btn-rekam{background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.3);color:white;padding:6px 10px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s}
 .btn-rekam:hover{background:rgba(255,255,255,0.28)}
@@ -1252,12 +1253,11 @@ async function eksporKunjunganExcel() {
   const buf = await wb.xlsx.writeBuffer();
   const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const url = URL.createObjectURL(blob);
+  const fname = 'Rekap_Kunjungan_' + mulai + '_sd_' + selesai + '.xlsx';
   const a = document.createElement('a');
-  a.href = url;
-  a.download = 'Rekap_Kunjungan_' + mulai + '_sd_' + selesai + '.xlsx';
-  a.click();
-  URL.revokeObjectURL(url);
-  showToastDownload('Excel');
+  a.href = url; a.download = fname; a.click();
+  showToastDownload('Excel', url, fname);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
 async function eksporKunjunganWord() {
@@ -1309,12 +1309,11 @@ async function eksporKunjunganWord() {
 
   const blob = new Blob([html], { type:'application/msword' });
   const url = URL.createObjectURL(blob);
+  const fname = 'Rekap_Kunjungan_' + mulai + '_sd_' + selesai + '.doc';
   const a = document.createElement('a');
-  a.href = url;
-  a.download = 'Rekap_Kunjungan_' + mulai + '_sd_' + selesai + '.doc';
-  a.click();
-  URL.revokeObjectURL(url);
-  showToastDownload('Word');
+  a.href = url; a.download = fname; a.click();
+  showToastDownload('Word', url, fname);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
 function keluarRekap() {
@@ -1633,11 +1632,9 @@ cekIOSInstall();
   } catch(e) {}
 })();
 
-function showToastDownload(jenis) {
-  // Deteksi apakah dalam mode PWA standalone
+function showToastDownload(jenis, url, filename) {
   const isPWA = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
   
-  // Buat modal notifikasi download
   const existing = document.getElementById('downloadNotif');
   if (existing) existing.remove();
 
@@ -1651,25 +1648,31 @@ function showToastDownload(jenis) {
     max-width:320px;width:calc(100% - 40px);
     font-family:'Segoe UI',system-ui,sans-serif;
   `;
+  
+  const bukaTombol = url ? `<a href="${url}" download="${filename || ''}" 
+    style="display:block;margin-top:10px;background:white;color:#1a7a3c;border-radius:8px;
+    padding:8px 12px;font-size:12px;font-weight:700;text-decoration:none;text-align:center">
+    📂 Buka File</a>` : '';
+
   div.innerHTML = `
     <div style="display:flex;align-items:flex-start;gap:12px">
-      <div style="font-size:28px;line-height:1">✅</div>
+      <div style="font-size:24px;line-height:1">✅</div>
       <div style="flex:1">
         <div style="font-size:14px;font-weight:700;margin-bottom:4px">File ${jenis} Berhasil!</div>
         <div style="font-size:12px;opacity:0.9;line-height:1.5">
           ${isPWA 
-            ? 'File tersimpan di folder <b>Downloads</b> HP kamu. Buka aplikasi <b>Files/File Manager</b> untuk melihatnya.' 
+            ? 'Tersimpan di folder <b>Downloads</b>. Tap tombol di bawah untuk membuka.' 
             : 'File sudah didownload ke folder Downloads.'}
         </div>
+        ${bukaTombol}
       </div>
       <button onclick="document.getElementById('downloadNotif').remove()" 
-        style="background:rgba(255,255,255,0.2);border:none;color:white;width:24px;height:24px;border-radius:50%;font-size:14px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0">✕</button>
+        style="background:rgba(255,255,255,0.2);border:none;color:white;width:24px;height:24px;
+        border-radius:50%;font-size:14px;cursor:pointer;flex-shrink:0;padding:0">✕</button>
     </div>
   `;
   document.body.appendChild(div);
-
-  // Auto hilang setelah 6 detik
-  setTimeout(() => { if (div.parentNode) div.remove(); }, 6000);
+  setTimeout(() => { if (div.parentNode) div.remove(); }, 8000);
 }
 
 function getInisial(nama) {
@@ -2379,8 +2382,8 @@ ${isi}
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-  showToastDownload('Word Rekap');
+  showToastDownload('Word Rekap', url, a.download);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
 // ── EXPORT REKAP EXCEL ──
@@ -2723,9 +2726,8 @@ async function eksporRekapExcel() {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-
-  showToastDownload('Excel Rekap');
+  showToastDownload('Excel Rekap', url, a.download);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
 // Fetch foto dari Cloudinary dan embed ke cell Excel
@@ -3191,13 +3193,28 @@ function progRestoreAll() {
 }
 
 // ── AUTO-SUFFIX VITAL SIGN ──
+function stripSuffix2(val, sfx) {
+  if (!val) return val;
+  let v = String(val).trim();
+  // Hapus suffix berulang (misal "x/mnt x/mnt")
+  const allSfx = [' mmHg','mmHg',' x/mnt','x/mnt',' %','%',' °C','°C'];
+  let prev = '';
+  while (prev !== v) { prev = v; allSfx.forEach(s => { while (v.endsWith(s)) v = v.slice(0, v.length-s.length).trim(); }); }
+  return v;
+}
+
 function autoSuffix(el) {
   const suffix = el.dataset.suffix || "";
   let val = el.value.trim();
   if (!val) return;
-  const suffixes = [" mmHg", " x/mnt", "%", "°C"];
-  suffixes.forEach(s => { if (val.endsWith(s)) val = val.slice(0, -s.length).trim(); });
-  el.value = val + suffix;
+  // Strip SEMUA kemungkinan suffix berulang sampai bersih
+  const suffixes = [" mmHg","mmHg"," x/mnt","x/mnt"," %","%"," °C","°C"];
+  let prev = '';
+  while (prev !== val) {
+    prev = val;
+    suffixes.forEach(s => { while (val.endsWith(s)) val = val.slice(0, val.length-s.length).trim(); });
+  }
+  if (val) el.value = val + suffix;
 }
 function stripSuffix(el) {
   const suffix = el.dataset.suffix || "";
