@@ -2906,21 +2906,21 @@ function exportWordLengkap(g) {
   const kapW = (s) => s ? s.charAt(0).toUpperCase()+s.slice(1) : '';
   const fvW = (val,sfx) => { if(!val||val==='-') return '-'; const s=String(val).trim(); return s.endsWith(sfx)?s:s+sfx; };
 
-  // Helper paragraf - Times New Roman 12pt seperti format asli
+  const F = "font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;line-height:1.5;text-align:justify;margin:0;";
   const s = (txt, bold=false, indent=false, italic=false) => {
-    let style = 'font-family:Times New Roman,serif;font-size:12pt;margin:2pt 0;text-align:justify;';
+    let style = F;
     if (bold) style += 'font-weight:bold;';
     if (indent) style += 'margin-left:1.25cm;';
     const content = italic ? `<i>${txt}</i>` : txt;
     return `<p style="${style}">${content}</p>`;
   };
-  // Helper paragraf dengan indent lebih dalam (sub-poin)
   const p2 = (txt, bold=false, italic=false) => {
-    let style = 'font-family:Times New Roman,serif;font-size:12pt;margin:2pt 0;margin-left:1.25cm;text-align:justify;';
+    let style = F + 'margin-left:1.25cm;';
     if (bold) style += 'font-weight:bold;';
     const content = italic ? `<i>${txt}</i>` : txt;
     return `<p style="${style}">${content}</p>`;
   };
+  const br = () => `<p style="margin:0;line-height:1.5;">&nbsp;</p>`;
 
   // IV. Pelaksanaan - Waktu, Tempat, Kegiatan digabung
   // Waktu: gabung semua dengan ", dan"
@@ -2971,7 +2971,7 @@ function exportWordLengkap(g) {
     kunjHtml += `${hari}, ${tgl} tim Biddokkes Polda NTB melakukan ${jenisFormat} terhadap yang bersangkutan di ${k['Tempat']||'-'}`;
     
     if (!isTelemedicine) {
-      kunjHtml += ` dilakukan pemeriksaan tanda-tanda vital berupa tekanan darah : ${fvW(k['Tensi'],' mmHg')}, suhu : ${fvW(k['Suhu'],'°C')}, RR: ${fvW(k['RR'],'x/Menit')}, N : ${fvW(k['Nadi'],'x/Menit')}`;
+      kunjHtml += ` dilakukan pemeriksaan tanda-tanda vital berupa tekanan darah : ${fvW(k['Tensi'],' mmHg')}, suhu : ${fvW(k['Suhu'],' °C')}, RR: ${fvW(k['RR'],' x/mnt')}, N : ${fvW(k['Nadi'],' x/mnt')}`;
       if (spo2 && spo2 !== '-') kunjHtml += `, SpO2 : ${fvW(spo2,'%')}`;
       kunjHtml += ` dengan kesimpulan untuk pemeriksaan tanda-tanda vital dengan hasil normal`;
     }
@@ -2997,42 +2997,34 @@ function exportWordLengkap(g) {
 <head><meta charset='utf-8'>
 <style>
   @page { size: 21.59cm 33.02cm; margin: 2.5cm 2cm 2cm 3cm; }
-  body { font-family: 'Times New Roman', serif; font-size: 12pt; margin: 2.5cm 2cm 2cm 3cm; line-height: 1.5; }
-  p { margin: 2pt 0; font-size: 12pt; text-align: justify; }
+  body { font-family: 'Arial Narrow', Arial, sans-serif; font-size: 12pt; margin: 2.5cm 2cm 2cm 3cm; line-height: 1.5; }
+  p { margin: 0; font-size: 12pt; text-align: justify; line-height: 1.5; }
+  .par { margin-bottom: 12pt; }
 </style>
 </head>
 <body>
-<p style="font-family:Times New Roman,serif;font-size:12pt;font-weight:bold;text-align:center;margin:2pt 0">KEPOLISIAN NEGARA REPUBLIK INDONESIA</p>
-<p style="font-family:Times New Roman,serif;font-size:12pt;font-weight:bold;text-align:center;margin:2pt 0">DAERAH NUSA TENGGARA BARAT</p>
-<p style="font-family:Times New Roman,serif;font-size:12pt;font-weight:bold;text-align:center;margin:2pt 0">BIDANG KEDOKTERAN DAN KESEHATAN</p>
-<br>
-<p style="font-family:Times New Roman,serif;font-size:12pt;font-weight:bold;text-align:center;margin:2pt 0;text-decoration:underline">LAPORAN HASIL KEGIATAN PENDAMPINGAN / HOME VISIT KEPADA ANGGOTA YANG SAKIT</p>
-<p style="font-family:Times New Roman,serif;font-size:12pt;font-weight:bold;text-align:center;margin:2pt 0;text-decoration:underline">OLEH TIM BIDDOKKES POLDA NTB</p>
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;font-weight:bold;text-align:center;margin:0;line-height:1.5">KEPOLISIAN NEGARA REPUBLIK INDONESIA</p>
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;font-weight:bold;text-align:center;margin:0;line-height:1.5">DAERAH NUSA TENGGARA BARAT</p>
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;font-weight:bold;text-align:center;margin:0;line-height:1.5">BIDANG KEDOKTERAN DAN KESEHATAN</p>
+${br()}
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;font-weight:bold;text-align:center;margin:0;line-height:1.5;text-decoration:underline">LAPORAN HASIL KEGIATAN PENDAMPINGAN / HOME VISIT KEPADA ANGGOTA YANG SAKIT</p>
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;font-weight:bold;text-align:center;margin:0;line-height:1.5;text-decoration:underline">OLEH TIM BIDDOKKES POLDA NTB</p>
 <br>
 ${s('I.  PENDAHULUAN', true)}
 ${s('a. Umum', false, true)}
-<p style="font-family:Arial;font-size:11pt;margin:3pt 0;margin-left:1cm;text-align:justify;">
-Saat ini Polri sedang membenahi diri di berbagai bidang dan ini untuk melaksanakan reformasi birokrasi guna mewujudkan pelayanan publik yang prima. Sebagai salah satu fungsi Polri jajaran Dokkes harus memahami dan tanggap akan kebutuhan organisasi tersebut.
-</p>
-<p style="font-family:Arial;font-size:11pt;margin:3pt 0;margin-left:1cm;text-align:justify;">
-Reformasi birokrasi Dokkes harus diterjemahkan pada kegiatan-kegiatan konkrit yang dilaksanakan secara terarah dan terjadwal dengan rinci dan dikendalikan dengan ketat menggunakan instrumen-instrumen manajemen, sehingga menghasilkan perubahan yang bersifat akseleratif dan segera dapat dirasakan oleh pengguna pelayanan Dokkes.
-</p>
-<p style="font-family:Arial;font-size:11pt;margin:3pt 0;margin-left:1cm;text-align:justify;">
-Selama ini Biddokkes Polda NTB tetap berupaya mengedepankan peningkatan pelayanan kesehatan secara profesional kepada keluarga besar Polri dan masyarakat Polri di dalam setiap melaksanakan tugas. Pelayanan kesehatan Biddokkes Polda NTB bukan hanya ditujukan untuk anggota Polri yang mampu melaksanakan tugas melainkan anggota yang mengalami sakit kronis atau menahun yang tidak bisa melaksanakan tugas sebagaimana mestinya.
-</p>
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;margin-left:1.25cm;text-align:justify;line-height:1.5;">Saat ini Polri sedang membenahi diri di berbagai bidang dan ini untuk melaksanakan reformasi birokrasi guna mewujudkan pelayanan publik yang prima. Sebagai salah satu fungsi Polri jajaran Dokkes harus memahami dan tanggap akan kebutuhan organisasi tersebut.</p>${br()}
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;margin-left:1.25cm;text-align:justify;line-height:1.5;">Reformasi birokrasi Dokkes harus diterjemahkan pada kegiatan-kegiatan konkrit yang dilaksanakan secara terarah dan terjadwal dengan rinci dan dikendalikan dengan ketat menggunakan instrumen-instrumen manajemen, sehingga menghasilkan perubahan yang bersifat akseleratif dan segera dapat dirasakan oleh pengguna pelayanan Dokkes.</p>${br()}
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;margin-left:1.25cm;text-align:justify;line-height:1.5;">Selama ini Biddokkes Polda NTB tetap berupaya mengedepankan peningkatan pelayanan kesehatan secara profesional kepada keluarga besar Polri dan masyarakat Polri di dalam setiap melaksanakan tugas. Pelayanan kesehatan Biddokkes Polda NTB bukan hanya ditujukan untuk anggota Polri yang mampu melaksanakan tugas melainkan anggota yang mengalami sakit kronis atau menahun yang tidak bisa melaksanakan tugas sebagaimana mestinya.</p>
 <br>
 ${s('II. MAKSUD DAN TUJUAN', true)}
 ${s('a. Maksud', false, true)}
-<p style="font-family:Arial;font-size:11pt;margin:3pt 0;margin-left:1cm;text-align:justify;">
-Untuk memberikan laporan hasil kegiatan pelayanan kesehatan dan pendampingan kepada pimpinan yang dilaksanakan oleh Biddokkes Polda NTB.
-</p>
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;margin-left:1.25cm;text-align:justify;line-height:1.5;">Untuk memberikan laporan hasil kegiatan pelayanan kesehatan dan pendampingan kepada pimpinan yang dilaksanakan oleh Biddokkes Polda NTB.</p>${br()}
 ${s('b. Tujuan', false, true)}
-<p style="font-family:Arial;font-size:11pt;margin:3pt 0;margin-left:1cm;text-align:justify;">
-Agar setiap anggota Polri, PNS Polri dan keluarganya mendapat pelayanan kesehatan sehingga tercipta suatu optimalisasi derajat kesehatan bagi anggota Polri.
-</p>
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;margin-left:1.25cm;text-align:justify;line-height:1.5;">Agar setiap anggota Polri, PNS Polri dan keluarganya mendapat pelayanan kesehatan sehingga tercipta suatu optimalisasi derajat kesehatan bagi anggota Polri.</p>
 <br>
 ${s('III. DASAR', true)}
 ${s('a.  Peraturan Kepala Kepolisian Negara Republik Indonesia Nomor 8 Tahun 2018 tentang Pelayanan Kesehatan Tertentu di lingkungan Kepolisian Negara Republik Indonesia.', false, true)}
+${br()}
 ${s('b.  Renja Biddokkes Polda NTB TA. 2026.', false, true)}
 <br>
 ${s('IV. PELAKSANAAN KEGIATAN', true)}
