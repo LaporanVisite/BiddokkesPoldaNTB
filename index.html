@@ -812,6 +812,25 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
         <input type="date" id="kunjunganTglSelesai" style="width:100%;padding:8px 10px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;color:var(--text);background:var(--white);outline:none">
       </div>
     </div>
+    <div style="margin-bottom:12px">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:4px">FKTP Yang Melaksanakan:</div>
+      <select id="kunjunganFKTP" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;color:var(--text);background:var(--white);outline:none">
+        <option value="">— Semua FKTP —</option>
+        <option value="Polda NTB">Polda NTB</option>
+        <option value="Brimob Polda NTB">Brimob Polda NTB</option>
+        <option value="SPN Polda NTB">SPN Polda NTB</option>
+        <option value="Polresta Mataram">Polresta Mataram</option>
+        <option value="Polres Lombok Barat">Polres Lombok Barat</option>
+        <option value="Polres Lombok Tengah">Polres Lombok Tengah</option>
+        <option value="Polres Lombok Timur">Polres Lombok Timur</option>
+        <option value="Polres Lombok Utara">Polres Lombok Utara</option>
+        <option value="Polres Sumbawa">Polres Sumbawa</option>
+        <option value="Polres Sumbawa Barat">Polres Sumbawa Barat</option>
+        <option value="Polres Dompu">Polres Dompu</option>
+        <option value="Polres Bima">Polres Bima</option>
+        <option value="Polres Bima Kota">Polres Bima Kota</option>
+      </select>
+    </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button onclick="previewRekapKunjungan()" style="flex:1;padding:10px;background:var(--green);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">🔍 Tampilkan Data</button>
       <button onclick="eksporKunjunganExcel()" style="flex:1;padding:10px;background:#1d6f42;color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">📊 Download Excel</button>
@@ -1006,10 +1025,14 @@ function getKunjunganData() {
   const tSelesai = new Date(selesai); tSelesai.setHours(23,59,59,999);
   if (tMulai > tSelesai) { showToast('Tanggal mulai harus sebelum tanggal selesai!','error'); return null; }
 
-  // Filter data dalam rentang
+  const filterFKTP = (document.getElementById('kunjunganFKTP') || {}).value || '';
+
+  // Filter data dalam rentang + FKTP
   const filtered = allData.filter(r => {
     const t = parseTglKunjungan(r['Tanggal']);
-    return t >= tMulai.getTime() && t <= tSelesai.getTime();
+    const inRange = t >= tMulai.getTime() && t <= tSelesai.getTime();
+    const inFKTP = !filterFKTP || (r['FKTP'] || '') === filterFKTP;
+    return inRange && inFKTP;
   });
 
   // Group per pasien (Nama+NIPNRP+Kesatuan)
