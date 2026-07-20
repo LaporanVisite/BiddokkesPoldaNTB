@@ -349,6 +349,7 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
     <div class="nav-tab active" id="tab-form" onclick="ganti('form')">📝 Input Laporan</div>
     <div class="nav-tab" id="tab-rekam" onclick="ganti('rekam')" style="display:none">📋 Rekam Medis</div>
     <div class="nav-tab" id="tab-rekap" onclick="ganti('rekap')" style="display:none">📊 Rekap Mingguan</div>
+    <div class="nav-tab" id="tab-kunjungan" onclick="ganti('kunjungan')" style="display:none">📋 Rekap Kunjungan</div>
   </div>
 </div>
 
@@ -797,6 +798,30 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
   </div>
 </div>
 </div>
+<div class="page" id="page-kunjungan">
+<div class="container" style="max-width:720px;margin:0 auto;padding:16px">
+  <div class="card">
+    <div class="card-title"><div class="ct-icon">📋</div> Rekap Data Kunjungan</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+      <div style="flex:1;min-width:140px">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:4px">Tanggal Mulai:</div>
+        <input type="date" id="kunjunganTglMulai" style="width:100%;padding:8px 10px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;color:var(--text);background:var(--white);outline:none">
+      </div>
+      <div style="flex:1;min-width:140px">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:4px">Tanggal Selesai:</div>
+        <input type="date" id="kunjunganTglSelesai" style="width:100%;padding:8px 10px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;color:var(--text);background:var(--white);outline:none">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button onclick="previewRekapKunjungan()" style="flex:1;padding:10px;background:var(--green);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">🔍 Tampilkan Data</button>
+      <button onclick="eksporKunjunganExcel()" style="flex:1;padding:10px;background:#1d6f42;color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">📊 Download Excel</button>
+      <button onclick="eksporKunjunganWord()" style="flex:1;padding:10px;background:#2b579a;color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">📄 Download Word</button>
+    </div>
+  </div>
+  <div id="kunjunganPreview" style="margin-top:12px"></div>
+</div>
+</div>
+
 <div class="page" id="page-rekam">
 <div class="container">
   <div class="card">
@@ -903,6 +928,11 @@ function ganti(page) {
   const tabEl = document.getElementById('tab-'+page);
   if (pageEl) pageEl.classList.add('active');
   if (tabEl) tabEl.classList.add('active');
+  // Sembunyikan tab kunjungan kalau pindah halaman lain
+  if (page !== 'kunjungan') {
+    const tk = document.getElementById('tab-kunjungan');
+    if (tk && !tk.classList.contains('active')) tk.style.display = 'none';
+  }
 }
 
 const REKAP_PW = 'Adityask99';
@@ -945,6 +975,323 @@ function bukaModeRekap() {
   document.getElementById('rekapKonten').style.display = 'block';
   isiPilihanMinggu();
   muatSemuaData(); // Selalu muat data terbaru
+}
+
+// ── REKAP DATA KUNJUNGAN ──
+function bukaRekapKunjungan() {
+  document.getElementById('tab-kunjungan').style.display = 'block';
+  ganti('kunjungan');
+  if (!allData || allData.length === 0) muatSemuaData();
+  // Set default tanggal bulan ini
+  const now = new Date();
+  const y = now.getFullYear(), m = String(now.getMonth()+1).padStart(2,'0');
+  const tglM = document.getElementById('kunjunganTglMulai');
+  const tglS = document.getElementById('kunjunganTglSelesai');
+  if (tglM && !tglM.value) tglM.value = `${y}-${m}-01`;
+  if (tglS && !tglS.value) tglS.value = now.toISOString().split('T')[0];
+}
+
+function parseTglKunjungan(s) {
+  if (!s) return 0;
+  const m = String(s).match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  if (m) return new Date(parseInt(m[3]), parseInt(m[2])-1, parseInt(m[1])).getTime();
+  return new Date(s).getTime() || 0;
+}
+
+function getKunjunganData() {
+  const mulai = document.getElementById('kunjunganTglMulai').value;
+  const selesai = document.getElementById('kunjunganTglSelesai').value;
+  if (!mulai || !selesai) { showToast('Pilih tanggal mulai dan selesai!','error'); return null; }
+  const tMulai = new Date(mulai); tMulai.setHours(0,0,0,0);
+  const tSelesai = new Date(selesai); tSelesai.setHours(23,59,59,999);
+  if (tMulai > tSelesai) { showToast('Tanggal mulai harus sebelum tanggal selesai!','error'); return null; }
+
+  // Filter data dalam rentang
+  const filtered = allData.filter(r => {
+    const t = parseTglKunjungan(r['Tanggal']);
+    return t >= tMulai.getTime() && t <= tSelesai.getTime();
+  });
+
+  // Group per pasien (Nama+NIPNRP+Kesatuan)
+  const pasienMap = {};
+  filtered.forEach(r => {
+    const key = (r['Nama Pasien']||'').trim().toUpperCase() + '||' + (r['NIPNRP']||'');
+    if (!pasienMap[key]) {
+      pasienMap[key] = {
+        nama: (r['Nama Pasien']||'').trim().toUpperCase(),
+        pangkat: r['Pangkat'] || '',
+        nrp: r['NIPNRP'] || '',
+        satker: r['Kesatuan'] || '',
+        kunjungan: [],
+        allDiagnosa: [],
+        lastFoto: '',
+        lastTgl: 0,
+      };
+    }
+    const tgl = parseTglKunjungan(r['Tanggal']);
+    pasienMap[key].kunjungan.push({ tgl, tglStr: r['Tanggal'], r });
+
+    // Kumpulkan semua diagnosa dengan timestamp
+    [r['Diagnosa1'],r['Diagnosa2'],r['Diagnosa3'],r['Diagnosa4']].filter(Boolean).forEach(d => {
+      pasienMap[key].allDiagnosa.push({ tgl, val: d.trim() });
+    });
+
+    // Foto terakhir
+    if (tgl >= pasienMap[key].lastTgl) {
+      const foto = r['Dokumentasi1'] || r['Dokumentasi2'] || '';
+      if (foto) { pasienMap[key].lastFoto = foto; pasienMap[key].lastTgl = tgl; }
+    }
+  });
+
+  // Proses setiap pasien
+  const bln = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const fmtTglPanjang = (tglStr) => {
+    const m = String(tglStr).match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    if (!m) return tglStr;
+    return parseInt(m[1]) + ' ' + bln[parseInt(m[2])-1] + ' ' + m[3];
+  };
+
+  return Object.values(pasienMap).map((p, i) => {
+    // Diagnosa terakhir (dari kunjungan terbaru)
+    p.allDiagnosa.sort((a,b) => b.tgl - a.tgl);
+    const diagnosa = p.allDiagnosa.length ? p.allDiagnosa[0].val : '-';
+
+    // Semua tanggal kunjungan (unik, urut terdahulu)
+    const tglList = [...new Set(p.kunjungan.map(k => k.tglStr))]
+      .sort((a,b) => parseTglKunjungan(a) - parseTglKunjungan(b))
+      .map(t => fmtTglPanjang(t).toUpperCase());
+
+    return {
+      no: i+1,
+      nama: p.nama,
+      pangkat: p.pangkat,
+      nrp: p.nrp,
+      satker: p.satker,
+      diagnosa,
+      tanggalVisit: tglList.join(', '),
+      foto: p.lastFoto,
+    };
+  });
+}
+
+function previewRekapKunjungan() {
+  if (!allData || allData.length === 0) {
+    showToast('Data belum dimuat, tunggu sebentar...','error');
+    muatSemuaData();
+    return;
+  }
+  const rows = getKunjunganData();
+  if (!rows) return;
+  if (!rows.length) { document.getElementById('kunjunganPreview').innerHTML = '<div class="empty-state"><div class="es-icon">📭</div><p>Tidak ada data dalam rentang tanggal ini.</p></div>'; return; }
+
+  const tbl = `<div class="card" style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead>
+        <tr style="background:var(--green);color:white">
+          <th style="padding:8px;border:1px solid #ccc">No</th>
+          <th style="padding:8px;border:1px solid #ccc;text-align:left">Nama</th>
+          <th style="padding:8px;border:1px solid #ccc">Pangkat</th>
+          <th style="padding:8px;border:1px solid #ccc">NRP</th>
+          <th style="padding:8px;border:1px solid #ccc">Satker</th>
+          <th style="padding:8px;border:1px solid #ccc">Diagnosa</th>
+          <th style="padding:8px;border:1px solid #ccc">Tgl Visit</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map((r,i) => `<tr style="background:${i%2===0?'white':'#f9f9f9'}">
+          <td style="padding:6px;border:1px solid #eee;text-align:center">${r.no}</td>
+          <td style="padding:6px;border:1px solid #eee">${r.nama}</td>
+          <td style="padding:6px;border:1px solid #eee;text-align:center">${r.pangkat}</td>
+          <td style="padding:6px;border:1px solid #eee;text-align:center">${r.nrp}</td>
+          <td style="padding:6px;border:1px solid #eee;text-align:center">${r.satker}</td>
+          <td style="padding:6px;border:1px solid #eee">${r.diagnosa}</td>
+          <td style="padding:6px;border:1px solid #eee;font-size:11px">${r.tanggalVisit}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <div style="font-size:12px;color:var(--text3);margin-top:8px">Total: ${rows.length} pasien</div>
+  </div>`;
+  document.getElementById('kunjunganPreview').innerHTML = tbl;
+}
+
+async function eksporKunjunganExcel() {
+  if (!allData || allData.length === 0) { showToast('Data belum dimuat!','error'); return; }
+  const rows = getKunjunganData();
+  if (!rows || !rows.length) { showToast('Tidak ada data!','error'); return; }
+
+  const mulai = document.getElementById('kunjunganTglMulai').value;
+  const selesai = document.getElementById('kunjunganTglSelesai').value;
+  const bln = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const fmtTglJudul = (s) => {
+    const d = new Date(s);
+    return d.getDate() + ' ' + bln[d.getMonth()] + ' ' + d.getFullYear();
+  };
+  const tglJudul = fmtTglJudul(mulai) + ' s.d ' + fmtTglJudul(selesai);
+  const judulText = 'DATA KUNJUNGAN ANGGOTA SAKIT BIDDOKKES POLDA NTB\nTanggal ' + tglJudul;
+
+  showToast('Membuat Excel...', 'info');
+
+  const ExcelJS = window.ExcelJS;
+  if (!ExcelJS) { showToast('ExcelJS belum siap, coba lagi','error'); return; }
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('DATA KUNJUNGAN');
+
+  // Lebar kolom sesuai file asli
+  ws.columns = [
+    { width: 6 },   // A: NO
+    { width: 28 },  // B: NAMA
+    { width: 10 },  // C: PANGKAT
+    { width: 14 },  // D: NRP
+    { width: 22 },  // E: SATKER
+    { width: 30 },  // F: DIAGNOSA
+    { width: 28 },  // G: TANGGAL VISIT
+    { width: 22 },  // H: DOKUMENTASI
+  ];
+
+  const thinBorder = { style:'thin', color:{ argb:'FF000000' } };
+  const allBorder = { top:thinBorder, left:thinBorder, bottom:thinBorder, right:thinBorder };
+  const centerWrap = { horizontal:'center', vertical:'middle', wrapText:true };
+
+  // Row 1: Judul
+  ws.mergeCells('A1:H1');
+  const j1 = ws.getCell('A1');
+  j1.value = 'DATA KUNJUNGAN ANGGOTA SAKIT BIDDOKKES POLDA NTB';
+  j1.font = { bold:true, size:14, name:'Calibri' };
+  j1.alignment = centerWrap;
+  ws.getRow(1).height = 22;
+
+  // Row 2: Sub judul tanggal
+  ws.mergeCells('A2:H2');
+  const j2 = ws.getCell('A2');
+  j2.value = 'Tanggal ' + tglJudul;
+  j2.font = { bold:true, size:12, name:'Calibri' };
+  j2.alignment = centerWrap;
+  ws.getRow(2).height = 18;
+
+  // Row 3: kosong
+  ws.getRow(3).height = 8;
+
+  // Row 4: Header kolom
+  const headers = ['NO','NAMA','PANGKAT','NRP','SATKER','DIAGNOSA','TANGGAL VISIT','DOKUMENTASI'];
+  headers.forEach((h, i) => {
+    const cell = ws.getCell(4, i+1);
+    cell.value = h;
+    cell.font = { bold:true, size:11, name:'Calibri' };
+    cell.alignment = centerWrap;
+    cell.border = allBorder;
+    cell.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFE2EFDA' } };
+  });
+  ws.getRow(4).height = 20;
+
+  // Row 5: Nomor kolom
+  for (let i = 1; i <= 8; i++) {
+    const cell = ws.getCell(5, i);
+    cell.value = i;
+    cell.font = { size:11, name:'Calibri' };
+    cell.alignment = centerWrap;
+    cell.border = allBorder;
+  }
+  ws.getRow(5).height = 16;
+
+  // Data rows mulai baris 6
+  const imgPromises = [];
+  let rowIdx = 6;
+
+  for (const r of rows) {
+    const row = ws.getRow(rowIdx);
+    row.height = 83;
+    row.getCell(1).value = r.no;
+    row.getCell(2).value = r.nama;
+    row.getCell(3).value = r.pangkat;
+    row.getCell(4).value = String(r.nrp);
+    row.getCell(5).value = r.satker;
+    row.getCell(6).value = r.diagnosa;
+    row.getCell(7).value = r.tanggalVisit;
+    row.getCell(8).value = '';
+
+    for (let c = 1; c <= 8; c++) {
+      const cell = row.getCell(c);
+      cell.font = { size:11, name:'Calibri' };
+      cell.border = allBorder;
+      cell.alignment = c === 2 ? { vertical:'middle', wrapText:true } : centerWrap;
+    }
+    // Format NRP sebagai teks
+    row.getCell(4).numFmt = '@';
+
+    // Embed foto jika ada
+    if (r.foto) imgPromises.push(embedFoto(wb, ws, fixImgBBUrl(r.foto), rowIdx, 7));
+    rowIdx++;
+  }
+
+  await Promise.all(imgPromises);
+
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Rekap_Kunjungan_' + mulai + '_sd_' + selesai + '.xlsx';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Excel berhasil didownload!', 'success');
+}
+
+async function eksporKunjunganWord() {
+  if (!allData || allData.length === 0) { showToast('Data belum dimuat!','error'); return; }
+  const rows = getKunjunganData();
+  if (!rows || !rows.length) { showToast('Tidak ada data!','error'); return; }
+
+  const mulai = document.getElementById('kunjunganTglMulai').value;
+  const selesai = document.getElementById('kunjunganTglSelesai').value;
+  const bln = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const fmtTglJudul = (s) => { const d = new Date(s); return d.getDate() + ' ' + bln[d.getMonth()] + ' ' + d.getFullYear(); };
+  const tglJudul = fmtTglJudul(mulai) + ' s.d ' + fmtTglJudul(selesai);
+
+  const p = (txt, align='left', bold=false, size='11pt') =>
+    `<p style="font-family:Arial;font-size:${size};text-align:${align};margin:2pt 0${bold?';font-weight:bold':''}">${txt}</p>`;
+
+  let tabelRows = rows.map((r,i) => `
+    <tr>
+      <td style="border:1px solid #000;padding:4pt;text-align:center;font-size:10pt">${r.no}</td>
+      <td style="border:1px solid #000;padding:4pt;font-size:10pt">${r.nama}</td>
+      <td style="border:1px solid #000;padding:4pt;text-align:center;font-size:10pt">${r.pangkat}</td>
+      <td style="border:1px solid #000;padding:4pt;text-align:center;font-size:10pt">${r.nrp}</td>
+      <td style="border:1px solid #000;padding:4pt;text-align:center;font-size:10pt">${r.satker}</td>
+      <td style="border:1px solid #000;padding:4pt;font-size:10pt">${r.diagnosa}</td>
+      <td style="border:1px solid #000;padding:4pt;font-size:10pt">${r.tanggalVisit}</td>
+      <td style="border:1px solid #000;padding:4pt;text-align:center;font-size:10pt">${r.foto ? '<img src="'+fixImgBBUrl(r.foto)+'" style="max-width:80pt;max-height:60pt">' : ''}</td>
+    </tr>`).join('');
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>
+    ${p('DATA KUNJUNGAN ANGGOTA SAKIT BIDDOKKES POLDA NTB','center',true,'14pt')}
+    ${p('Tanggal '+tglJudul,'center',true,'12pt')}
+    <br>
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="background:#e2efda">
+          <th style="border:1px solid #000;padding:4pt;font-size:10pt">NO</th>
+          <th style="border:1px solid #000;padding:4pt;font-size:10pt">NAMA</th>
+          <th style="border:1px solid #000;padding:4pt;font-size:10pt">PANGKAT</th>
+          <th style="border:1px solid #000;padding:4pt;font-size:10pt">NRP</th>
+          <th style="border:1px solid #000;padding:4pt;font-size:10pt">SATKER</th>
+          <th style="border:1px solid #000;padding:4pt;font-size:10pt">DIAGNOSA</th>
+          <th style="border:1px solid #000;padding:4pt;font-size:10pt">TANGGAL VISIT</th>
+          <th style="border:1px solid #000;padding:4pt;font-size:10pt">DOKUMENTASI</th>
+        </tr>
+      </thead>
+      <tbody>${tabelRows}</tbody>
+    </table>
+  </body></html>`;
+
+  const blob = new Blob([html], { type:'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Rekap_Kunjungan_' + mulai + '_sd_' + selesai + '.doc';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Word berhasil didownload!', 'success');
 }
 
 function keluarRekap() {
