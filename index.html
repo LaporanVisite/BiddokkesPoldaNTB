@@ -2028,7 +2028,13 @@ function tampilRekamMedis(data) {
           <div class="pasien-meta">${info['Pangkat']||''} · ${info['NIPNRP']||'-'} · ${info['Kesatuan']||'-'}</div>
           <div class="pasien-meta" style="margin-top:3px">Terakhir: ${formatTanggal(terbaru['Tanggal'])} · ${terbaru['JenisPelayanan']||'-'}</div>
         </div>
-        <span class="pasien-count">${jml} kunjungan</span>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <span class="pasien-count">${jml} kunjungan</span>
+          <button onclick="event.stopPropagation();exportWordLengkap(${JSON.stringify(g).replace(/"/g,'&quot;')})" 
+            style="background:#2b579a;border:none;color:white;border-radius:8px;padding:5px 8px;font-size:11px;cursor:pointer;font-weight:600;white-space:nowrap">
+            📋 Laporan
+          </button>
+        </div>
       </div>
       <div class="kunjungan-list" id="kv-${idx}">
         ${g.kunjungan.slice().sort((a,b) => {
@@ -2872,6 +2878,232 @@ function kapital(str) {
 }
 
 // Export ke Word (.doc) — format sesuai template resmi
+function exportWordLengkap(g) {
+  // Ambil semua kunjungan pasien, sort dari terlama ke terbaru
+  const kunjungan = (g.kunjungan || []).slice().sort((a,b) => {
+    const p = (s) => { const m=String(s||'').match(/(\d{2})\/(\d{2})\/(\d{4})/); return m?new Date(m[3],m[2]-1,m[1]).getTime():0; };
+    return p(a['Tanggal']) - p(b['Tanggal']);
+  });
+  if (!kunjungan.length) return;
+
+  const info = g.info || kunjungan[0];
+  const nama = (info['Nama Pasien'] || '-').trim();
+  const pangkat = info['Pangkat'] || '-';
+  const nipnrp = info['NIPNRP'] || info['NIP/NRP'] || '-';
+  const jabatan = info['Jabatan'] || '-';
+  const kesatuan = info['Kesatuan'] || '-';
+
+  // Judul sesuai jenis pelayanan yang ada
+  const jenisUnik = [...new Set(kunjungan.map(k => k['JenisPelayanan']).filter(Boolean))];
+  const judulJenis = jenisUnik.map(j => j === 'Home Visit' || j === 'Telemedicine' ? j : j).join(' dan ');
+  const judulWord = `Laporan ${judulJenis} dan Pendampingan ${nama}`;
+
+  const bln = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const fmtTglPanjang = (s) => {
+    const m = String(s||'').match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    return m ? parseInt(m[1]) + ' ' + bln[parseInt(m[2])-1] + ' ' + m[3] : s;
+  };
+  const kapW = (s) => s ? s.charAt(0).toUpperCase()+s.slice(1) : '';
+  const fvW = (val,sfx) => { if(!val||val==='-') return '-'; const s=String(val).trim(); return s.endsWith(sfx)?s:s+sfx; };
+
+  const s = (txt,bold=false,indent=false,italic=false) => {
+    let style = 'font-family:Arial;font-size:11pt;margin:3pt 0;';
+    if (bold) style += 'font-weight:bold;';
+    if (indent) style += 'margin-left:1cm;';
+    const content = italic ? `<i>${txt}</i>` : txt;
+    return `<p style="${style}">${content}</p>`;
+  };
+
+  // IV. Pelaksanaan - Waktu dan Tempat
+  let waktuTempatHtml = '';
+  kunjungan.forEach((k, i) => {
+    const label = String.fromCharCode(97 + i); // a, b, c...
+    const tgl = fmtTglPanjang(k['Tanggal']);
+    const hari = k['Hari'] || '';
+    const waktu = (k['Waktu']||'').substring(0,5);
+    const tempat = k['Tempat'] || '-';
+    const jenis = k['JenisPelayanan'] || '-';
+    waktuTempatHtml += s(`${label}. Waktu : ${waktu} Wita, ${hari} ${tgl}`, false, true);
+    if (i < kunjungan.length-1) {
+      // Untuk kunjungan pertama tambah tempat
+    }
+  });
+
+  // Tempat per kunjungan
+  let tempatHtml = '';
+  kunjungan.forEach((k, i) => {
+    const label = String.fromCharCode(97 + i);
+    tempatHtml += s(`${label}. Tempat : ${k['Tempat'] || '-'}`, false, true);
+  });
+
+  // Kegiatan per kunjungan
+  let kegiatanHtml = '';
+  kunjungan.forEach((k, i) => {
+    const label = String.fromCharCode(97 + i);
+    const jenis = k['JenisPelayanan'] || '-';
+    const jenisFormat = (jenis==='Home Visit'||jenis==='Telemedicine') ? `<i>${jenis}</i>` : jenis;
+    kegiatanHtml += `<p style="font-family:Arial;font-size:11pt;margin:3pt 0;margin-left:1cm;">${label}. Kegiatan : ${jenisFormat}</p>`;
+  });
+
+  // V. Hasil per kunjungan
+  let hasilHtml = '';
+  kunjungan.forEach((k, i) => {
+    const tgl = fmtTglPanjang(k['Tanggal']);
+    const hari = k['Hari'] || '';
+    const waktu = (k['Waktu']||'').substring(0,5);
+    const jenis = k['JenisPelayanan'] || '-';
+    const jenisItalic = (jenis==='Home Visit'||jenis==='Telemedicine');
+    const jenisFormat = jenisItalic ? `<i>${jenis}</i>` : jenis;
+    const isTelemedicine = jenis === 'Telemedicine';
+
+    const keluhan = [k['Keluhan1'],k['Keluhan2'],k['Keluhan3'],k['Keluhan4']].filter(Boolean).map(kapW);
+    const diagnosa = [k['Diagnosa1'],k['Diagnosa2'],k['Diagnosa3'],k['Diagnosa4']].filter(Boolean).map(v => `<i>${kapW(v.trim())}</i>`);
+    const tindakan = [k['Tindakan1'],k['Tindakan2'],k['Tindakan3'],k['Tindakan4']].filter(Boolean).map(kapW);
+    const rencana = [k['Rencana1'],k['Rencana2'],k['Rencana3'],k['Rencana4']].filter(Boolean).map(kapW);
+    const dpjp = [k['DokterDPJP1'],k['DokterDPJP2'],k['DokterDPJP3'],k['DokterDPJP4']].filter(Boolean);
+    const ketArr = [k['Keterangan'],k['Keterangan2'],k['Keterangan3'],k['Keterangan4']].filter(Boolean);
+    const spo2 = fixSpO2(k['SpO2']);
+
+    // Keterangan
+    let kunjHtml = '';
+    if (ketArr.length) {
+      kunjHtml += s(`- ${ketArr.map(kapW).join(', ')}`, false, true);
+    }
+
+    // Narasi kunjungan
+    kunjHtml += `<p style="font-family:Arial;font-size:11pt;margin:3pt 0;text-indent:1cm;text-align:justify;">`;
+    kunjHtml += `${hari}, ${tgl} tim Biddokkes Polda NTB melakukan ${jenisFormat} terhadap yang bersangkutan di ${k['Tempat']||'-'}`;
+    
+    if (!isTelemedicine) {
+      kunjHtml += ` dilakukan pemeriksaan tanda-tanda vital berupa tekanan darah : ${fvW(k['Tensi'],' mmHg')}, suhu : ${fvW(k['Suhu'],'°C')}, RR: ${fvW(k['RR'],'x/Menit')}, N : ${fvW(k['Nadi'],'x/Menit')}`;
+      if (spo2 && spo2 !== '-') kunjHtml += `, SpO2 : ${fvW(spo2,'%')}`;
+      kunjHtml += ` dengan kesimpulan untuk pemeriksaan tanda-tanda vital dengan hasil normal`;
+    }
+
+    if (keluhan.length) kunjHtml += `, dan Keluhan yang dirasakan sekarang : ${keluhan.join(', ')}`;
+    if (diagnosa.length) kunjHtml += `, dengan Diagnosa : ${diagnosa.join(', ')}`;
+    if (tindakan.length) kunjHtml += `, Tim Biddokkes ${tindakan.join(', ')}`;
+    if (rencana.length) kunjHtml += `, ${rencana.join(', ')}`;
+    if (dpjp.length) kunjHtml += `, Dokter DPJP : ${dpjp.join(', ')}`;
+    kunjHtml += `.</p>`;
+
+    hasilHtml += kunjHtml;
+    if (i < kunjungan.length - 1) hasilHtml += '<br>';
+  });
+
+  // Foto dari kunjungan pertama
+  const fotoArr = kunjungan.map(k => [k['Dokumentasi1'],k['Dokumentasi2']]).flat().filter(Boolean);
+
+  const html = `<!DOCTYPE html>
+<html xmlns:o='urn:schemas-microsoft-com:office:office'
+      xmlns:w='urn:schemas-microsoft-com:office:word'
+      xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset='utf-8'>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 11pt; margin: 2.5cm 2.5cm 2cm 3cm; }
+  p { margin: 3pt 0; font-size: 11pt; text-align: justify; }
+  h3 { font-size: 11pt; text-align: center; margin: 2pt 0; }
+</style>
+</head>
+<body>
+${s('KEPOLISIAN NEGARA REPUBLIK INDONESIA', true, false)}
+${s('DAERAH NUSA TENGGARA BARAT', true, false)}
+${s('BIDANG KEDOKTERAN DAN KESEHATAN', true, false)}
+<br>
+${s(`LAPORAN HASIL KEGIATAN PENDAMPINGAN / HOME VISIT KEPADA ANGGOTA YANG SAKIT`, true, false)}
+${s(`OLEH TIM BIDDOKKES POLDA NTB`, true, false)}
+<br>
+${s('I.  PENDAHULUAN', true)}
+${s('a. Umum', false, true)}
+<p style="font-family:Arial;font-size:11pt;margin:3pt 0;margin-left:1cm;text-align:justify;">
+Saat ini Polri sedang membenahi diri di berbagai bidang dan ini untuk melaksanakan reformasi birokrasi guna mewujudkan pelayanan publik yang prima. Sebagai salah satu fungsi Polri jajaran Dokkes harus memahami dan tanggap akan kebutuhan organisasi tersebut.
+</p>
+<p style="font-family:Arial;font-size:11pt;margin:3pt 0;margin-left:1cm;text-align:justify;">
+Reformasi birokrasi Dokkes harus diterjemahkan pada kegiatan-kegiatan konkrit yang dilaksanakan secara terarah dan terjadwal dengan rinci dan dikendalikan dengan ketat menggunakan instrumen-instrumen manajemen, sehingga menghasilkan perubahan yang bersifat akseleratif dan segera dapat dirasakan oleh pengguna pelayanan Dokkes.
+</p>
+<p style="font-family:Arial;font-size:11pt;margin:3pt 0;margin-left:1cm;text-align:justify;">
+Selama ini Biddokkes Polda NTB tetap berupaya mengedepankan peningkatan pelayanan kesehatan secara profesional kepada keluarga besar Polri dan masyarakat Polri di dalam setiap melaksanakan tugas. Pelayanan kesehatan Biddokkes Polda NTB bukan hanya ditujukan untuk anggota Polri yang mampu melaksanakan tugas melainkan anggota yang mengalami sakit kronis atau menahun yang tidak bisa melaksanakan tugas sebagaimana mestinya.
+</p>
+<br>
+${s('II. MAKSUD DAN TUJUAN', true)}
+${s('a. Maksud', false, true)}
+<p style="font-family:Arial;font-size:11pt;margin:3pt 0;margin-left:1cm;text-align:justify;">
+Untuk memberikan laporan hasil kegiatan pelayanan kesehatan dan pendampingan kepada pimpinan yang dilaksanakan oleh Biddokkes Polda NTB.
+</p>
+${s('b. Tujuan', false, true)}
+<p style="font-family:Arial;font-size:11pt;margin:3pt 0;margin-left:1cm;text-align:justify;">
+Agar setiap anggota Polri, PNS Polri dan keluarganya mendapat pelayanan kesehatan sehingga tercipta suatu optimalisasi derajat kesehatan bagi anggota Polri.
+</p>
+<br>
+${s('III. DASAR', true)}
+${s('a.  Peraturan Kepala Kepolisian Negara Republik Indonesia Nomor 8 Tahun 2018 tentang Pelayanan Kesehatan Tertentu di lingkungan Kepolisian Negara Republik Indonesia.', false, true)}
+${s('b.  Renja Biddokkes Polda NTB TA. 2026.', false, true)}
+<br>
+${s('IV. PELAKSANAAN KEGIATAN', true)}
+${s('a. Waktu dan Tempat', false, true)}
+${waktuTempatHtml}
+${tempatHtml}
+${kegiatanHtml}
+<br>
+${s('V.  HASIL YANG DICAPAI', true)}
+<p style="font-family:Arial;font-size:11pt;margin:3pt 0;text-align:justify;">
+Adapun hasil kegiatan terhadap anggota yang sakit atau menahun personel Polri Polda Nusa Tenggara Barat, sebagai berikut :
+</p>
+<br>
+${s('1. IDENTITAS', true, true)}
+${s(`a) Nama             : ${nama}`, false, true)}
+${s(`b) Pangkat/ NRP    : ${pangkat} / ${nipnrp}`, false, true)}
+${s(`c) Jabatan          : ${jabatan}`, false, true)}
+${s(`d) Tempat           : ${kunjungan[0]['Tempat']||'-'}`, false, true)}
+<br>
+${s('2. RIWAYAT PENYAKIT & HASIL PEMERIKSAAN', true, true)}
+${hasilHtml}
+<br>
+${s('VI. ANALISA DAN EVALUASI', true)}
+${s('a. Analisa', false, true)}
+<p style="font-family:Arial;font-size:11pt;margin:3pt 0;margin-left:1cm;text-align:justify;">
+Dari hasil pelaksanaan kegiatan pemeriksaan terhadap anggota yang bersangkutan perlu mendapatkan perhatian dan <i>support</i> / dukungan lebih terhadap penyakit yang dideritanya.
+</p>
+${s('b. Evaluasi', false, true)}
+<p style="font-family:Arial;font-size:11pt;margin:3pt 0;margin-left:1cm;text-align:justify;">
+Kegiatan pelayanan kesehatan ini mendapat respon yang baik dari yang bersangkutan dan mengikuti semua prosedur tahap pemeriksaan yang diberikan sehingga memudahkan tim Biddokkes Polda NTB untuk melakukan pemeriksaan.
+</p>
+<br>
+${s('VII. KESIMPULAN DAN SARAN', true)}
+${s('a. Kesimpulan', false, true)}
+<p style="font-family:Arial;font-size:11pt;margin:3pt 0;margin-left:1cm;text-align:justify;">
+Untuk saat ini secara umum, kondisi fisik ${nama} masih memerlukan pemantauan dan pengobatan lanjutan guna mencapai perbaikan kondisi kesehatan yang optimal.
+</p>
+${s('b. Saran', false, true)}
+<p style="font-family:Arial;font-size:11pt;margin:3pt 0;margin-left:1cm;text-align:justify;">
+Disarankan agar yang bersangkutan tetap menjalani kontrol rutin sesuai jadwal yang telah ditentukan serta mengonsumsi obat secara teratur sesuai anjuran dokter. Yang bersangkutan juga perlu menjaga pola hidup sehat dan mendapat dukungan dari keluarga serta lingkungan kerja agar kondisi kesehatannya dapat membaik.
+</p>
+<br>
+${s('VIII. PENUTUP', true)}
+<p style="font-family:Arial;font-size:11pt;margin:3pt 0;text-align:justify;">
+Demikian laporan kegiatan pelayanan kesehatan terhadap anggota ${kesatuan} selanjutnya mohon petunjuk dari pimpinan.
+</p>
+<br><br>
+${fotoArr.length ? `<p style="font-family:Arial;font-size:11pt;font-weight:bold;margin:6pt 0;">Dokumentasi :</p>
+<div style="display:flex;gap:10px;flex-wrap:wrap;">
+${fotoArr.map(f => `<img src="${fixImgBBUrl(f)}" style="max-width:200px;max-height:150px;border:1px solid #ccc;">`).join('')}
+</div>` : ''}
+<br>
+${s(`Mataram, ${bln[new Date().getMonth()]} ${new Date().getFullYear()}`, false, false)}
+</body></html>`;
+
+  const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Laporan_${judulJenis.replace(/ /g,'_')}_${nama.replace(/ /g,'_')}.doc`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showToastDownload('Laporan Word', a.download);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 function exportWord(r) {
   const fktp = (r['FKTP'] || '-').toUpperCase();
   const jenis = r['JenisPelayanan'] || '-';
