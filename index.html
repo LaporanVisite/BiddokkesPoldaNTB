@@ -121,7 +121,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135d
 
 /* ── SEARCH ── */
 .search-wrap{position:relative}
-.search-icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:16px;pointer-events:none}
+.search-icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--green);font-size:18px;cursor:pointer;z-index:10;pointer-events:auto;padding:4px 6px}
 .dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:white;border:1.5px solid var(--border);border-radius:var(--radius2);z-index:50;overflow:hidden;box-shadow:var(--shadow2);max-height:240px;overflow-y:auto}
 .dropdown-item{padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--green3);display:flex;align-items:center;gap:10px;transition:background 0.15s}
 .dropdown-item:last-child{border-bottom:none}
@@ -392,7 +392,7 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
     <div class="field">
       <label>Nama Pasien <span class="req">*</span></label>
       <div class="search-wrap">
-        <input type="text" id="NamaPasien" placeholder="Ketik nama pasien..." autocomplete="off" onkeydown="if(event.key==='Enter')cariPasienManual()" oninput="tutupDropdownJikaKosong(this.value)">
+        <input type="text" id="NamaPasien" placeholder="Ketik nama pasien..." autocomplete="off" onkeydown="if(event.key==='Enter')cariPasienManual()" oninput="cariPasienAuto(this.value)">
         <span class="search-icon" onclick="cariPasienManual()" style="cursor:pointer" title="Cari pasien">🔍</span>
         <div class="dropdown" id="dropdown" style="display:none"></div>
       </div>
@@ -1410,20 +1410,27 @@ function updateTembusan() {
 // ── CARI PASIEN ──
 let cariTimer = null;
 
-// Hanya tutup dropdown kalau input dikosongkan
-function tutupDropdownJikaKosong(val) {
+// Auto cari saat ketik (dengan delay 350ms)
+function cariPasienAuto(val) {
+  clearTimeout(cariTimer);
   document.getElementById('loadedBanner').style.display = 'none';
-  if (!val || val.trim() === '') {
-    document.getElementById('dropdown').style.display = 'none';
-  }
+  if (!val || val.trim() === '') { document.getElementById('dropdown').style.display = 'none'; return; }
+  if (val.length < 2) return;
+  cariTimer = setTimeout(() => cariPasienEksekusi(val), 350);
 }
 
-// Cari saat tombol 🔍 ditekan atau Enter
-async function cariPasienManual() {
+// Cari langsung saat tombol 🔍 atau Enter ditekan
+function cariPasienManual() {
   const val = document.getElementById('NamaPasien').value.trim();
   if (!val || val.length < 2) { showToast('Ketik minimal 2 huruf nama pasien!', 'error'); return; }
-  const btn = document.querySelector('.search-btn');
-  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+  clearTimeout(cariTimer);
+  cariPasienEksekusi(val);
+}
+
+// Fungsi utama pencarian
+async function cariPasienEksekusi(val) {
+  const icon = document.querySelector('.search-icon');
+  if (icon) icon.textContent = '⏳';
   try {
     const res = await fetch(API_URL + '?action=search&nama=' + encodeURIComponent(val));
     const data = await res.json();
@@ -1431,14 +1438,12 @@ async function cariPasienManual() {
   } catch(e) {
     tampilDropdown([]);
   } finally {
-    if (btn) { btn.innerHTML = '🔍'; btn.disabled = false; }
+    if (icon) icon.textContent = '🔍';
   }
 }
 
-// Alias untuk kompatibilitas
-function cariPasien(val) {
-  tutupDropdownJikaKosong(val);
-}
+// Alias
+function cariPasien(val) { cariPasienAuto(val); }
 
 function tampilDropdown(data) {
   const dd = document.getElementById('dropdown');
