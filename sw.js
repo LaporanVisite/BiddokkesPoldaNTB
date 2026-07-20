@@ -1,26 +1,9 @@
 // ── Service Worker Biddokkes Polda NTB ──
-const CACHE_NAME = 'biddokkes-v2';
+const CACHE_NAME = 'biddokkes-v3';
 const BASE = '/BiddokkesPoldaNTB';
 
-// File yang di-cache untuk offline
-const STATIC_ASSETS = [
-  BASE + '/',
-  BASE + '/index.html',
-  BASE + '/manifest.json',
-  BASE + '/icon-192.png',
-  BASE + '/icon-512.png',
-  'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
-];
-
-// ── Install: cache semua file statis ──
+// ── Install ──
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch((err) => {
-        console.warn('SW: Beberapa file tidak bisa di-cache:', err);
-      });
-    })
-  );
   self.skipWaiting();
 });
 
@@ -37,46 +20,46 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// ── Fetch: strategi Cache First untuk aset statis, Network First untuk API ──
+// ── Fetch: Network First untuk index.html, Cache First untuk aset lain ──
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Jangan cache request ke Google Apps Script (API data)
+  // Jangan cache request ke API eksternal
   if (url.hostname === 'script.google.com' ||
       url.hostname === 'api.fonnte.com' ||
-      url.hostname === 'api.cloudinary.com' ||
-      url.hostname.includes('cloudinary.com')) {
-    return; // Biarkan browser handle langsung
+      url.hostname.includes('cloudinary.com') ||
+      url.hostname.includes('cdnjs.cloudflare.com')) {
+    return;
   }
 
-  // Untuk aset statis: Cache First
+  // index.html → selalu ambil dari network (Network First)
+  if (url.pathname.endsWith('/') || url.pathname.endsWith('index.html')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Aset lain (icon, manifest, sw) → Cache First
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
-
-      // Tidak ada di cache, ambil dari network
       return fetch(event.request).then((response) => {
-        // Hanya cache response yang valid
-        if (!response || response.status !== 200 || response.type === 'opaque') {
-          return response;
-        }
-        // Simpan ke cache
-        const responseClone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseClone);
-        });
+        if (!response || response.status !== 200) return response;
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         return response;
-      }).catch(() => {
-        // Jika offline dan tidak ada cache, kembalikan halaman utama
-        if (event.request.destination === 'document') {
-          return caches.match(BASE + '/index.html');
-        }
-      });
+      }).catch(() => caches.match(BASE + '/index.html'));
     })
   );
 });
 
-// ── Push notification (untuk future use) ──
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
