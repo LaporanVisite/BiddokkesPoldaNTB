@@ -2994,6 +2994,7 @@ function exportWordLengkap(g) {
   const html = `<!DOCTYPE html>
 <html xmlns:o='urn:schemas-microsoft-com:office:office'
       xmlns:w='urn:schemas-microsoft-com:office:word'
+      xmlns:v='urn:schemas-microsoft-com:vml'
       xmlns='http://www.w3.org/TR/REC-html40'>
 <head><meta charset='utf-8'>
 <style>
@@ -3007,7 +3008,10 @@ function exportWordLengkap(g) {
 <p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;font-weight:bold;text-align:center;margin:0;line-height:1.5">DAERAH NUSA TENGGARA BARAT</p>
 <p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;font-weight:bold;text-align:center;margin:0;line-height:1.5">BIDANG KEDOKTERAN DAN KESEHATAN</p>
 ${br()}
-${`<p style="text-align:center;margin:4pt 0;line-height:1;"><img src="data:image/png;base64,${LOGO_POLRI_B64}" width="80" height="80" style="position:relative;z-index:-1;mso-position-horizontal:center;"></p>`}
+${`<p style="text-align:center;margin:0;line-height:1;mso-line-height-rule:exactly;">
+<v:shape style="width:80px;height:80px;mso-wrap-style:none;mso-position-horizontal:center;z-index:-1;" fillcolor="none" stroked="f">
+<v:imagedata src="data:image/png;base64,${LOGO_POLRI_B64}" o:title="logo"/>
+</v:shape></p>`}
 ${br()}
 <p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;font-weight:bold;text-align:center;margin:0;text-decoration:underline">LAPORAN HASIL KEGIATAN PENDAMPINGAN / HOME VISIT KEPADA ANGGOTA YANG SAKIT</p>
 <p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;font-weight:bold;text-align:center;margin:0;text-decoration:underline">OLEH TIM BIDDOKKES POLDA NTB</p>
@@ -3075,7 +3079,10 @@ Demikian laporan kegiatan pelayanan kesehatan terhadap anggota ${kesatuan} selan
 </p>
 <br><br>
 ${fotoArr.length ? `<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;font-weight:bold;margin:0;line-height:100%;mso-line-height-rule:exactly;text-decoration:underline;">Dokumentasi :</p>
-${fotoArr.map(f => `<p style="margin:6pt 0;line-height:1;"><img src="${fixImgBBUrl(f)}" width="718" height="416" style="width:19cm;height:11cm;mso-position-horizontal:left;z-index:-1;"></p>`).join('')}` : ''}
+${fotoArr.map(f => `<p style="margin:0;line-height:1;mso-line-height-rule:exactly;">
+<v:shape style="width:19cm;height:11cm;mso-wrap-style:none;z-index:-1;mso-position-horizontal:left;mso-position-horizontal-relative:page;mso-position-vertical-relative:page;" fillcolor="none" stroked="f">
+<v:imagedata src="${fixImgBBUrl(f)}" o:title="foto"/>
+</v:shape></p>`).join('')}` : ''}
 <br>
 ${s(`Mataram, ${bln[new Date().getMonth()]} ${new Date().getFullYear()}`, false, false)}
 </body></html>`;
