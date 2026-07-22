@@ -316,6 +316,83 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 .mrp-empty{text-align:center;color:var(--text3);font-size:13px;padding:24px}
 .btn-lihat-rm{display:none;width:100%;margin-top:8px;padding:8px;background:rgba(22,163,74,0.08);border:1.5px dashed var(--green);color:var(--green);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s}
 .btn-lihat-rm:hover{background:rgba(22,163,74,0.15)}
+
+/* ═══════════════════════════════════════════════
+   TEMA VISUAL BARU — hanya tampilan, tidak ada
+   perubahan fungsi/struktur/fitur apapun
+   ═══════════════════════════════════════════════ */
+:root{
+  --green:#16a34a;--green2:#22c55e;--green3:#ecfdf3;--green4:#bbf0cf;
+  --white:#ffffff;--bg:#f4f7f5;--border:#e4e9e6;
+  --text:#0f2417;--text2:#4b5f54;--text3:#8fa398;
+  --card:#ffffff;
+  --shadow:0 1px 3px rgba(15,36,23,0.06),0 1px 2px rgba(15,36,23,0.04);
+  --shadow2:0 12px 32px rgba(15,36,23,0.12);
+  --radius:18px;--radius2:12px;
+}
+body.dark-mode{
+  --green:#34d399;--green2:#10b981;--green3:#0f2b1e;--green4:#164a30;
+  --white:#131f19;--bg:#0a120d;--border:#1e2f26;
+  --text:#e7f3ec;--text2:#a6c2b3;--text3:#5d7568;
+  --card:#131f19;
+}
+body{background:linear-gradient(160deg,#0a2016 0%,#0c2a1b 45%,#0a1710 100%);background-attachment:fixed}
+body.dark-mode{background:linear-gradient(160deg,#050d09 0%,#08130d 45%,#050a07 100%)}
+
+.header{background:linear-gradient(135deg,#0f3a24 0%,#166534 55%,#0f3a24 100%);box-shadow:0 4px 24px rgba(15,58,36,0.35);border-bottom:1px solid rgba(255,255,255,0.06)}
+.header-logo .icon{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.14);border-radius:12px}
+.btn-rekam,.btn-panduan{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.16);border-radius:20px;backdrop-filter:blur(6px)}
+.btn-rekam:hover{background:rgba(255,255,255,0.16)}
+
+.nav-tabs{background:rgba(10,26,17,0.85);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,0.06)}
+body.dark-mode .nav-tabs{background:rgba(5,13,9,0.9)}
+.nav-tab{color:rgba(255,255,255,0.4);font-weight:500}
+.nav-tab.active{color:var(--green2);border-bottom-color:var(--green2)}
+
+.card{background:rgba(255,255,255,0.98);border:1px solid rgba(15,36,23,0.05);border-radius:var(--radius);box-shadow:var(--shadow2)}
+body.dark-mode .card{background:rgba(19,31,25,0.9);border-color:rgba(255,255,255,0.06)}
+.card-title{color:var(--green);border-bottom-color:rgba(22,163,74,0.14);font-weight:600;letter-spacing:0.04em}
+.card-title .ct-icon{background:var(--green3);border-radius:9px}
+
+.field label{color:var(--text2);font-weight:500}
+.field input,.field select,.field textarea{
+  border:1.5px solid rgba(15,36,23,0.1);border-radius:var(--radius2);
+  background:rgba(15,36,23,0.02);transition:all .2s ease;
+}
+body.dark-mode .field input,body.dark-mode .field select,body.dark-mode .field textarea{
+  background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.08);
+}
+.field input:focus,.field select:focus,.field textarea:focus{
+  border-color:var(--green2);box-shadow:0 0 0 4px rgba(34,197,94,0.12);background:var(--white)
+}
+
+.pill{border-radius:24px;border:1.5px solid rgba(15,36,23,0.1);font-weight:500;background:rgba(15,36,23,0.02)}
+body.dark-mode .pill{background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.08)}
+.pill:hover{border-color:var(--green2);background:var(--green3)}
+.pill.active{background:linear-gradient(135deg,var(--green),var(--green2));border-color:var(--green2);box-shadow:0 4px 14px rgba(22,163,74,0.3)}
+
+.btn{border-radius:var(--radius2);font-weight:600;letter-spacing:0.01em}
+.btn-save{background:linear-gradient(135deg,var(--green),var(--green2));box-shadow:0 6px 20px rgba(22,163,74,0.35)}
+.btn-save:hover{box-shadow:0 8px 26px rgba(22,163,74,0.42);transform:translateY(-1px)}
+.btn-reset{background:rgba(15,36,23,0.03);border:1.5px solid rgba(15,36,23,0.08)}
+body.dark-mode .btn-reset{background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.08)}
+
+.loaded-banner{background:linear-gradient(135deg,rgba(34,197,94,0.1),rgba(34,197,94,0.04));border:1px solid rgba(34,197,94,0.25);border-radius:var(--radius2)}
+.btn-lihat-rm{border-radius:var(--radius2);border-style:dashed}
+
+.vital-box,.mrp-vbox{background:var(--green3);border-radius:var(--radius2)}
+.pasien-card,.pasien-card-header,.kunjungan-item{border-radius:var(--radius2)}
+.pasien-card{border:1px solid rgba(15,36,23,0.06);box-shadow:var(--shadow)}
+body.dark-mode .pasien-card{border-color:rgba(255,255,255,0.06)}
+.pasien-avatar{background:linear-gradient(135deg,var(--green3),var(--green4))}
+
+.modal,.pw-box,#modalRekamPasienBox{border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.25)}
+.modal-header,.mrp-header{background:linear-gradient(135deg,var(--green),var(--green2))}
+
+.upload-area{border-radius:var(--radius2);border:1.5px dashed rgba(22,163,74,0.3);background:rgba(22,163,74,0.03)}
+.upload-area:hover{border-color:var(--green2);background:var(--green3)}
+
+.toast{border-radius:24px;box-shadow:0 10px 30px rgba(0,0,0,0.2);backdrop-filter:blur(8px)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
@@ -382,7 +459,7 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
       <div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px;flex-wrap:wrap">
         <div style="display:flex;align-items:center;gap:6px">
           <div class="check">✓</div>
-          Data <strong id="loadedNama" style="margin:0 4px"></strong> dimuat — silakan edit yang perlu diubah
+          <span>Data <strong id="loadedNama" style="margin:0 4px"></strong> dimuat — Nama &amp; NIP/NRP terkunci, Pangkat/Jabatan/Kesatuan bisa diubah</span>
         </div>
         <button id="btnLihatRekamPasien" class="btn-lihat-rm" onclick="event.stopPropagation();bukaRekamPasienDariForm()" style="display:none;width:auto;margin:0">
           📋 Lihat Rekam Medis
@@ -1450,11 +1527,11 @@ function tampilDropdown(data) {
   if (!data.length) {
     dd.innerHTML = '<div class="no-result">Belum ada data — akan dibuat baru</div>';
   } else {
-    // Deduplikasi by Nama + NIPNRP + Kesatuan — tampilkan semua yang berbeda
+    // Deduplikasi by Nama + NIPNRP + FKTP (case-insensitive) — beda FKTP tetap tampil terpisah
     const seen = {};
     const unik = [];
     data.forEach(r => {
-      const key = (r['Nama Pasien']||'') + '||' + (r['NIPNRP']||'') + '||' + (r['Kesatuan']||'');
+      const key = (r['Nama Pasien']||'').trim().toLowerCase() + '||' + (r['NIPNRP']||'').trim().toLowerCase() + '||' + (r['FKTP']||'').trim().toLowerCase();
       if (!seen[key]) { seen[key] = true; unik.push(r); }
     });
     dd.innerHTML = unik.map(r => `
@@ -1476,6 +1553,11 @@ function muatData(r) {
     const el = document.getElementById(id);
     if (el) el.value = r[key] || '';
   });
+  // Kunci Nama & NIP/NRP agar tidak membuat pasien baru — Pangkat/Jabatan/Kesatuan tetap bisa diubah
+  const namaEl = document.getElementById('NamaPasien');
+  const nipEl = document.getElementById('NIPNRP');
+  if (namaEl) namaEl.readOnly = true;
+  if (nipEl) nipEl.readOnly = true;
   // Kesatuan + trigger auto-fill
   if (r['Kesatuan']) { document.getElementById('Kesatuan').value = r['Kesatuan']; pilihKesatuan(r['Kesatuan']); }
   // FKTP
@@ -1774,6 +1856,40 @@ async function uploadKeImgBB(file, retry=true) {
 }
 
 // ── SIMPAN ──
+// ── CEK DUPLIKAT PASIEN (Nama + NIP/NRP, tanpa peduli besar/kecil huruf) ──
+// Jika ditemukan data lama dengan Nama+NIP/NRP yang sama tapi beda penulisan huruf,
+// otomatis samakan penulisan Nama agar tidak tercipta 2 data pasien yang berbeda.
+async function cekDanSamakanNamaPasien() {
+  // Pastikan data terbaru sudah dimuat agar pengecekan akurat
+  if (!allData || allData.length === 0) {
+    try { await muatSemuaData(); } catch(e) { /* lanjut walau gagal muat */ }
+  }
+  if (!allData || allData.length === 0) return;
+
+  const namaInput = document.getElementById('NamaPasien').value.trim();
+  const nipnrpInput = document.getElementById('NIPNRP').value.trim();
+  if (!namaInput || !nipnrpInput) return;
+
+  const namaKey = namaInput.toLowerCase();
+  const nipnrpKey = nipnrpInput.toLowerCase();
+
+  // Cari data lama dengan Nama (lowercase) + NIP/NRP (lowercase) yang sama
+  const cocok = allData.find(r => {
+    const rNama = (r['Nama Pasien'] || '').trim().toLowerCase();
+    const rNip = (r['NIPNRP'] || '').trim().toLowerCase();
+    return rNama === namaKey && rNip === nipnrpKey;
+  });
+
+  if (cocok) {
+    const namaAsli = (cocok['Nama Pasien'] || '').trim();
+    if (namaAsli && namaAsli !== namaInput) {
+      // Samakan penulisan nama dengan data yang sudah ada di database
+      document.getElementById('NamaPasien').value = namaAsli;
+      showToast('Penulisan nama disesuaikan dengan data pasien sebelumnya', 'info');
+    }
+  }
+}
+
 async function simpanLaporan() {
   const jenis = document.getElementById('JenisPelayanan').value;
   const nama = document.getElementById('NamaPasien').value.trim();
@@ -1806,6 +1922,10 @@ async function simpanLaporan() {
   if (!document.getElementById('Rencana1').value.trim()) { showToast('Rencana 1 wajib diisi!','error'); return; }
   if (!document.getElementById('fileDoc1').files[0] && !document.getElementById('fileDoc1g').files[0]) { showToast('Foto 1 wajib diupload!','error'); return; }
   if (!document.getElementById('fileDoc2').files[0] && !document.getElementById('fileDoc2g').files[0]) { showToast('Foto 2 wajib diupload!','error'); return; }
+
+  // ── CEK DUPLIKAT: samakan penulisan nama jika Nama+NIP/NRP sudah ada (case-insensitive) ──
+  await cekDanSamakanNamaPasien();
+
 
   document.getElementById('loadingOverlay').classList.add('show');
   document.getElementById('btnSave').disabled = true;
@@ -1877,6 +1997,11 @@ function resetForm() {
   document.getElementById('fileDoc1g').value = '';
   document.getElementById('fileDoc2g').value = '';
   document.getElementById('cardDPJP').style.display = 'none';
+  // Buka kembali kunci Nama & NIP/NRP untuk input pasien baru
+  const namaEl = document.getElementById('NamaPasien');
+  const nipEl = document.getElementById('NIPNRP');
+  if (namaEl) namaEl.readOnly = false;
+  if (nipEl) nipEl.readOnly = false;
   // Reset dropdown No HP
   const noHPPilih = document.getElementById('NoHPPilih');
   if (noHPPilih) noHPPilih.value = '';
@@ -1989,10 +2114,11 @@ async function muatSemuaData() {
 }
 
 function tampilRekamMedis(data) {
-  // Grup by Nama Pasien + NIPNRP + Kesatuan
+  // Grup by Nama Pasien + NIPNRP + FKTP (case-insensitive) — Kesatuan/Pangkat/Jabatan
+  // boleh berubah tanpa memecah kartu, tapi beda FKTP Yang Melaksanakan = kartu pasien terpisah
   const grup = {};
   data.forEach(r => {
-    const key = (r['Nama Pasien']||'') + '||' + (r['NIPNRP']||'') + '||' + (r['Kesatuan']||'');
+    const key = (r['Nama Pasien']||'').trim().toLowerCase() + '||' + (r['NIPNRP']||'').trim().toLowerCase() + '||' + (r['FKTP']||'').trim().toLowerCase();
     if (!grup[key]) grup[key] = { info: r, kunjungan: [] };
     grup[key].kunjungan.push(r);
   });
