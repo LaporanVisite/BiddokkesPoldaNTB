@@ -317,82 +317,40 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 .btn-lihat-rm{display:none;width:100%;margin-top:8px;padding:8px;background:rgba(22,163,74,0.08);border:1.5px dashed var(--green);color:var(--green);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s}
 .btn-lihat-rm:hover{background:rgba(22,163,74,0.15)}
 
-/* ═══════════════════════════════════════════════
-   TEMA VISUAL BARU — hanya tampilan, tidak ada
-   perubahan fungsi/struktur/fitur apapun
-   ═══════════════════════════════════════════════ */
-:root{
-  --green:#16a34a;--green2:#22c55e;--green3:#ecfdf3;--green4:#bbf0cf;
-  --white:#ffffff;--bg:#f4f7f5;--border:#e4e9e6;
-  --text:#0f2417;--text2:#4b5f54;--text3:#8fa398;
-  --card:#ffffff;
-  --shadow:0 1px 3px rgba(15,36,23,0.06),0 1px 2px rgba(15,36,23,0.04);
-  --shadow2:0 12px 32px rgba(15,36,23,0.12);
-  --radius:18px;--radius2:12px;
+/* ── ANIMASI KLIK & INTERAKSI (visual saja) ── */
+.btn,.pill,.btn-rekam,.btn-panduan,.btn-lihat-rm,.pw-btn,.modal-close,.mrp-close,
+.pasien-card,.kunjungan-item,.dropdown-item,.rm-photos img,.mrp-foto img{
+  transition:transform 0.12s ease, box-shadow 0.12s ease, background 0.2s ease;
 }
-body.dark-mode{
-  --green:#34d399;--green2:#10b981;--green3:#0f2b1e;--green4:#164a30;
-  --white:#131f19;--bg:#0a120d;--border:#1e2f26;
-  --text:#e7f3ec;--text2:#a6c2b3;--text3:#5d7568;
-  --card:#131f19;
+.btn:active,.pill:active,.btn-rekam:active,.btn-panduan:active,.btn-lihat-rm:active,
+.pw-btn:active,.modal-close:active,.mrp-close:active{
+  transform:scale(0.96);
 }
-body{background:linear-gradient(160deg,#0a2016 0%,#0c2a1b 45%,#0a1710 100%);background-attachment:fixed}
-body.dark-mode{background:linear-gradient(160deg,#050d09 0%,#08130d 45%,#050a07 100%)}
-
-.header{background:linear-gradient(135deg,#0f3a24 0%,#166534 55%,#0f3a24 100%);box-shadow:0 4px 24px rgba(15,58,36,0.35);border-bottom:1px solid rgba(255,255,255,0.06)}
-.header-logo .icon{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.14);border-radius:12px}
-.btn-rekam,.btn-panduan{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.16);border-radius:20px;backdrop-filter:blur(6px)}
-.btn-rekam:hover{background:rgba(255,255,255,0.16)}
-
-.nav-tabs{background:rgba(10,26,17,0.85);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,0.06)}
-body.dark-mode .nav-tabs{background:rgba(5,13,9,0.9)}
-.nav-tab{color:rgba(255,255,255,0.4);font-weight:500}
-.nav-tab.active{color:var(--green2);border-bottom-color:var(--green2)}
-
-.card{background:rgba(255,255,255,0.98);border:1px solid rgba(15,36,23,0.05);border-radius:var(--radius);box-shadow:var(--shadow2)}
-body.dark-mode .card{background:rgba(19,31,25,0.9);border-color:rgba(255,255,255,0.06)}
-.card-title{color:var(--green);border-bottom-color:rgba(22,163,74,0.14);font-weight:600;letter-spacing:0.04em}
-.card-title .ct-icon{background:var(--green3);border-radius:9px}
-
-.field label{color:var(--text2);font-weight:500}
-.field input,.field select,.field textarea{
-  border:1.5px solid rgba(15,36,23,0.1);border-radius:var(--radius2);
-  background:rgba(15,36,23,0.02);transition:all .2s ease;
+.pasien-card:active,.kunjungan-item:active,.dropdown-item:active{
+  transform:scale(0.99);
 }
-body.dark-mode .field input,body.dark-mode .field select,body.dark-mode .field textarea{
-  background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.08);
-}
-.field input:focus,.field select:focus,.field textarea:focus{
-  border-color:var(--green2);box-shadow:0 0 0 4px rgba(34,197,94,0.12);background:var(--white)
-}
+.btn-save{animation:none}
+.btn-save:not(:disabled):active{transform:scale(0.97) translateY(0)}
 
-.pill{border-radius:24px;border:1.5px solid rgba(15,36,23,0.1);font-weight:500;background:rgba(15,36,23,0.02)}
-body.dark-mode .pill{background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.08)}
-.pill:hover{border-color:var(--green2);background:var(--green3)}
-.pill.active{background:linear-gradient(135deg,var(--green),var(--green2));border-color:var(--green2);box-shadow:0 4px 14px rgba(22,163,74,0.3)}
+/* Fade-in halus saat card muncul pertama kali */
+@keyframes fadeSlideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.card{animation:fadeSlideIn 0.35s ease both}
 
-.btn{border-radius:var(--radius2);font-weight:600;letter-spacing:0.01em}
-.btn-save{background:linear-gradient(135deg,var(--green),var(--green2));box-shadow:0 6px 20px rgba(22,163,74,0.35)}
-.btn-save:hover{box-shadow:0 8px 26px rgba(22,163,74,0.42);transform:translateY(-1px)}
-.btn-reset{background:rgba(15,36,23,0.03);border:1.5px solid rgba(15,36,23,0.08)}
-body.dark-mode .btn-reset{background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.08)}
+/* Checkmark pop saat banner data dimuat muncul */
+@keyframes popIn{0%{transform:scale(0)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+.loaded-banner .check{animation:popIn 0.35s ease}
 
-.loaded-banner{background:linear-gradient(135deg,rgba(34,197,94,0.1),rgba(34,197,94,0.04));border:1px solid rgba(34,197,94,0.25);border-radius:var(--radius2)}
-.btn-lihat-rm{border-radius:var(--radius2);border-style:dashed}
+/* Toast masuk dengan sedikit slide dari bawah */
+.toast{transition:opacity 0.3s ease, transform 0.3s ease;transform:translateX(-50%) translateY(6px)}
+.toast.show{transform:translateX(-50%) translateY(0)}
 
-.vital-box,.mrp-vbox{background:var(--green3);border-radius:var(--radius2)}
-.pasien-card,.pasien-card-header,.kunjungan-item{border-radius:var(--radius2)}
-.pasien-card{border:1px solid rgba(15,36,23,0.06);box-shadow:var(--shadow)}
-body.dark-mode .pasien-card{border-color:rgba(255,255,255,0.06)}
-.pasien-avatar{background:linear-gradient(135deg,var(--green3),var(--green4))}
+/* Modal & popup muncul dengan zoom lembut */
+@keyframes modalPop{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}
+.modal-overlay.show .modal{animation:modalPop 0.22s ease}
+.pw-modal.show .pw-box{animation:modalPop 0.22s ease}
 
-.modal,.pw-box,#modalRekamPasienBox{border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.25)}
-.modal-header,.mrp-header{background:linear-gradient(135deg,var(--green),var(--green2))}
-
-.upload-area{border-radius:var(--radius2);border:1.5px dashed rgba(22,163,74,0.3);background:rgba(22,163,74,0.03)}
-.upload-area:hover{border-color:var(--green2);background:var(--green3)}
-
-.toast{border-radius:24px;box-shadow:0 10px 30px rgba(0,0,0,0.2);backdrop-filter:blur(8px)}
+/* Spinner tetap, tapi overlay fade halus */
+.loading-overlay{transition:opacity 0.2s ease}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
@@ -402,6 +360,12 @@ body.dark-mode .pasien-card{border-color:rgba(255,255,255,0.06)}
 <div class="loading-overlay" id="loadingOverlay">
   <div class="spinner"></div>
   <p id="loadingText">Menyimpan laporan...</p>
+</div>
+
+<div class="loading-overlay" id="successOverlay" style="background:rgba(255,255,255,0.95)">
+  <div style="width:70px;height:70px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:36px;color:white;animation:popIn 0.4s ease">✓</div>
+  <p style="font-size:16px;font-weight:700;color:var(--green);margin-top:4px">Terima kasih!</p>
+  <p style="font-size:14px;color:var(--text2);text-align:center;max-width:280px;line-height:1.5;margin-top:-6px">Telah menginput data pasien.<br>Data sudah tersimpan dan terkirim ke WA Anda.</p>
 </div>
 
 <!-- HEADER -->
@@ -434,6 +398,9 @@ body.dark-mode .pasien-card{border-color:rgba(255,255,255,0.06)}
 <!-- ═══════════════ PAGE: FORM ═══════════════ -->
 <div class="page active" id="page-form">
 <div class="container">
+
+  <!-- GREETING -->
+  <div id="greetingBox" style="padding:2px 4px 14px;font-size:15px;color:#ffffff;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,0.25)"></div>
 
   <!-- JENIS PELAYANAN -->
   <div class="card">
@@ -1968,7 +1935,7 @@ async function simpanLaporan() {
       const res = await fetch(API_URL, { method:'POST', body:JSON.stringify(payload), signal: saveController.signal });
       clearTimeout(saveTimeout);
       const result = await res.json();
-      if (result.status==='ok') { showToast('Laporan berhasil disimpan! WA terkirim ✓','success'); resetForm(); }
+      if (result.status==='ok') { tampilkanSuksesOverlay(); resetForm(); }
       else showToast('Gagal menyimpan, coba lagi','error');
     } catch(e) {
       clearTimeout(saveTimeout);
@@ -3462,6 +3429,14 @@ function showToast(msg, type) {
   setTimeout(() => t.classList.remove('show'), 3500);
 }
 
+// ── OVERLAY SUKSES DI TENGAH LAYAR ──
+function tampilkanSuksesOverlay() {
+  const el = document.getElementById('successOverlay');
+  if (!el) { showToast('Laporan berhasil disimpan! WA terkirim ✓','success'); return; }
+  el.classList.add('show');
+  setTimeout(() => { el.classList.remove('show'); }, 2200);
+}
+
 // ── CUSTOM SUGGEST DROPDOWN (Tindakan) ──
 const TINDAKAN_OPTIONS = [
   "Pemeriksaan TTV",
@@ -3616,6 +3591,20 @@ document.addEventListener('click', e => {
 document.getElementById('Tanggal').value = new Date().toISOString().split('T')[0];
 const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
 document.getElementById('Hari').value = days[new Date().getDay()];
+
+// ── GREETING SESUAI WAKTU ──
+function tampilkanGreeting() {
+  const box = document.getElementById('greetingBox');
+  if (!box) return;
+  const jam = new Date().getHours();
+  let sapaan, ikon;
+  if (jam >= 4 && jam < 11) { sapaan = 'Selamat Pagi'; ikon = '🌤️'; }
+  else if (jam >= 11 && jam < 15) { sapaan = 'Selamat Siang'; ikon = '☀️'; }
+  else if (jam >= 15 && jam < 18) { sapaan = 'Selamat Sore'; ikon = '🌇'; }
+  else { sapaan = 'Selamat Malam'; ikon = '🌙'; }
+  box.textContent = `${ikon} ${sapaan}, siap bertugas hari ini?`;
+}
+tampilkanGreeting();
 </script>
 <script>
 // ── PWA Service Worker ──
