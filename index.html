@@ -363,9 +363,11 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 </div>
 
 <div class="loading-overlay" id="successOverlay" style="background:rgba(255,255,255,0.95)">
+  <button onclick="tutupSuksesOverlay()" style="position:absolute;top:24px;right:24px;background:rgba(15,36,23,0.06);border:none;color:var(--text2);width:34px;height:34px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
   <div style="width:70px;height:70px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:36px;color:white;animation:popIn 0.4s ease">✓</div>
   <p style="font-size:16px;font-weight:700;color:var(--green);margin-top:4px">Terima kasih!</p>
   <p style="font-size:14px;color:var(--text2);text-align:center;max-width:280px;line-height:1.5;margin-top:-6px">Telah menginput data pasien.<br>Data sudah tersimpan dan terkirim ke WA Anda.</p>
+  <button onclick="tutupSuksesOverlay()" style="margin-top:8px;background:var(--green);color:white;border:none;padding:12px 32px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">📝 Isi Data Kembali</button>
 </div>
 
 <!-- HEADER -->
@@ -3434,7 +3436,11 @@ function tampilkanSuksesOverlay() {
   const el = document.getElementById('successOverlay');
   if (!el) { showToast('Laporan berhasil disimpan! WA terkirim ✓','success'); return; }
   el.classList.add('show');
-  setTimeout(() => { el.classList.remove('show'); }, 2200);
+}
+
+function tutupSuksesOverlay() {
+  const el = document.getElementById('successOverlay');
+  if (el) el.classList.remove('show');
 }
 
 // ── CUSTOM SUGGEST DROPDOWN (Tindakan) ──
