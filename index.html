@@ -65,7 +65,7 @@ body.dark-mode .rekap-tabel tr:hover td{background:#2a2a2a}
 #iosInstallPopup .ios-arrow{position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:12px solid white}
 #iosInstallPopup .ios-close{position:absolute;top:8px;right:12px;background:none;border:none;font-size:18px;color:#999;cursor:pointer;line-height:1}
 #iosInstallPopup .ios-icon{font-size:28px;margin-bottom:6px}
-body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135deg,#0d1b2a 0%,#1a3a4a 40%,#0d2d1a 100%);background-attachment:fixed;min-height:100vh;color:var(--text)}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135deg,#1a1f1c 0%,#1e2a24 40%,#14251a 100%);background-attachment:fixed;min-height:100vh;color:var(--text)}
 
 /* ── HEADER ── */
 .header{background:linear-gradient(135deg,var(--green) 0%,var(--green2) 100%);color:white;padding:0;position:sticky;top:0;z-index:200;box-shadow:0 2px 16px rgba(26,122,60,0.18)}
@@ -2390,10 +2390,10 @@ async function eksporRekapMingguan() {
       const jenis = r['JenisPelayanan'] || '-';
       const hari = r['Hari'] || '-';
       const tglP = formatTglPanjang(r['Tanggal']);
-      const nama = r['Nama Pasien'] || '-';
+      const nama = titleCase(r['Nama Pasien'] || '-');
       const pangkat = r['Pangkat'] || '-';
       const nipnrp = r['NIPNRP'] || '-';
-      const jabatan = r['Jabatan'] || '-';
+      const jabatan = titleCase(r['Jabatan'] || '-');
       const kesatuan = r['Kesatuan'] || '-';
       const tempat = r['Tempat'] || '-';
 
@@ -2978,6 +2978,12 @@ function kapital(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+// Kapital di setiap kata — khusus Nama Pasien & Jabatan (herman -> Herman, ba sidokkes -> Ba Sidokkes)
+function titleCase(str) {
+  if (!str) return '';
+  return str.toLowerCase().split(' ').map(w => w ? w.charAt(0).toUpperCase() + w.slice(1) : w).join(' ');
+}
+
 // Export ke Word (.doc) — format sesuai template resmi
 function exportWordLengkap(g) {
   // Ambil semua kunjungan pasien, sort dari terlama ke terbaru
@@ -2988,10 +2994,10 @@ function exportWordLengkap(g) {
   if (!kunjungan.length) return;
 
   const info = g.info || kunjungan[0];
-  const nama = (info['Nama Pasien'] || '-').trim();
+  const nama = titleCase((info['Nama Pasien'] || '-').trim());
   const pangkat = info['Pangkat'] || '-';
   const nipnrp = info['NIPNRP'] || info['NIP/NRP'] || '-';
-  const jabatan = info['Jabatan'] || '-';
+  const jabatan = titleCase(info['Jabatan'] || '-');
   const kesatuan = info['Kesatuan'] || '-';
 
   // Judul sesuai jenis pelayanan yang ada
@@ -3204,10 +3210,10 @@ function exportWord(r) {
   const jenis = r['JenisPelayanan'] || '-';
   const hari = r['Hari'] || '-';
   const tanggalPanjang = formatTanggalPanjang(r['Tanggal']);
-  const nama = r['Nama Pasien'] || '-';
+  const nama = titleCase(r['Nama Pasien'] || '-');
   const pangkat = r['Pangkat'] || '-';
   const nipnrp = r['NIPNRP'] || '-';
-  const jabatan = r['Jabatan'] || '-';
+  const jabatan = titleCase(r['Jabatan'] || '-');
   const kesatuan = r['Kesatuan'] || '-';
   const tempat = r['Tempat'] || '-';
 
