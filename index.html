@@ -443,17 +443,17 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
     <div class="field">
       <label>Nama Pasien <span class="req">*</span></label>
       <div class="search-wrap">
-        <input type="text" id="NamaPasien" placeholder="Ketik nama pasien..." autocomplete="off" onkeydown="if(event.key==='Enter')cariPasienManual()" oninput="cariPasienAuto(this.value)">
+        <input type="text" id="NamaPasien" placeholder="Ketik nama pasien..." autocomplete="off" onkeydown="if(event.key==='Enter')cariPasienManual()" oninput="cariPasienAuto(this.value)" onblur="formatTitleCaseField(this)">
         <span class="search-icon" onclick="cariPasienManual()" style="cursor:pointer" title="Cari pasien">🔍</span>
         <div class="dropdown" id="dropdown" style="display:none"></div>
       </div>
     </div>
     <div class="grid2">
-      <div class="field"><label>Pangkat <span class="req">*</span></label><input type="text" id="Pangkat" placeholder="Misal: Brigadir"></div>
+      <div class="field"><label>Pangkat <span class="req">*</span></label><input type="text" id="Pangkat" placeholder="Misal: Brigadir" onblur="formatTitleCaseField(this)"></div>
       <div class="field"><label>NIP / NRP <span class="req">*</span></label><input type="text" id="NIPNRP" placeholder="Nomor induk"></div>
     </div>
     <div class="grid2">
-      <div class="field"><label>Jabatan <span class="req">*</span></label><input type="text" id="Jabatan" placeholder="Jabatan pasien"></div>
+      <div class="field"><label>Jabatan <span class="req">*</span></label><input type="text" id="Jabatan" placeholder="Jabatan pasien" onblur="formatTitleCaseField(this)"></div>
       <div class="field"><label>Kesatuan <span class="req">*</span></label>
         <select id="Kesatuan" onchange="pilihKesatuan(this.value)">
           <option value="">— Pilih Kesatuan —</option>
@@ -522,7 +522,7 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
     </div>
     <div class="grid2">
       <div class="field"><label>Waktu <span class="req">*</span></label><input type="time" id="Waktu"></div>
-      <div class="field" id="fieldTempat"><label>Tempat <span class="req">*</span></label><input type="text" id="Tempat" placeholder="Lokasi pelaksanaan"></div>
+      <div class="field" id="fieldTempat"><label>Tempat <span class="req">*</span></label><input type="text" id="Tempat" placeholder="Lokasi pelaksanaan" onblur="formatTitleCaseField(this)"></div>
     </div>
   </div>
 
@@ -1522,10 +1522,12 @@ function tampilDropdown(data) {
 }
 
 function muatData(r) {
-  // Data Pasien
+  // Data Pasien — Nama, Pangkat, Jabatan dirapikan otomatis (huruf awal tiap kata besar)
   [['NamaPasien','Nama Pasien'],['Pangkat','Pangkat'],['NIPNRP','NIPNRP'],['Jabatan','Jabatan']].forEach(([id,key]) => {
     const el = document.getElementById(id);
-    if (el) el.value = r[key] || '';
+    if (!el) return;
+    const val = r[key] || '';
+    el.value = (id === 'NIPNRP') ? val : titleCase(val);
   });
   // Kunci Nama & NIP/NRP agar tidak membuat pasien baru — Pangkat/Jabatan/Kesatuan tetap bisa diubah
   const namaEl = document.getElementById('NamaPasien');
@@ -1557,9 +1559,9 @@ function muatData(r) {
   if (!noHPSudahDipilih && noHPInputEl) noHPInputEl.value = '';
   const personalEl = document.getElementById('PersonelTerlibat');
   if (personalEl) personalEl.value = '';
-  // Isi Tempat dari history
+  // Isi Tempat dari history (dirapikan otomatis)
   const tempatEl = document.getElementById('Tempat');
-  if (tempatEl) tempatEl.value = r['Tempat'] || '';
+  if (tempatEl) tempatEl.value = titleCase(r['Tempat'] || '');
   // Waktu & Tanggal hari ini
   document.getElementById('Waktu').value = '';
   // Tanggal & hari hari ini
@@ -1830,38 +1832,15 @@ async function uploadKeImgBB(file, retry=true) {
 }
 
 // ── SIMPAN ──
-// ── CEK DUPLIKAT PASIEN (Nama + NIP/NRP, tanpa peduli besar/kecil huruf) ──
-// Jika ditemukan data lama dengan Nama+NIP/NRP yang sama tapi beda penulisan huruf,
-// otomatis samakan penulisan Nama agar tidak tercipta 2 data pasien yang berbeda.
+// ── RAPIKAN NAMA PASIEN SAAT SIMPAN ──
+// Nama selalu dirapikan dengan title case (huruf awal tiap kata besar),
+// supaya penulisan konsisten dan tidak tercipta 2 data pasien berbeda hanya karena beda huruf besar/kecil.
 async function cekDanSamakanNamaPasien() {
-  // Pastikan data terbaru sudah dimuat agar pengecekan akurat
-  if (!allData || allData.length === 0) {
-    try { await muatSemuaData(); } catch(e) { /* lanjut walau gagal muat */ }
-  }
-  if (!allData || allData.length === 0) return;
-
-  const namaInput = document.getElementById('NamaPasien').value.trim();
-  const nipnrpInput = document.getElementById('NIPNRP').value.trim();
-  if (!namaInput || !nipnrpInput) return;
-
-  const namaKey = namaInput.toLowerCase();
-  const nipnrpKey = nipnrpInput.toLowerCase();
-
-  // Cari data lama dengan Nama (lowercase) + NIP/NRP (lowercase) yang sama
-  const cocok = allData.find(r => {
-    const rNama = (r['Nama Pasien'] || '').trim().toLowerCase();
-    const rNip = (r['NIPNRP'] || '').trim().toLowerCase();
-    return rNama === namaKey && rNip === nipnrpKey;
-  });
-
-  if (cocok) {
-    const namaAsli = (cocok['Nama Pasien'] || '').trim();
-    if (namaAsli && namaAsli !== namaInput) {
-      // Samakan penulisan nama dengan data yang sudah ada di database
-      document.getElementById('NamaPasien').value = namaAsli;
-      showToast('Penulisan nama disesuaikan dengan data pasien sebelumnya', 'info');
-    }
-  }
+  const namaEl = document.getElementById('NamaPasien');
+  if (!namaEl) return;
+  const namaInput = namaEl.value.trim();
+  if (!namaInput) return;
+  namaEl.value = titleCase(namaInput);
 }
 
 async function simpanLaporan() {
@@ -1897,8 +1876,12 @@ async function simpanLaporan() {
   if (!document.getElementById('fileDoc1').files[0] && !document.getElementById('fileDoc1g').files[0]) { showToast('Foto 1 wajib diupload!','error'); return; }
   if (!document.getElementById('fileDoc2').files[0] && !document.getElementById('fileDoc2g').files[0]) { showToast('Foto 2 wajib diupload!','error'); return; }
 
-  // ── CEK DUPLIKAT: samakan penulisan nama jika Nama+NIP/NRP sudah ada (case-insensitive) ──
+  // ── RAPIKAN PENULISAN: Nama, Pangkat, Jabatan, Tempat (huruf awal tiap kata besar) ──
   await cekDanSamakanNamaPasien();
+  ['Pangkat','Jabatan','Tempat'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.value.trim()) el.value = titleCase(el.value.trim());
+  });
 
 
   document.getElementById('loadingOverlay').classList.add('show');
@@ -2391,11 +2374,11 @@ async function eksporRekapMingguan() {
       const hari = r['Hari'] || '-';
       const tglP = formatTglPanjang(r['Tanggal']);
       const nama = titleCase(r['Nama Pasien'] || '-');
-      const pangkat = r['Pangkat'] || '-';
+      const pangkat = titleCase(r['Pangkat'] || '-');
       const nipnrp = r['NIPNRP'] || '-';
       const jabatan = titleCase(r['Jabatan'] || '-');
       const kesatuan = r['Kesatuan'] || '-';
-      const tempat = r['Tempat'] || '-';
+      const tempat = titleCase(r['Tempat'] || '-');
 
       const keluhanArr = [r['Keluhan1'],r['Keluhan2'],r['Keluhan3'],r['Keluhan4']].filter(Boolean).map(kap);
       const diagnosaArr = [r['Diagnosa1'],r['Diagnosa2'],r['Diagnosa3'],r['Diagnosa4']].filter(Boolean).map(v => '- <i>_' + kap(v.trim()) + '_</i>');
@@ -2978,10 +2961,17 @@ function kapital(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-// Kapital di setiap kata — khusus Nama Pasien & Jabatan (herman -> Herman, ba sidokkes -> Ba Sidokkes)
+// Kapital di setiap kata — khusus Nama Pasien, Pangkat, Jabatan, Tempat (herman -> Herman, ba sidokkes -> Ba Sidokkes)
 function titleCase(str) {
   if (!str) return '';
   return str.toLowerCase().split(' ').map(w => w ? w.charAt(0).toUpperCase() + w.slice(1) : w).join(' ');
+}
+
+// Format langsung di field input (dipanggil saat onblur)
+function formatTitleCaseField(el) {
+  if (!el) return;
+  const val = el.value.trim();
+  if (val) el.value = titleCase(val);
 }
 
 // Export ke Word (.doc) — format sesuai template resmi
@@ -2995,7 +2985,7 @@ function exportWordLengkap(g) {
 
   const info = g.info || kunjungan[0];
   const nama = titleCase((info['Nama Pasien'] || '-').trim());
-  const pangkat = info['Pangkat'] || '-';
+  const pangkat = titleCase(info['Pangkat'] || '-');
   const nipnrp = info['NIPNRP'] || info['NIP/NRP'] || '-';
   const jabatan = titleCase(info['Jabatan'] || '-');
   const kesatuan = info['Kesatuan'] || '-';
@@ -3040,7 +3030,7 @@ function exportWordLengkap(g) {
   const waktuTempatHtml = p2(`b. Waktu : ${waktuList.join(', dan ')}`);
 
   // Tempat: gabung hanya kalau beda
-  const tempatUnik = [...new Set(kunjungan.map(k => (k['Tempat']||'-').trim()))];
+  const tempatUnik = [...new Set(kunjungan.map(k => titleCase((k['Tempat']||'-').trim())))];
   const tempatHtml = p2(`c. Tempat : ${tempatUnik.join(', dan ')}`);
 
   // Kegiatan: gabung jenis yang unik
@@ -3075,7 +3065,7 @@ function exportWordLengkap(g) {
 
     // Narasi kunjungan
     kunjHtml += `<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-indent:1cm;text-align:justify;line-height:100%;mso-line-height-rule:exactly;">`;
-    kunjHtml += `${hari}, ${tgl} tim Biddokkes Polda NTB melakukan ${jenisFormat} terhadap yang bersangkutan di ${k['Tempat']||'-'}`;
+    kunjHtml += `${hari}, ${tgl} tim Biddokkes Polda NTB melakukan ${jenisFormat} terhadap yang bersangkutan di ${titleCase(k['Tempat']||'-')}`;
     
     if (!isTelemedicine) {
       kunjHtml += ` dilakukan pemeriksaan tanda-tanda vital berupa tekanan darah : ${fvW(k['Tensi'],' mmHg')}, suhu : ${fvW(k['Suhu'],' °C')}, RR: ${fvW(k['RR'],' x/mnt')}, N : ${fvW(k['Nadi'],' x/mnt')}`;
@@ -3154,7 +3144,7 @@ ${s('1. IDENTITAS', true, true)}
 ${s(`a) Nama             : ${nama}`, false, true)}
 ${s(`b) Pangkat/ NRP    : ${pangkat} / ${nipnrp}`, false, true)}
 ${s(`c) Jabatan          : ${jabatan}`, false, true)}
-${s(`d) Tempat           : ${kunjungan[0]['Tempat']||'-'}`, false, true)}
+${s(`d) Tempat           : ${titleCase(kunjungan[0]['Tempat']||'-')}`, false, true)}
 <br>
 ${s('2. RIWAYAT PENYAKIT & HASIL PEMERIKSAAN', true, true)}
 ${hasilHtml}
@@ -3211,11 +3201,11 @@ function exportWord(r) {
   const hari = r['Hari'] || '-';
   const tanggalPanjang = formatTanggalPanjang(r['Tanggal']);
   const nama = titleCase(r['Nama Pasien'] || '-');
-  const pangkat = r['Pangkat'] || '-';
+  const pangkat = titleCase(r['Pangkat'] || '-');
   const nipnrp = r['NIPNRP'] || '-';
   const jabatan = titleCase(r['Jabatan'] || '-');
   const kesatuan = r['Kesatuan'] || '-';
-  const tempat = r['Tempat'] || '-';
+  const tempat = titleCase(r['Tempat'] || '-');
 
   const keluhanArr = [r['Keluhan1'],r['Keluhan2'],r['Keluhan3'],r['Keluhan4']].filter(Boolean).map(kapital);
   const diagnosaArr = [r['Diagnosa1'],r['Diagnosa2'],r['Diagnosa3'],r['Diagnosa4']].filter(Boolean).map(v => '- <i>_' + kapital(v.trim()) + '_</i>');
