@@ -954,6 +954,11 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
     </div>
     <!-- Info jumlah hasil filter -->
     <div id="filterInfo" style="display:none;margin-top:8px;font-size:12px;color:var(--green);font-weight:600;padding:6px 10px;background:var(--green3);border-radius:8px"></div>
+    <!-- Tombol muat semua riwayat (termasuk data lebih dari 60 laporan terakhir) -->
+    <button id="btnMuatSemuaRiwayat" onclick="muatSemuaRiwayat()"
+      style="display:none;width:100%;margin-top:8px;padding:9px;background:rgba(22,163,74,0.08);border:1.5px dashed var(--green);color:var(--green);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer">
+      📜 Muat Semua Riwayat (termasuk data lebih lama)
+    </button>
     <div id="rmList"></div>
   </div>
 </div>
@@ -1636,8 +1641,17 @@ async function bukaRekamPasienDariForm() {
     await muatSemuaData();
   }
 
-  const kunjungan = allData.filter(r => (r['Nama Pasien']||'').trim().toLowerCase() === nama)
-    .sort((a,b) => {
+  let kunjungan = allData.filter(r => (r['Nama Pasien']||'').trim().toLowerCase() === nama);
+
+  // Kalau tidak ketemu di data yang dibatasi (60 terbaru), coba muat SELURUH riwayat
+  // sebelum menyimpulkan "tidak ada data" — supaya data lama tidak salah dikira terhapus
+  if (!kunjungan.length) {
+    document.getElementById('mrpBody').innerHTML = '<div class="mrp-empty">⏳ Memeriksa riwayat lengkap...</div>';
+    await muatSemuaData(true);
+    kunjungan = allData.filter(r => (r['Nama Pasien']||'').trim().toLowerCase() === nama);
+  }
+
+  kunjungan = kunjungan.sort((a,b) => {
       const tA = new Date((b['Tanggal']||'').split('/').reverse().join('-') + 'T' + (b['Waktu']||'00:00'));
       const tB = new Date((a['Tanggal']||'').split('/').reverse().join('-') + 'T' + (a['Waktu']||'00:00'));
       return tA - tB;
@@ -2015,12 +2029,13 @@ function resetForm() {
 }
 
 // ── REKAM MEDIS ──
-async function muatSemuaData() {
+async function muatSemuaData(muatSemua = false) {
   const rmList = document.getElementById('rmList');
-  if (rmList) rmList.innerHTML = '<div class="empty-state"><div class="es-icon">⏳</div><p>Memuat data terbaru...</p></div>';
+  if (rmList) rmList.innerHTML = `<div class="empty-state"><div class="es-icon">⏳</div><p>${muatSemua ? 'Memuat semua riwayat...' : 'Memuat data terbaru...'}</p></div>`;
   try {
-    const fetchPromise = fetch(API_URL + '?action=getAll');
-    const timeoutPromise = new Promise((_,reject) => setTimeout(() => reject(new Error('Timeout')), 45000));
+    const limitParam = muatSemua ? 'all' : '60';
+    const fetchPromise = fetch(API_URL + '?action=getAll&limit=' + limitParam);
+    const timeoutPromise = new Promise((_,reject) => setTimeout(() => reject(new Error('Timeout')), muatSemua ? 90000 : 45000));
     const res = await Promise.race([fetchPromise, timeoutPromise]);
     const text = await res.text();
     let parsed;
@@ -2034,13 +2049,11 @@ async function muatSemuaData() {
     const raw = Array.isArray(parsed) ? parsed : (parsed.data || []);
     const total = parsed.total || raw.length;
     const loaded = parsed.loaded || raw.length;
-    if (total > loaded && rmList) {
-      const sisa = total - loaded;
-      rmList.insertAdjacentHTML('beforeend',
-        `<div style="text-align:center;padding:10px;color:var(--text3);font-size:13px">
-          Menampilkan ${loaded} data terbaru dari total ${total} data.
-          Gunakan pencarian untuk menemukan data lama.
-        </div>`);
+    const btnMuatSemua = document.getElementById('btnMuatSemuaRiwayat');
+    if (total > loaded) {
+      if (btnMuatSemua) btnMuatSemua.style.display = 'block';
+    } else {
+      if (btnMuatSemua) btnMuatSemua.style.display = 'none';
     }
     const str = v => (v === null || v === undefined) ? '' : String(v);
     allData = raw.map(r => {
@@ -2891,6 +2904,17 @@ async function embedFoto(wb, ws, url, rowIdx, colIdx) {
   }
 }
 
+// ── MUAT SEMUA RIWAYAT (termasuk data lebih dari 60 laporan terakhir) ──
+async function muatSemuaRiwayat() {
+  const btn = document.getElementById('btnMuatSemuaRiwayat');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Memuat semua riwayat...'; }
+  await muatSemuaData(true);
+  // Terapkan ulang filter yang sedang aktif setelah data lengkap dimuat
+  filterPasien(document.getElementById('rmSearch').value);
+  if (btn) { btn.disabled = false; btn.innerHTML = '📜 Muat Semua Riwayat (termasuk data lebih lama)'; btn.style.display = 'none'; }
+  showToast('Semua riwayat berhasil dimuat ✓', 'success');
+}
+
 function filterPasien(val) {
   const fktp = (document.getElementById('filterFKTP')||{}).value || '';
   const jenis = (document.getElementById('filterJenis')||{}).value || '';
@@ -3473,8 +3497,15 @@ function bukaDetail(r) {
 function tutupModal() { document.getElementById('modalOverlay').classList.remove('show'); }
 
 // ── HAPUS KUNJUNGAN (Admin Only) ──
+let sedangHapusData = false; // Kunci agar tidak ada hapus bersamaan yang bisa salah sasaran baris
+
 async function hapusLangsung(rowIndex, namaPasien) {
+  if (sedangHapusData) {
+    showToast('Tunggu proses hapus sebelumnya selesai dulu...', 'error');
+    return;
+  }
   if (!confirm('Hapus data kunjungan ' + namaPasien + '?')) return;
+  sedangHapusData = true;
   try {
     showToast('Menghapus data...', 'success');
     const res = await fetch(API_URL, {
@@ -3484,12 +3515,14 @@ async function hapusLangsung(rowIndex, namaPasien) {
     const result = await res.json();
     if (result.status === 'ok') {
       showToast('Data berhasil dihapus! ✓', 'success');
-      await muatSemuaData();
+      await muatSemuaData(); // refresh agar nomor baris semua data ter-update ulang
     } else {
       showToast('Gagal menghapus: ' + (result.msg||''), 'error');
     }
   } catch(e) {
     showToast('Koneksi bermasalah', 'error');
+  } finally {
+    sedangHapusData = false;
   }
 }
 
