@@ -2847,6 +2847,8 @@ async function eksporRekapExcel() {
     cell.font = { bold: true, name: 'Calibri', size: 11 };
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2EFDA' } };
   }
+  // Page break: halaman 1 berhenti di sini (tabel + total), halaman 2 mulai dari TTD
+  totalRow.addPageBreak();
   rowIdx++;
 
   // ── TTD (kanan bawah) ──
@@ -2900,8 +2902,8 @@ async function eksporRekapExcel() {
   ws.mergeCells(`F${ttdStartRow+9}:I${ttdStartRow+9}`);
   setTTDCell(`F${ttdStartRow+9}`, 'PEMBINA NIP 198005232006041011');
   ws.getRow(ttdStartRow+9).height = 16;
-  // Garis atas di baris PEMBINA NIP (F s.d H, sepanjang tulisan)
-  for (let c = 6; c <= 8; c++) {
+  // Garis atas di baris PEMBINA NIP — dipendekkan (G s.d H saja, tidak sepanjang F-H)
+  for (let c = 7; c <= 8; c++) {
     const cell = ws.getCell(ttdStartRow+9, c);
     cell.border = { top: { style: 'thin', color: { argb: 'FF000000' } } };
   }
