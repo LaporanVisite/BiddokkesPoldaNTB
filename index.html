@@ -921,6 +921,31 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
         <option>Polres Bima Kota</option>
       </select>
     </div>
+    <!-- Filter Jenis Pelayanan -->
+    <div style="margin-top:10px">
+      <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.4px;display:block;margin-bottom:6px">🩺 Filter Jenis Pelayanan</label>
+      <select id="filterJenis" onchange="filterPasien(document.getElementById('rmSearch').value)"
+        style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;color:var(--text);background:#f8fafc;outline:none">
+        <option value="">— Semua Jenis —</option>
+        <option value="Home Visit">🏠 Home Visit</option>
+        <option value="Monitoring">🔍 Monitoring</option>
+        <option value="Pendampingan">🤝 Pendampingan</option>
+        <option value="Telemedicine">💻 Telemedicine</option>
+      </select>
+    </div>
+    <!-- Filter Tanggal Custom -->
+    <div style="margin-top:10px">
+      <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.4px;display:block;margin-bottom:6px">📅 Filter Tanggal Custom</label>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <input type="date" id="filterTglMulai" onchange="filterPasien(document.getElementById('rmSearch').value)"
+          style="flex:1;min-width:120px;padding:8px 10px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;color:var(--text);background:#f8fafc;outline:none">
+        <span style="font-size:12px;color:var(--text3);white-space:nowrap">s.d.</span>
+        <input type="date" id="filterTglSelesai" onchange="filterPasien(document.getElementById('rmSearch').value)"
+          style="flex:1;min-width:120px;padding:8px 10px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;color:var(--text);background:#f8fafc;outline:none">
+        <button onclick="document.getElementById('filterTglMulai').value='';document.getElementById('filterTglSelesai').value='';filterPasien(document.getElementById('rmSearch').value)"
+          style="padding:8px 12px;border-radius:10px;border:1.5px solid var(--border);background:white;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">✕ Reset</button>
+      </div>
+    </div>
     <!-- Info jumlah hasil filter -->
     <div id="filterInfo" style="display:none;margin-top:8px;font-size:12px;color:var(--green);font-weight:600;padding:6px 10px;background:var(--green3);border-radius:8px"></div>
     <div id="rmList"></div>
@@ -2858,6 +2883,9 @@ async function embedFoto(wb, ws, url, rowIdx, colIdx) {
 
 function filterPasien(val) {
   const fktp = (document.getElementById('filterFKTP')||{}).value || '';
+  const jenis = (document.getElementById('filterJenis')||{}).value || '';
+  const tglMulaiStr = (document.getElementById('filterTglMulai')||{}).value || '';
+  const tglSelesaiStr = (document.getElementById('filterTglSelesai')||{}).value || '';
   let filtered = allData;
 
   // Filter nama
@@ -2870,9 +2898,31 @@ function filterPasien(val) {
     filtered = filtered.filter(r => (r['FKTP']||'').toLowerCase().trim() === fktp.toLowerCase().trim());
   }
 
+  // Filter Jenis Pelayanan
+  if (jenis) {
+    filtered = filtered.filter(r => (r['JenisPelayanan']||'').toLowerCase().trim() === jenis.toLowerCase().trim());
+  }
+
+  // Filter Tanggal Custom
+  if (tglMulaiStr || tglSelesaiStr) {
+    const parseTglRM = (s) => {
+      if (!s) return 0;
+      const m = String(s).match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+      if (m) return new Date(parseInt(m[3]), parseInt(m[2])-1, parseInt(m[1])).getTime();
+      const d = new Date(s); return isNaN(d) ? 0 : d.getTime();
+    };
+    const tMulai = tglMulaiStr ? new Date(tglMulaiStr).setHours(0,0,0,0) : -Infinity;
+    const tSelesai = tglSelesaiStr ? new Date(tglSelesaiStr).setHours(23,59,59,999) : Infinity;
+    filtered = filtered.filter(r => {
+      const t = parseTglRM(r['Tanggal']);
+      return t >= tMulai && t <= tSelesai;
+    });
+  }
+
   // Tampilkan info jumlah hasil filter
   const infoEl = document.getElementById('filterInfo');
-  if (fktp || val) {
+  const adaFilter = fktp || val || jenis || tglMulaiStr || tglSelesaiStr;
+  if (adaFilter) {
     // Hitung jumlah pasien unik
     const seen = {};
     filtered.forEach(r => {
@@ -2881,10 +2931,12 @@ function filterPasien(val) {
     });
     const jmlPasien = Object.keys(seen).length;
     const jmlLaporan = filtered.length;
+    const bagian = [];
+    if (fktp) bagian.push(`🏥 ${fktp}`);
+    if (jenis) bagian.push(`🩺 ${jenis}`);
+    if (tglMulaiStr || tglSelesaiStr) bagian.push(`📅 ${tglMulaiStr||'...'} s.d ${tglSelesaiStr||'...'}`);
     infoEl.style.display = 'block';
-    infoEl.textContent = fktp
-      ? `🏥 ${fktp}: ${jmlPasien} pasien · ${jmlLaporan} laporan`
-      : `🔍 Hasil: ${jmlPasien} pasien · ${jmlLaporan} laporan`;
+    infoEl.textContent = (bagian.length ? bagian.join(' · ') + ': ' : '🔍 Hasil: ') + `${jmlPasien} pasien · ${jmlLaporan} laporan`;
   } else {
     infoEl.style.display = 'none';
   }
