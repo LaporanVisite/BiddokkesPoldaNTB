@@ -2711,6 +2711,12 @@ async function eksporRekapExcel() {
     { width: 13 }, { width: 13 }, { width: 8 }, { width: 22 }, { width: 22 }
   ];
 
+  // Page setup — sesuai contoh: potrait, scale 61%, agar rapi saat print/view page break
+  ws.pageSetup.orientation = 'portrait';
+  ws.pageSetup.scale = 61;
+  ws.pageSetup.fitToPage = false;
+  ws.pageSetup.horizontalCentered = true;
+
   const thinBorder = { style: 'medium', color: { argb: 'FF000000' } };
   const allBorder = { top: thinBorder, left: thinBorder, bottom: thinBorder, right: thinBorder };
   const centerWrap = { horizontal: 'center', vertical: 'middle', wrapText: true };
@@ -2824,6 +2830,9 @@ async function eksporRekapExcel() {
     if (r.foto2) imagePromises.push(embedFoto(wb, ws, r.foto2, rowIdx, 8));
     rowIdx++;
   });
+
+  // Page break manual — halaman 1 berisi 9 FKTP pertama (baris 10-18), halaman 2 sisanya + TOTAL + TTD
+  ws.rowBreaks = [{ id: 18, max: 16383, man: true }];
 
   // Baris TOTAL
   const totalHV  = rows.reduce((sum, r) => sum + (r.hv || 0), 0);
