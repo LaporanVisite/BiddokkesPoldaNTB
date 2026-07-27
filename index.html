@@ -955,7 +955,7 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
     <!-- Info jumlah hasil filter -->
     <div id="filterInfo" style="display:none;margin-top:8px;font-size:12px;color:var(--green);font-weight:600;padding:6px 10px;background:var(--green3);border-radius:8px"></div>
     <!-- Tombol muat semua riwayat (termasuk data lebih dari 60 laporan terakhir) -->
-    <button id="btnMuatSemuaRiwayat" onclick="muatSemuaRiwayat()"
+    <button id="btnMuatSemuaRiwayat" onclick="muatDataLagi()"
       style="display:none;width:100%;margin-top:8px;padding:9px;background:rgba(22,163,74,0.08);border:1.5px dashed var(--green);color:var(--green);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer">
       📜 Muat Semua Riwayat (termasuk data lebih lama)
     </button>
@@ -1647,7 +1647,7 @@ async function bukaRekamPasienDariForm() {
   // sebelum menyimpulkan "tidak ada data" — supaya data lama tidak salah dikira terhapus
   if (!kunjungan.length) {
     document.getElementById('mrpBody').innerHTML = '<div class="mrp-empty">⏳ Memeriksa riwayat lengkap...</div>';
-    await muatSemuaData(true);
+    await muatSisaSemuaData();
     kunjungan = allData.filter(r => (r['Nama Pasien']||'').trim().toLowerCase() === nama);
   }
 
@@ -2029,13 +2029,71 @@ function resetForm() {
 }
 
 // ── REKAM MEDIS ──
-async function muatSemuaData(muatSemua = false) {
+let rmOffset = 0;    // jumlah data yang sudah dimuat (dari yang terbaru)
+let rmTotal = 0;     // total seluruh data di spreadsheet
+const RM_BATCH_SIZE = 60;
+
+function normalisasiRow(r) {
+  const str = v => (v === null || v === undefined) ? '' : String(v);
+  const norm = {
+    'Nama Pasien':    str(r['Nama Pasien']),
+    'NIPNRP':         str(r['NIP/NRP']    || r['NIPNRP']),
+    'Pangkat':        str(r['Pangkat']     || ''),
+    'Jabatan':        str(r['Jabatan']     || ''),
+    'Kesatuan':       str(r['Kesatuan']    || ''),
+    'Tanggal':        str(r['Tanggal']     || ''),
+    'Hari':           str(r['Hari']        || ''),
+    'Waktu':          str(r['Waktu']       || ''),
+    'Tempat':         str(r['Tempat']      || ''),
+    'KondisiUmum':    str(r['Kondisi Umum']|| r['KondisiUmum'] || ''),
+    'Tensi':          str(r['Tensi']       || ''),
+    'Nadi':           str(r['Nadi']        || ''),
+    'RR':             str(r['RR']          || ''),
+    'SpO2':           str(r['SpO2']        || ''),
+    'Suhu':           str(r['Suhu']         || ''),
+    'PersonelTerlibat': str(r['PersonelTerlibat'] || r['Personel Yang Terlibat'] || ''),
+    'Keterangan':     str(r['Keterangan']  || ''),
+    'Keterangan2':    str(r['Keterangan2'] || ''),
+    'Keterangan3':    str(r['Keterangan3'] || ''),
+    'Keterangan4':    str(r['Keterangan4'] || ''),
+    'Keluhan1':       str(r['Keluhan 1']   || r['Keluhan1']  || ''),
+    'Keluhan2':       str(r['Keluhan 2']   || r['Keluhan2']  || ''),
+    'Keluhan3':       str(r['Keluhan 3']   || r['Keluhan3']  || ''),
+    'Keluhan4':       str(r['Keluhan 4']   || r['Keluhan4']  || ''),
+    'Diagnosa1':      str(r['Diagnosa 1']  || r['Diagnosa1'] || ''),
+    'Diagnosa2':      str(r['Diagnosa 2']  || r['Diagnosa2'] || ''),
+    'Diagnosa3':      str(r['Diagnosa 3']  || r['Diagnosa3'] || ''),
+    'Diagnosa4':      str(r['Diagnosa 4']  || r['Diagnosa4'] || ''),
+    'Tindakan1':      str(r['Tindakan 1']  || r['Tindakan1'] || ''),
+    'Tindakan2':      str(r['Tindakan 2']  || r['Tindakan2'] || ''),
+    'Tindakan3':      str(r['Tindakan 3']  || r['Tindakan3'] || ''),
+    'Tindakan4':      str(r['Tindakan 4']  || r['Tindakan4'] || ''),
+    'Rencana1':       str(r['Rencana 1']   || r['Rencana1']  || ''),
+    'Rencana2':       str(r['Rencana 2']   || r['Rencana2']  || ''),
+    'Rencana3':       str(r['Rencana 3']   || r['Rencana3']  || ''),
+    'Rencana4':       str(r['Rencana 4']   || r['Rencana4']  || ''),
+    'DokterDPJP1':    str(r['Dokter DPJP 1']||r['DokterDPJP1']||''),
+    'DokterDPJP2':    str(r['Dokter DPJP 2']||r['DokterDPJP2']||''),
+    'DokterDPJP3':    str(r['Dokter DPJP 3']||r['DokterDPJP3']||''),
+    'DokterDPJP4':    str(r['Dokter DPJP 4']||r['DokterDPJP4']||''),
+    'FKTP':           str(r['FKTP Yang Melaksanakan']||r['FKTP']||''),
+    'Dokumentasi1':   str(r['Dokumentasi 1']||r['Dokumentasi1']||''),
+    'Dokumentasi2':   str(r['Dokumentasi 2']||r['Dokumentasi2']||''),
+    'JenisPelayanan': str(r['Jenis Pelayanan']||r['JenisPelayanan']||''),
+    '_rowIndex':      r._rowIndex || 0,
+  };
+  return Object.assign({}, r, norm);
+}
+
+// Muat halaman PERTAMA (60 data terbaru) — dipanggil saat pertama buka Rekam Medis
+async function muatSemuaData() {
   const rmList = document.getElementById('rmList');
-  if (rmList) rmList.innerHTML = `<div class="empty-state"><div class="es-icon">⏳</div><p>${muatSemua ? 'Memuat semua riwayat...' : 'Memuat data terbaru...'}</p></div>`;
+  if (rmList) rmList.innerHTML = '<div class="empty-state"><div class="es-icon">⏳</div><p>Memuat data terbaru...</p></div>';
+  rmOffset = 0;
+  allData = [];
   try {
-    const limitParam = muatSemua ? 'all' : '60';
-    const fetchPromise = fetch(API_URL + '?action=getAll&limit=' + limitParam);
-    const timeoutPromise = new Promise((_,reject) => setTimeout(() => reject(new Error('Timeout')), muatSemua ? 90000 : 45000));
+    const fetchPromise = fetch(API_URL + '?action=getAll&offset=0&limit=' + RM_BATCH_SIZE);
+    const timeoutPromise = new Promise((_,reject) => setTimeout(() => reject(new Error('Timeout')), 45000));
     const res = await Promise.race([fetchPromise, timeoutPromise]);
     const text = await res.text();
     let parsed;
@@ -2045,76 +2103,58 @@ async function muatSemuaData(muatSemua = false) {
       if (rmList) rmList.innerHTML = '<div class="empty-state"><div class="es-icon">❌</div><p>Gagal memuat data (parse error)</p></div>';
       return;
     }
-    // Support format baru {data, total, loaded} maupun format lama array langsung
     const raw = Array.isArray(parsed) ? parsed : (parsed.data || []);
-    const total = parsed.total || raw.length;
-    const loaded = parsed.loaded || raw.length;
-    const btnMuatSemua = document.getElementById('btnMuatSemuaRiwayat');
-    if (total > loaded) {
-      if (btnMuatSemua) btnMuatSemua.style.display = 'block';
-    } else {
-      if (btnMuatSemua) btnMuatSemua.style.display = 'none';
-    }
-    const str = v => (v === null || v === undefined) ? '' : String(v);
-    allData = raw.map(r => {
-      const norm = {
-        'Nama Pasien':    str(r['Nama Pasien']),
-        'NIPNRP':         str(r['NIP/NRP']    || r['NIPNRP']),
-        'Pangkat':        str(r['Pangkat']     || ''),
-        'Jabatan':        str(r['Jabatan']     || ''),
-        'Kesatuan':       str(r['Kesatuan']    || ''),
-        'Tanggal':        str(r['Tanggal']     || ''),
-        'Hari':           str(r['Hari']        || ''),
-        'Waktu':          str(r['Waktu']       || ''),
-        'Tempat':         str(r['Tempat']      || ''),
-        'KondisiUmum':    str(r['Kondisi Umum']|| r['KondisiUmum'] || ''),
-        'Tensi':          str(r['Tensi']       || ''),
-        'Nadi':           str(r['Nadi']        || ''),
-        'RR':             str(r['RR']          || ''),
-        'SpO2':           str(r['SpO2']        || ''),
-        'Suhu':           str(r['Suhu']         || ''),
-        'PersonelTerlibat': str(r['PersonelTerlibat'] || r['Personel Yang Terlibat'] || ''),
-        'Keterangan':     str(r['Keterangan']  || ''),
-        'Keterangan2':    str(r['Keterangan2'] || ''),
-        'Keterangan3':    str(r['Keterangan3'] || ''),
-        'Keterangan4':    str(r['Keterangan4'] || ''),
-        'Keluhan1':       str(r['Keluhan 1']   || r['Keluhan1']  || ''),
-        'Keluhan2':       str(r['Keluhan 2']   || r['Keluhan2']  || ''),
-        'Keluhan3':       str(r['Keluhan 3']   || r['Keluhan3']  || ''),
-        'Keluhan4':       str(r['Keluhan 4']   || r['Keluhan4']  || ''),
-        'Diagnosa1':      str(r['Diagnosa 1']  || r['Diagnosa1'] || ''),
-        'Diagnosa2':      str(r['Diagnosa 2']  || r['Diagnosa2'] || ''),
-        'Diagnosa3':      str(r['Diagnosa 3']  || r['Diagnosa3'] || ''),
-        'Diagnosa4':      str(r['Diagnosa 4']  || r['Diagnosa4'] || ''),
-        'Tindakan1':      str(r['Tindakan 1']  || r['Tindakan1'] || ''),
-        'Tindakan2':      str(r['Tindakan 2']  || r['Tindakan2'] || ''),
-        'Tindakan3':      str(r['Tindakan 3']  || r['Tindakan3'] || ''),
-        'Tindakan4':      str(r['Tindakan 4']  || r['Tindakan4'] || ''),
-        'Rencana1':       str(r['Rencana 1']   || r['Rencana1']  || ''),
-        'Rencana2':       str(r['Rencana 2']   || r['Rencana2']  || ''),
-        'Rencana3':       str(r['Rencana 3']   || r['Rencana3']  || ''),
-        'Rencana4':       str(r['Rencana 4']   || r['Rencana4']  || ''),
-        'DokterDPJP1':    str(r['Dokter DPJP 1']||r['DokterDPJP1']||''),
-        'DokterDPJP2':    str(r['Dokter DPJP 2']||r['DokterDPJP2']||''),
-        'DokterDPJP3':    str(r['Dokter DPJP 3']||r['DokterDPJP3']||''),
-        'DokterDPJP4':    str(r['Dokter DPJP 4']||r['DokterDPJP4']||''),
-        'FKTP':           str(r['FKTP Yang Melaksanakan']||r['FKTP']||''),
-        'Dokumentasi1':   str(r['Dokumentasi 1']||r['Dokumentasi1']||''),
-        'Dokumentasi2':   str(r['Dokumentasi 2']||r['Dokumentasi2']||''),
-        'JenisPelayanan': str(r['Jenis Pelayanan']||r['JenisPelayanan']||''),
-        '_rowIndex':      r._rowIndex || 0,
-      };
-      // Copy semua field asli lalu timpa dengan versi ternormalisasi
-      return Object.assign({}, r, norm);
-    });
-    window._allPasienData = allData; // untuk modal rekam medis dari form
+    rmTotal = parsed.total || raw.length;
+    rmOffset = parsed.loaded || raw.length;
+    allData = raw.map(normalisasiRow);
+    window._allPasienData = allData;
     if (rmList) tampilRekamMedis(allData);
     isiPilihanMinggu();
+    perbaruiTombolMuatLagi();
   } catch(e) {
     console.error('muatSemuaData error:', e);
     const msg = e.name === 'AbortError' ? 'Koneksi timeout, coba lagi' : 'Gagal memuat data';
     if (rmList) rmList.innerHTML = `<div class="empty-state"><div class="es-icon">❌</div><p>${msg}</p><button onclick="muatSemuaData()" style="margin-top:12px;background:#1a7a3c;color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px">🔄 Coba Lagi</button></div>`;
     else showToast(msg, 'error');
+  }
+}
+
+// Muat 60 data LAGI (halaman berikutnya, lebih lama) — ditambahkan ke data yang sudah ada
+async function muatDataLagi() {
+  const btn = document.getElementById('btnMuatSemuaRiwayat');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Memuat...'; }
+  try {
+    const res = await fetch(API_URL + '?action=getAll&offset=' + rmOffset + '&limit=' + RM_BATCH_SIZE);
+    const parsed = await res.json();
+    const raw = Array.isArray(parsed) ? parsed : (parsed.data || []);
+    rmTotal = parsed.total || rmTotal;
+    rmOffset = parsed.loaded || rmOffset;
+    allData = allData.concat(raw.map(normalisasiRow));
+    window._allPasienData = allData;
+    filterPasien(document.getElementById('rmSearch').value);
+    showToast(`Data lama berhasil dimuat (${rmOffset}/${rmTotal}) ✓`, 'success');
+  } catch(e) {
+    showToast('Gagal memuat data lama, coba lagi', 'error');
+  }
+  perbaruiTombolMuatLagi();
+}
+
+// Muat SEMUA sisa data (dipakai saat pencarian butuh riwayat lengkap 1 pasien)
+async function muatSisaSemuaData() {
+  while (rmOffset < rmTotal) {
+    await muatDataLagi();
+  }
+}
+
+function perbaruiTombolMuatLagi() {
+  const btn = document.getElementById('btnMuatSemuaRiwayat');
+  if (!btn) return;
+  if (rmOffset < rmTotal) {
+    btn.style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = `📜 Muat ${Math.min(RM_BATCH_SIZE, rmTotal - rmOffset)} Data Lagi (${rmOffset}/${rmTotal})`;
+  } else {
+    btn.style.display = 'none';
   }
 }
 
@@ -2902,17 +2942,6 @@ async function embedFoto(wb, ws, url, rowIdx, colIdx) {
   } catch(e) {
     console.error('Gagal embed foto:', e);
   }
-}
-
-// ── MUAT SEMUA RIWAYAT (termasuk data lebih dari 60 laporan terakhir) ──
-async function muatSemuaRiwayat() {
-  const btn = document.getElementById('btnMuatSemuaRiwayat');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Memuat semua riwayat...'; }
-  await muatSemuaData(true);
-  // Terapkan ulang filter yang sedang aktif setelah data lengkap dimuat
-  filterPasien(document.getElementById('rmSearch').value);
-  if (btn) { btn.disabled = false; btn.innerHTML = '📜 Muat Semua Riwayat (termasuk data lebih lama)'; btn.style.display = 'none'; }
-  showToast('Semua riwayat berhasil dimuat ✓', 'success');
 }
 
 function filterPasien(val) {
