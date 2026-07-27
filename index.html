@@ -521,7 +521,9 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
       <div class="field"><label>Tanggal <span class="req">*</span></label><input type="date" id="Tanggal"></div>
     </div>
     <div class="grid2">
-      <div class="field"><label>Waktu <span class="req">*</span></label><input type="time" id="Waktu"></div>
+      <div class="field"><label>Waktu <span class="req">*</span></label>
+        <input type="text" id="Waktu" placeholder="Contoh: 14:30" inputmode="numeric" maxlength="5" oninput="formatWaktuInput(this)">
+      </div>
       <div class="field" id="fieldTempat"><label>Tempat <span class="req">*</span></label><input type="text" id="Tempat" placeholder="Lokasi pelaksanaan" onblur="formatTitleCaseField(this)"></div>
     </div>
   </div>
@@ -795,8 +797,12 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
     <div class="pw-icon">📊</div>
     <h3 class="pw-title">Rekap Mingguan</h3>
     <p class="pw-sub">Masukkan password untuk mengakses rekap</p>
-    <input type="password" id="rekapPwInput" class="pw-input" placeholder="Password..."
-      onkeydown="if(event.key==='Enter')cekPwRekap()">
+    <div style="position:relative">
+      <input type="password" id="rekapPwInput" class="pw-input" placeholder="Password..." style="padding-right:40px"
+        onkeydown="if(event.key==='Enter')cekPwRekap()">
+      <button type="button" onclick="toggleLihatPassword('rekapPwInput', this)"
+        style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--text3);padding:4px">👁️</button>
+    </div>
     <div style="display:flex;gap:10px;margin-top:4px">
       <button class="pw-btn cancel" onclick="ganti('form')">Batal</button>
       <button class="pw-btn" onclick="cekPwRekap()">Masuk</button>
@@ -962,7 +968,11 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
     <div class="pw-icon">🔒</div>
     <h3>Akses Admin</h3>
     <p>Masukkan password untuk membuka halaman Rekam Medis</p>
-    <input type="password" id="pwInput" placeholder="••••••••••" onkeydown="if(event.key==='Enter')cekPassword()">
+    <div style="position:relative">
+      <input type="password" id="pwInput" placeholder="••••••••••" style="padding-right:40px;width:100%" onkeydown="if(event.key==='Enter')cekPassword()">
+      <button type="button" onclick="toggleLihatPassword('pwInput', this)"
+        style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--text3);padding:4px">👁️</button>
+    </div>
     <div class="pw-btn-row">
       <button class="pw-btn cancel" onclick="tutupPwModal()">Batal</button>
       <button class="pw-btn confirm" onclick="cekPassword()">Masuk</button>
@@ -3014,9 +3024,15 @@ function kapital(str) {
 }
 
 // Kapital di setiap kata — khusus Nama Pasien, Pangkat, Jabatan, Tempat (herman -> Herman, ba sidokkes -> Ba Sidokkes)
+// Kata yang mengandung titik (gelar seperti S.H., S.Kom, M.Ked, dr.) dibiarkan apa adanya, tidak ikut diubah
 function titleCase(str) {
   if (!str) return '';
-  return str.toLowerCase().split(' ').map(w => w ? w.charAt(0).toUpperCase() + w.slice(1) : w).join(' ');
+  return str.split(' ').map(w => {
+    if (!w) return w;
+    if (w.includes('.')) return w; // gelar/singkatan — biarkan penulisan aslinya
+    const lower = w.toLowerCase();
+    return lower.charAt(0).toUpperCase() + lower.slice(1);
+  }).join(' ');
 }
 
 // Format langsung di field input (dipanggil saat onblur)
@@ -3640,6 +3656,34 @@ function pilihanNoHP(val) {
   } else {
     input.value = val;
     input.readOnly = true;
+  }
+}
+
+// ── WAKTU 24 JAM — input manual, format HH:MM, otomatis tambah titik dua ──
+function formatWaktuInput(el) {
+  let v = el.value.replace(/[^0-9]/g, ''); // hanya angka
+  if (v.length > 4) v = v.slice(0, 4);
+  if (v.length >= 3) {
+    let jam = v.slice(0, 2);
+    let menit = v.slice(2);
+    // Batasi jam maksimal 23
+    if (parseInt(jam) > 23) jam = '23';
+    el.value = jam + ':' + menit;
+  } else {
+    el.value = v;
+  }
+}
+
+// ── LIHAT/SEMBUNYIKAN PASSWORD ──
+function toggleLihatPassword(inputId, btn) {
+  const el = document.getElementById(inputId);
+  if (!el) return;
+  if (el.type === 'password') {
+    el.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    el.type = 'password';
+    btn.textContent = '👁️';
   }
 }
 
