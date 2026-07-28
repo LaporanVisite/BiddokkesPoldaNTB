@@ -2893,7 +2893,7 @@ async function eksporRekapExcel() {
   try {
     const ttdImgId = wb.addImage({ base64: TTD_MUNANDAR_B64, extension: 'png' });
     ws.addImage(ttdImgId, {
-      tl: { col: 6.589, row: ttdStartRow + 3.4 },
+      tl: { col: 6.589, row: (ttdStartRow + 8) - 6.859 },
       ext: { width: 207, height: 157 }, // 5.49cm x 4.16cm @ 96 DPI
       editAs: 'oneCell'
     });
@@ -2917,7 +2917,7 @@ async function eksporRekapExcel() {
   try {
     const garisImgId = wb.addImage({ base64: GARIS_TTD_B64, extension: 'png' });
     ws.addImage(garisImgId, {
-      tl: { col: 6.5, row: (ttdStartRow + 9) - 1 },
+      tl: { col: 6.5, row: ttdStartRow + 9 },
       ext: { width: 217, height: 1.13 }, // 5.73cm x 0.03cm @ 96 DPI
       editAs: 'oneCell'
     });
