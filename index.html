@@ -2716,8 +2716,9 @@ async function eksporRekapExcel() {
 
   // Page setup — sesuai contoh: potrait, scale 61%, agar rapi saat print/view page break
   ws.pageSetup.orientation = 'portrait';
-  ws.pageSetup.scale = 61;
-  ws.pageSetup.fitToPage = false;
+  ws.pageSetup.fitToPage = true;
+  ws.pageSetup.fitToWidth = 1;
+  ws.pageSetup.fitToHeight = 2; // paksa selalu tepat 2 halaman
   ws.pageSetup.horizontalCentered = true;
 
   const thinBorder = { style: 'medium', color: { argb: 'FF000000' } };
@@ -2834,9 +2835,6 @@ async function eksporRekapExcel() {
     rowIdx++;
   });
 
-  // Page break manual — halaman 1 berisi 9 FKTP pertama (baris 10-18), halaman 2 sisanya + TOTAL + TTD
-  ws.rowBreaks = [{ id: 18, max: 16383, man: true }];
-
   // Baris TOTAL
   const totalHV  = rows.reduce((sum, r) => sum + (r.hv || 0), 0);
   const totalMon = rows.reduce((sum, r) => sum + (r.mon || 0), 0);
@@ -2891,12 +2889,12 @@ async function eksporRekapExcel() {
   setTTDCell(`F${ttdStartRow+3}`, 'PEMBUAT LAPORAN');
   ws.getRow(ttdStartRow+3).height = 16;
 
-  // Embed gambar TTD di area baris +4 s.d +7
+  // Embed gambar TTD — ukuran presisi 5,49 cm x 4,16 cm, diposisikan tepat di tengah kolom F:I
   try {
     const ttdImgId = wb.addImage({ base64: TTD_MUNANDAR_B64, extension: 'png' });
     ws.addImage(ttdImgId, {
-      tl: { col: 6.3, row: ttdStartRow + 3.5 },
-      br: { col: 8.0, row: ttdStartRow + 7.8 },
+      tl: { col: 6.589, row: ttdStartRow + 3.4 },
+      ext: { width: 207, height: 157 }, // 5.49cm x 4.16cm @ 96 DPI
       editAs: 'oneCell'
     });
   } catch(e) { console.warn('TTD image error:', e); }
@@ -2919,7 +2917,7 @@ async function eksporRekapExcel() {
   try {
     const garisImgId = wb.addImage({ base64: GARIS_TTD_B64, extension: 'png' });
     ws.addImage(garisImgId, {
-      tl: { col: 6.3, row: (ttdStartRow + 9) - 1 },
+      tl: { col: 6.5, row: (ttdStartRow + 9) - 1 },
       ext: { width: 217, height: 1.13 }, // 5.73cm x 0.03cm @ 96 DPI
       editAs: 'oneCell'
     });
