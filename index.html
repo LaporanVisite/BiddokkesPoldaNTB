@@ -2893,8 +2893,8 @@ async function eksporRekapExcel() {
   try {
     const ttdImgId = wb.addImage({ base64: TTD_MUNANDAR_B64, extension: 'png' });
     ws.addImage(ttdImgId, {
-      tl: { col: 6.589, row: ttdStartRow + 3 },
-      br: { col: 8.195, row: ttdStartRow + 7 },
+      tl: { col: 6.642, row: ttdStartRow + 1.235 },
+      br: { col: 8.390, row: ttdStartRow + 7.705 },
       editAs: 'oneCell'
     });
   } catch(e) { console.warn('TTD image error:', e); }
@@ -2913,12 +2913,12 @@ async function eksporRekapExcel() {
   setTTDCell(`F${ttdStartRow+9}`, 'PEMBINA NIP 198005232006041011');
   ws.getRow(ttdStartRow+9).height = 16;
 
-  // Garis tanda tangan — gambar garis presisi 5,73 cm x 0,03 cm (sesuai shape asli), diposisikan di atas "PEMBINA NIP"
+  // Garis tanda tangan — posisi & ukuran persis diambil dari template hasil verifikasi manual
   try {
     const garisImgId = wb.addImage({ base64: GARIS_TTD_B64, extension: 'png' });
     ws.addImage(garisImgId, {
-      tl: { col: 6.5, row: (ttdStartRow + 9) - 1 },
-      ext: { width: 217, height: 1.13 }, // 5.73cm x 0.03cm @ 96 DPI
+      tl: { col: 6.486, row: ttdStartRow + 8 },
+      ext: { width: 217, height: 1.13 },
       editAs: 'oneCell'
     });
   } catch(e) { console.warn('Garis TTD image error:', e); }
