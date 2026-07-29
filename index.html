@@ -357,6 +357,35 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 </head>
 <body>
 
+<!-- ═══════════════ LOGIN GATE (per FKTP) ═══════════════ -->
+<div id="loginGate" style="display:flex;position:fixed;inset:0;background:linear-gradient(160deg,#0a2016 0%,#0c2a1b 45%,#0a1710 100%);z-index:99999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:white;border-radius:20px;padding:32px 24px;max-width:360px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#1a7a3c,#22a050);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:26px">🏥</div>
+      <div style="font-size:15px;font-weight:700;color:#0f2417">Laporan Biddokkes Polda NTB</div>
+      <div style="font-size:12px;color:#6b7c72;margin-top:2px">Login sesuai FKTP Anda</div>
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:12px;font-weight:600;color:#4b5f54;display:block;margin-bottom:5px">ID FKTP</label>
+      <input type="text" id="loginId" placeholder="Contoh: brimob" autocomplete="off" autocapitalize="off"
+        style="width:100%;padding:11px 12px;border-radius:10px;border:1.5px solid #dde3df;font-size:14px;outline:none"
+        onkeydown="if(event.key==='Enter')document.getElementById('loginPw').focus()">
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="font-size:12px;font-weight:600;color:#4b5f54;display:block;margin-bottom:5px">Password</label>
+      <div style="position:relative">
+        <input type="password" id="loginPw" placeholder="••••••••" autocomplete="off"
+          style="width:100%;padding:11px 40px 11px 12px;border-radius:10px;border:1.5px solid #dde3df;font-size:14px;outline:none"
+          onkeydown="if(event.key==='Enter')cekLoginFKTP()">
+        <button type="button" onclick="toggleLihatPassword('loginPw', this)"
+          style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:#8fa398;padding:4px">👁️</button>
+      </div>
+    </div>
+    <div id="loginError" style="display:none;color:#dc2626;font-size:12px;margin-bottom:12px;text-align:center"></div>
+    <button onclick="cekLoginFKTP()" style="width:100%;padding:12px;background:#1a7a3c;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Masuk</button>
+  </div>
+</div>
+
 <div class="loading-overlay" id="loadingOverlay">
   <div class="spinner"></div>
   <p id="loadingText">Menyimpan laporan...</p>
@@ -386,6 +415,7 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
       </div>
     </div>
     <div class="header-actions">
+      <button onclick="gantiFKTP()" title="Ganti Akun" style="background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.35);color:white;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">🔑 Ganti Akun</button>
       <a href="https://drive.google.com/file/d/1dJKMCYpWfBOlzGIDpJ0gpDmXpyVOYIoL/view" target="_blank" class="btn-panduan">📖 Panduan</a>
       <button class="btn-rekam" onclick="bukaRekamMedis()">📋 Rekam Medis</button>
     </div>
@@ -1017,6 +1047,121 @@ const KESATUAN_DATA = {
   "Polres Bima Kota":     { tembusan5: "Kapolres Bima Kota" },
 };
 
+// ── AKUN LOGIN PER FKTP (case-insensitive) ──
+const FKTP_AKUN = {
+  'polda':    { password: 'ntb',     nama: 'Polda NTB',            admin: false },
+  'brimob':   { password: 'brigade', nama: 'Brimob Polda NTB',     admin: false },
+  'spn':      { password: 'spn',     nama: 'SPN Polda NTB',        admin: false },
+  'mataram':  { password: 'mtr',     nama: 'Polresta Mataram',     admin: false },
+  'lobar':    { password: '123',     nama: 'Polres Lombok Barat',  admin: false },
+  'loteng':   { password: 'loteng',  nama: 'Polres Lombok Tengah', admin: false },
+  'lotim':    { password: 'lotim',   nama: 'Polres Lombok Timur',  admin: false },
+  'lotara':   { password: '123',     nama: 'Polres Lombok Utara',  admin: false },
+  'sumbawa':  { password: 'sumbawa', nama: 'Polres Sumbawa',       admin: false },
+  'ksb':      { password: 'ksb',     nama: 'Polres Sumbawa Barat', admin: false },
+  'dompu':    { password: 'dompu',   nama: 'Polres Dompu',         admin: false },
+  'bimakota': { password: '123',     nama: 'Polres Bima Kota',     admin: false },
+  'bima':     { password: '123',     nama: 'Polres Bima',          admin: false },
+  'admin':    { password: 'yankes', nama: 'Admin',                 admin: true  },
+};
+
+// FKTP yang TIDAK pakai awalan "Klinik" di greeting
+const FKTP_TANPA_KLINIK = ['Polda NTB', 'Brimob Polda NTB', 'SPN Polda NTB'];
+
+// Nama petugas No HP per FKTP (untuk filter dropdown)
+const NOHP_PER_FKTP = {
+  'Polda NTB':            ['089671383332','082236069785','081237572137'], // Aditya, Albar, Agus Supriyanto
+  'Brimob Polda NTB':     ['081802896161','081803639600'], // drg. Wicaksana, dr. Eri
+  'SPN Polda NTB':        [],
+  'Polresta Mataram':     ['081935178381'], // Mbok Dayu Res Mataram
+  'Polres Lombok Barat':  ['087820872372'], // Arbi Lobar
+  'Polres Lombok Tengah': ['081917741856','087753460969'], // dr. Weni, Taofan Loteng
+  'Polres Lombok Timur':  ['087765418796'], // Didis Res Lotim
+  'Polres Lombok Utara':  [],
+  'Polres Sumbawa':       [],
+  'Polres Sumbawa Barat': ['081238066029'], // Lili KSB
+  'Polres Dompu':         ['082266406228'], // Ryan Res Dompu
+  'Polres Bima Kota':     ['085205445342'], // Pegi Bima Kota
+  'Polres Bima':          ['081918056341'], // Yoga Bima
+};
+
+let sesiFKTP = null; // { id, nama, admin }
+
+// ── CEK LOGIN ──
+function cekLoginFKTP() {
+  const idInput = document.getElementById('loginId').value.trim().toLowerCase();
+  const pwInput = document.getElementById('loginPw').value.trim().toLowerCase();
+  const errEl = document.getElementById('loginError');
+
+  const akun = FKTP_AKUN[idInput];
+  if (!akun || akun.password !== pwInput) {
+    errEl.textContent = 'ID atau Password salah!';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  sesiFKTP = { id: idInput, nama: akun.nama, admin: akun.admin };
+  try { localStorage.setItem('sesiFKTP', JSON.stringify(sesiFKTP)); } catch(e) {}
+  masukKeApp();
+}
+
+function gantiFKTP() {
+  if (!confirm('Ganti akun? Anda akan kembali ke halaman login.')) return;
+  try { localStorage.removeItem('sesiFKTP'); } catch(e) {}
+  location.reload();
+}
+
+// ── MASUK KE APLIKASI SETELAH LOGIN SUKSES ──
+function masukKeApp() {
+  document.getElementById('loginGate').style.display = 'none';
+
+  // Lewati password lama untuk Rekam Medis & Rekap (login sudah jadi gerbang utama)
+  adminUnlocked = true;
+  rekapUnlocked = true;
+
+  if (!sesiFKTP.admin) {
+    // Sembunyikan field "FKTP Yang Melaksanakan" — otomatis terkunci sesuai akun
+    const fieldFKTP = document.getElementById('FKTP')?.closest('.field');
+    if (fieldFKTP) fieldFKTP.style.display = 'none';
+    const fktpEl = document.getElementById('FKTP');
+    if (fktpEl) fktpEl.value = sesiFKTP.nama;
+    pilihFKTP(sesiFKTP.nama); // auto-isi Kepada/Dari/MohonIjin
+
+    // Filter dropdown No HP hanya petugas FKTP ini
+    const noHPList = NOHP_PER_FKTP[sesiFKTP.nama] || [];
+    document.querySelectorAll('#NoHPPilih option').forEach(opt => {
+      if (opt.value === '' || opt.value === '__manual__') return;
+      opt.style.display = noHPList.includes(opt.value) ? '' : 'none';
+    });
+
+    // Sembunyikan filter FKTP manual di Rekam Medis (otomatis terkunci ke FKTP sendiri)
+    const filterFKTPEl = document.getElementById('filterFKTP');
+    if (filterFKTPEl) {
+      const wrap = filterFKTPEl.closest('div');
+      if (wrap) wrap.style.display = 'none';
+    }
+    // Sembunyikan filter FKTP di Rekap Kunjungan (otomatis terkunci ke FKTP sendiri)
+    const kunjunganFKTPEl = document.getElementById('kunjunganFKTP');
+    if (kunjunganFKTPEl) {
+      const wrap2 = kunjunganFKTPEl.closest('div');
+      if (wrap2) wrap2.style.display = 'none';
+    }
+  }
+
+  tampilkanGreeting();
+}
+
+// ── CEK SESI TERSIMPAN SAAT HALAMAN DIBUKA ──
+(function cekSesiTersimpan() {
+  try {
+    const saved = localStorage.getItem('sesiFKTP');
+    if (saved) {
+      sesiFKTP = JSON.parse(saved);
+      document.addEventListener('DOMContentLoaded', masukKeApp);
+    }
+  } catch(e) {}
+})();
+
 const FKTP_DATA = {
   "Polda NTB":            { kepada:"BAPAK KAPOLDA NTB",      dari:"Kabid Dokkes Polda NTB",            mohonIjin:"Jenderal" },
   "Brimob Polda NTB":     { kepada:"KABID DOKKES POLDA NTB", dari:"Ka Poliklinik Brimob Polda NTB",    mohonIjin:"Komandan" },
@@ -1119,7 +1264,7 @@ function getKunjunganData() {
   const tSelesai = new Date(selesai); tSelesai.setHours(23,59,59,999);
   if (tMulai > tSelesai) { showToast('Tanggal mulai harus sebelum tanggal selesai!','error'); return null; }
 
-  const filterFKTP = (document.getElementById('kunjunganFKTP') || {}).value || '';
+  const filterFKTP = (sesiFKTP && !sesiFKTP.admin) ? sesiFKTP.nama : ((document.getElementById('kunjunganFKTP') || {}).value || '');
 
   // Filter data dalam rentang + FKTP
   const filtered = allData.filter(r => {
@@ -2784,7 +2929,8 @@ async function embedFoto(wb, ws, url, rowIdx, colIdx) {
 }
 
 function filterPasien(val) {
-  const fktp = (document.getElementById('filterFKTP')||{}).value || '';
+  // Non-admin: paksa filter hanya FKTP sendiri
+  const fktp = (sesiFKTP && !sesiFKTP.admin) ? sesiFKTP.nama : ((document.getElementById('filterFKTP')||{}).value || '');
   const jenis = (document.getElementById('filterJenis')||{}).value || '';
   const tglMulaiStr = (document.getElementById('filterTglMulai')||{}).value || '';
   const tglSelesaiStr = (document.getElementById('filterTglSelesai')||{}).value || '';
@@ -3606,7 +3752,16 @@ function tampilkanGreeting() {
   else if (jam >= 11 && jam < 15) { sapaan = 'Selamat Siang'; ikon = '☀️'; }
   else if (jam >= 15 && jam < 18) { sapaan = 'Selamat Sore'; ikon = '🌇'; }
   else { sapaan = 'Selamat Malam'; ikon = '🌙'; }
-  box.textContent = `${ikon} ${sapaan}, siap bertugas hari ini?`;
+
+  if (sesiFKTP && !sesiFKTP.admin) {
+    const perluKlinik = !FKTP_TANPA_KLINIK.includes(sesiFKTP.nama);
+    const namaTampil = perluKlinik ? `Klinik ${sesiFKTP.nama}` : sesiFKTP.nama;
+    box.textContent = `${ikon} ${sapaan} ${namaTampil}`;
+  } else if (sesiFKTP && sesiFKTP.admin) {
+    box.textContent = `${ikon} ${sapaan}, Admin`;
+  } else {
+    box.textContent = `${ikon} ${sapaan}, siap bertugas hari ini?`;
+  }
 }
 tampilkanGreeting();
 </script>
