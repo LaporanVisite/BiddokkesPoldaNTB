@@ -425,7 +425,7 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
     </div>
     <div class="header-actions">
       <button onclick="gantiFKTP()" title="Ganti Akun" style="background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.35);color:white;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">🔑 Ganti Akun</button>
-      <a href="https://drive.google.com/file/d/1dJKMCYpWfBOlzGIDpJ0gpDmXpyVOYIoL/view" target="_blank" class="btn-panduan">📖 Panduan</a>
+      <button type="button" class="btn-panduan" onclick="bukaPanduan()">📖 Panduan</button>
       <button class="btn-rekam" onclick="bukaRekamMedis()">📋 Rekam Medis</button>
     </div>
   </div>
@@ -1031,6 +1031,19 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
   <div class="modal" id="modalContent"></div>
 </div>
 
+<!-- MODAL PANDUAN -->
+<div class="modal-overlay" id="modalPanduanOverlay" onclick="if(event.target===this)tutupPanduan()">
+  <div class="modal" style="max-width:760px;max-height:92vh;display:flex;flex-direction:column">
+    <div class="modal-header">
+      <h3>📖 Panduan Penggunaan</h3>
+      <button class="modal-close" onclick="tutupPanduan()">✕</button>
+    </div>
+    <div style="flex:1;min-height:0;background:#f0f2f5">
+      <iframe id="panduanFrame" title="Panduan Penggunaan" style="width:100%;height:100%;min-height:70vh;border:none;display:block"></iframe>
+    </div>
+  </div>
+</div>
+
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbw2Ux1UMOhzLeNPxk4fqgQ7Fsof5SeH1tqz-qjzmXIrOj0522o97GHEBvzZsfPwzQe9zQ/exec";
 const ADMIN_PW = "Biddokkes2026";
@@ -1603,19 +1616,18 @@ async function bukaModeRekam() {
 }
 
 // ── JENIS PELAYANAN ──
-function pilihJenis(jenis) {
-  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-  event.target.closest('.pill').classList.add('active');
-  document.getElementById('JenisPelayanan').value = jenis;
+// Terapkan tampilan field sesuai Jenis Pelayanan (dipakai saat pilih pill MAUPUN saat memuat riwayat pasien,
+// supaya Tempat & Vital Sign konsisten disembunyikan+dikosongkan untuk Telemedicine di kedua jalur)
+function terapkanTampilanJenis(jenis) {
+  const isTelemedicine = jenis === 'Telemedicine';
   const showDPJP = (jenis === 'Pendampingan' || jenis === 'Monitoring');
-  document.getElementById('cardDPJP').style.display = showDPJP ? 'block' : 'none';
+  const cardDPJP = document.getElementById('cardDPJP');
+  if (cardDPJP) cardDPJP.style.display = showDPJP ? 'block' : 'none';
   if (!showDPJP) {
     ['DokterDPJP1','DokterDPJP2','DokterDPJP3','DokterDPJP4'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';
     });
   }
-  // Telemedicine: sembunyikan Tempat dan Vital Sign (Tensi/Nadi/RR/SpO2)
-  const isTelemedicine = jenis === 'Telemedicine';
   const fieldTempat = document.getElementById('fieldTempat');
   const vitalsGrid = document.getElementById('vitalsGrid');
   if (fieldTempat) {
@@ -1630,6 +1642,13 @@ function pilihJenis(jenis) {
       });
     }
   }
+}
+
+function pilihJenis(jenis) {
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  event.target.closest('.pill').classList.add('active');
+  document.getElementById('JenisPelayanan').value = jenis;
+  terapkanTampilanJenis(jenis);
 }
 
 // ── FKTP AUTO-FILL ──
@@ -1768,11 +1787,12 @@ function muatData(r) {
   document.getElementById('Tanggal').value = new Date().toISOString().split('T')[0];
   const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
   document.getElementById('Hari').value = days[new Date().getDay()];
-  // Jenis pelayanan
+  // Jenis pelayanan — pakai fungsi bersama supaya Tempat & Vital Sign ikut disembunyikan+
+  // dikosongkan kalau riwayat yang dimuat jenisnya Telemedicine (konsisten dgn klik pill manual)
   if (r['JenisPelayanan']) {
     document.getElementById('JenisPelayanan').value = r['JenisPelayanan'];
     document.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', p.textContent.includes(r['JenisPelayanan'])));
-    document.getElementById('cardDPJP').style.display = (r['JenisPelayanan']==='Pendampingan'||r['JenisPelayanan']==='Monitoring') ? 'block' : 'none';
+    terapkanTampilanJenis(r['JenisPelayanan']);
   }
   document.getElementById('dropdown').style.display = 'none';
   document.getElementById('loadedNama').textContent = r['Nama Pasien'] || '';
@@ -3530,6 +3550,16 @@ function bukaDetail(r) {
 }
 
 function tutupModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+
+// ── MODAL PANDUAN (ditampilkan langsung di dalam app, bukan tab baru) ──
+const PANDUAN_URL = "https://drive.google.com/file/d/1dJKMCYpWfBOlzGIDpJ0gpDmXpyVOYIoL/preview";
+function bukaPanduan() {
+  const frame = document.getElementById('panduanFrame');
+  // Muat isi PDF hanya sekali (baru fetch saat pertama kali dibuka), biar buka-tutup berikutnya instan
+  if (frame && !frame.src) frame.src = PANDUAN_URL;
+  document.getElementById('modalPanduanOverlay').classList.add('show');
+}
+function tutupPanduan() { document.getElementById('modalPanduanOverlay').classList.remove('show'); }
 
 // ── HAPUS KUNJUNGAN (Admin Only) ──
 let sedangHapusData = false; // Kunci agar tidak ada hapus bersamaan yang bisa salah sasaran baris
