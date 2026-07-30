@@ -2176,6 +2176,12 @@ function resetForm() {
       }
     }
   });
+  // Untuk akun FKTP terkunci (non-admin), isi ulang Kepada/Dari/FKTP yang barusan ikut terhapus
+  if (sesiFKTP && !sesiFKTP.admin) {
+    const fktpEl = document.getElementById('FKTP');
+    if (fktpEl) fktpEl.value = sesiFKTP.nama;
+    pilihFKTP(sesiFKTP.nama);
+  }
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
