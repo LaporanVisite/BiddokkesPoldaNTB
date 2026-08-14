@@ -1858,7 +1858,7 @@ function tampilDropdown(data) {
           <div class="d-name">${r['Nama Pasien']||''}</div>
           <div class="d-sub">${r['Kesatuan']||''} · ${r['Pangkat']||''} · ${r['NIPNRP']||'-'}${r['FKTP'] ? ' · 🏥 '+r['FKTP'] : ''}</div>
         </div>
-        <span class="d-badge">🕐 data lama</span>
+        <span class="d-badge">${r['_sumber']==='induk' ? '📋 sakit menahun' : '🕐 data lama'}</span>
       </div>`).join('');
   }
   dd.style.display = 'block';
