@@ -449,6 +449,18 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
   <!-- GREETING -->
   <div id="greetingBox" style="padding:2px 4px 14px;font-size:15px;color:#ffffff;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,0.25)"></div>
 
+  <!-- PENGINGAT KUNJUNGAN PASIEN SAKIT MENAHUN -->
+  <div id="pengingatBanner" class="card" style="display:none;background:rgba(245,158,11,0.10);border:1.5px solid #f59e0b;cursor:pointer" onclick="bukaModalPengingat()">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="font-size:22px;flex-shrink:0">⚠️</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:13.5px;color:#b45309">Ada pasien sakit menahun belum dikunjungi bulan ini</div>
+        <div id="pengingatRingkasan" style="font-size:12px;color:var(--text2);margin-top:2px"></div>
+      </div>
+      <div style="font-size:18px;color:#b45309;flex-shrink:0">›</div>
+    </div>
+  </div>
+
   <!-- JENIS PELAYANAN -->
   <div class="card">
     <div class="card-title" style="justify-content:space-between">
@@ -1188,6 +1200,7 @@ function masukKeApp() {
   }
 
   tampilkanGreeting();
+  cekPengingatKunjungan();
 
   // Muat data di background SETELAH login — filter FKTP sudah pasti benar di titik ini
   setTimeout(() => { if (!allData || allData.length === 0) muatSemuaData(); }, 800);
@@ -3996,6 +4009,58 @@ function tampilkanGreeting() {
   }
 }
 tampilkanGreeting();
+
+// ── PENGINGAT KUNJUNGAN PASIEN SAKIT MENAHUN ──
+let _dataPengingat = null; // simpan hasil terakhir untuk dipakai modal detail
+
+async function cekPengingatKunjungan() {
+  try {
+    const fktpParam = (sesiFKTP && !sesiFKTP.admin) ? '&fktp=' + encodeURIComponent(sesiFKTP.nama) : '';
+    const res = await fetch(API_URL + '?action=cekPengingat' + fktpParam);
+    const data = await res.json(); // { "Nama FKTP": [ {nama,pangkat,nrp}, ... ], ... }
+    _dataPengingat = data;
+
+    const daftarFKTP = Object.keys(data);
+    const totalPasien = daftarFKTP.reduce((sum, f) => sum + data[f].length, 0);
+
+    const banner = document.getElementById('pengingatBanner');
+    const ringkasan = document.getElementById('pengingatRingkasan');
+    if (!banner || !ringkasan) return;
+
+    if (totalPasien === 0) { banner.style.display = 'none'; return; }
+
+    ringkasan.textContent = (sesiFKTP && sesiFKTP.admin)
+      ? totalPasien + ' pasien di ' + daftarFKTP.length + ' FKTP — tap untuk lihat daftar'
+      : totalPasien + ' pasien — tap untuk lihat daftar';
+    banner.style.display = 'block';
+  } catch (e) {
+    // gagal cek pengingat tidak boleh mengganggu alur login — diam saja
+  }
+}
+
+function bukaModalPengingat() {
+  if (!_dataPengingat) return;
+  const daftarFKTP = Object.keys(_dataPengingat);
+  let html = `<div class="modal-header"><h3>⚠️ Pengingat Kunjungan Bulan Ini</h3><button class="modal-close" onclick="tutupModal()">✕</button></div><div class="modal-body">`;
+  if (!daftarFKTP.length) {
+    html += `<p style="text-align:center;color:var(--text3);padding:20px">Semua pasien sudah dikunjungi bulan ini 🎉</p>`;
+  } else {
+    daftarFKTP.forEach(fktp => {
+      const list = _dataPengingat[fktp];
+      html += `<div style="margin-bottom:16px">
+        <div style="font-weight:700;font-size:13px;color:var(--green);margin-bottom:6px">🏥 ${fktp} <span style="color:var(--text3);font-weight:500">(${list.length} pasien)</span></div>`;
+      list.forEach((p, i) => {
+        html += `<div style="padding:8px 10px;background:var(--bg);border-radius:8px;margin-bottom:4px;font-size:13px">
+          <b>${i+1}. ${p.nama}</b>${p.pangkat ? ' — ' + p.pangkat : ''}${p.nrp ? ' (' + p.nrp + ')' : ''}
+        </div>`;
+      });
+      html += `</div>`;
+    });
+  }
+  html += `</div>`;
+  document.getElementById('modalContent').innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('show');
+}
 </script>
 <script>
 // ── PWA Service Worker ──
