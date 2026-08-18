@@ -592,9 +592,16 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
   <!-- KONDISI & VITAL SIGN -->
   <div class="card">
     <div class="card-title"><div class="ct-icon">💊</div> Kondisi & Vital Sign</div>
-    <div class="field"><label>Kondisi Umum <span class="req">*</span></label><input type="text" id="KondisiUmum" placeholder="Baik / Sedang / Buruk"></div>
+    <div class="field"><label>Kondisi Umum <span class="req">*</span></label>
+      <select id="KondisiUmum">
+        <option value="">— Pilih Kondisi —</option>
+        <option value="Baik">Baik</option>
+        <option value="Sedang">Sedang</option>
+        <option value="Buruk">Buruk</option>
+      </select>
+    </div>
     <div id="vitalsGrid" class="vitals-grid">
-      <div class="field"><label>Tensi <span class="req">*</span></label><input type="text" id="Tensi" placeholder="120/80" data-suffix=" mmHg" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
+      <div class="field"><label>Tensi <span class="req">*</span></label><input type="text" id="Tensi" placeholder="120/80" inputmode="numeric" data-suffix=" mmHg" oninput="formatTensi(this)" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
       <div class="field"><label>Nadi <span class="req">*</span></label><input type="text" id="Nadi" placeholder="80" data-suffix=" x/mnt" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
       <div class="field"><label>RR <span class="req">*</span></label><input type="text" id="RR" placeholder="20" data-suffix=" x/mnt" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
       <div class="field"><label>SpO2 <span style="font-weight:400;color:var(--text3);font-size:11px">(Tidak Wajib)</span></label><input type="text" id="SpO2" placeholder="98" data-suffix="%" onblur="autoSuffix(this)" onfocus="stripSuffix(this)"></div>
@@ -1101,13 +1108,13 @@ const NOHP_PER_FKTP = {
   'Polda NTB':            ['089671383332','082236069785','081237572137'], // Aditya, Albar, Agus Supriyanto
   'Brimob Polda NTB':     ['081802896161','081803639600'], // drg. Wicaksana, dr. Eri
   'SPN Polda NTB':        [],
-  'Polresta Mataram':     ['081935178381'], // Mbok Dayu Res Mataram
+  'Polresta Mataram':     ['081935178381','082234903190'], // Mbok Dayu Res Mataram, Mba Ike
   'Polres Lombok Barat':  ['087820872372'], // Arbi Lobar
   'Polres Lombok Tengah': ['081917741856','087753460969'], // dr. Weni, Taofan Loteng
   'Polres Lombok Timur':  ['087765418796'], // Didis Res Lotim
   'Polres Lombok Utara':  [],
   'Polres Sumbawa':       ['082236069785'], // Albar
-  'Polres Sumbawa Barat': ['081238066029'], // Lili KSB
+  'Polres Sumbawa Barat': ['081238066029','085928054404'], // Lili KSB, Didi
   'Polres Dompu':         ['082266406228'], // Ryan Res Dompu
   'Polres Bima Kota':     ['085205445342'], // Pegi Bima Kota
   'Polres Bima':          ['081918056341'], // Yoga Bima
@@ -2399,6 +2406,17 @@ let rmOffset = 0;    // jumlah data yang sudah dimuat (dari yang terbaru)
 let rmTotal = 0;     // total seluruh data di spreadsheet
 const RM_BATCH_SIZE = 60;
 
+// Antrian (mutex) supaya muatSemuaData()/muatDataLagi() tidak pernah jalan tumpang tindih.
+// Tanpa ini, dua proses yang kebetulan minta data di waktu bersamaan (misal buka Rekam Medis
+// sambil download Rekap Mingguan) bisa sama-sama baca rmOffset yang masih sama, ambil halaman
+// data yang sama, lalu SAMA-SAMA menambahkannya ke allData — hasilnya data jadi dobel/tercatat 2x.
+let _antrianMuatData = Promise.resolve();
+function _muatDataBerurutan(fn) {
+  const hasil = _antrianMuatData.then(fn, fn);
+  _antrianMuatData = hasil.catch(() => {});
+  return hasil;
+}
+
 function normalisasiRow(r) {
   const str = v => (v === null || v === undefined) ? '' : String(v);
   const norm = {
@@ -2452,62 +2470,66 @@ function normalisasiRow(r) {
 }
 
 // Muat halaman PERTAMA (60 data terbaru) — dipanggil saat pertama buka Rekam Medis
-async function muatSemuaData() {
-  const rmList = document.getElementById('rmList');
-  if (rmList) rmList.innerHTML = '<div class="empty-state"><div class="es-icon">⏳</div><p>Memuat data terbaru...</p></div>';
-  rmOffset = 0;
-  allData = [];
-  try {
-    const fktpParam = (sesiFKTP && !sesiFKTP.admin) ? '&fktp=' + encodeURIComponent(sesiFKTP.nama) : '';
-    const fetchPromise = fetch(API_URL + '?action=getAll&offset=0&limit=' + RM_BATCH_SIZE + fktpParam);
-    const timeoutPromise = new Promise((_,reject) => setTimeout(() => reject(new Error('Timeout')), 45000));
-    const res = await Promise.race([fetchPromise, timeoutPromise]);
-    const text = await res.text();
-    let parsed;
-    try { parsed = JSON.parse(text); }
-    catch(parseErr) {
-      console.error('JSON parse error:', parseErr, 'Response:', text.substring(0,200));
-      if (rmList) rmList.innerHTML = '<div class="empty-state"><div class="es-icon">❌</div><p>Gagal memuat data (parse error)</p></div>';
-      return;
+function muatSemuaData() {
+  return _muatDataBerurutan(async () => {
+    const rmList = document.getElementById('rmList');
+    if (rmList) rmList.innerHTML = '<div class="empty-state"><div class="es-icon">⏳</div><p>Memuat data terbaru...</p></div>';
+    rmOffset = 0;
+    allData = [];
+    try {
+      const fktpParam = (sesiFKTP && !sesiFKTP.admin) ? '&fktp=' + encodeURIComponent(sesiFKTP.nama) : '';
+      const fetchPromise = fetch(API_URL + '?action=getAll&offset=0&limit=' + RM_BATCH_SIZE + fktpParam);
+      const timeoutPromise = new Promise((_,reject) => setTimeout(() => reject(new Error('Timeout')), 45000));
+      const res = await Promise.race([fetchPromise, timeoutPromise]);
+      const text = await res.text();
+      let parsed;
+      try { parsed = JSON.parse(text); }
+      catch(parseErr) {
+        console.error('JSON parse error:', parseErr, 'Response:', text.substring(0,200));
+        if (rmList) rmList.innerHTML = '<div class="empty-state"><div class="es-icon">❌</div><p>Gagal memuat data (parse error)</p></div>';
+        return;
+      }
+      const raw = Array.isArray(parsed) ? parsed : (parsed.data || []);
+      rmTotal = parsed.total || raw.length;
+      rmOffset = parsed.loaded || raw.length;
+      allData = raw.map(normalisasiRow);
+      window._allPasienData = allData;
+      if (rmList) tampilRekamMedis(allData);
+      isiPilihanMinggu();
+      perbaruiTombolMuatLagi();
+    } catch(e) {
+      console.error('muatSemuaData error:', e);
+      const msg = e.name === 'AbortError' ? 'Koneksi timeout, coba lagi' : 'Gagal memuat data';
+      if (rmList) rmList.innerHTML = `<div class="empty-state"><div class="es-icon">❌</div><p>${msg}</p><button onclick="muatSemuaData()" style="margin-top:12px;background:#1a7a3c;color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px">🔄 Coba Lagi</button></div>`;
+      else showToast(msg, 'error');
     }
-    const raw = Array.isArray(parsed) ? parsed : (parsed.data || []);
-    rmTotal = parsed.total || raw.length;
-    rmOffset = parsed.loaded || raw.length;
-    allData = raw.map(normalisasiRow);
-    window._allPasienData = allData;
-    if (rmList) tampilRekamMedis(allData);
-    isiPilihanMinggu();
-    perbaruiTombolMuatLagi();
-  } catch(e) {
-    console.error('muatSemuaData error:', e);
-    const msg = e.name === 'AbortError' ? 'Koneksi timeout, coba lagi' : 'Gagal memuat data';
-    if (rmList) rmList.innerHTML = `<div class="empty-state"><div class="es-icon">❌</div><p>${msg}</p><button onclick="muatSemuaData()" style="margin-top:12px;background:#1a7a3c;color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px">🔄 Coba Lagi</button></div>`;
-    else showToast(msg, 'error');
-  }
+  });
 }
 
 // Muat 60 data LAGI (halaman berikutnya, lebih lama) — ditambahkan ke data yang sudah ada
-async function muatDataLagi(silent) {
-  const btn = document.getElementById('btnMuatSemuaRiwayat');
-  if (btn && !silent) { btn.disabled = true; btn.textContent = '⏳ Memuat...'; }
-  try {
-    const fktpParam = (sesiFKTP && !sesiFKTP.admin) ? '&fktp=' + encodeURIComponent(sesiFKTP.nama) : '';
-    const res = await fetch(API_URL + '?action=getAll&offset=' + rmOffset + '&limit=' + RM_BATCH_SIZE + fktpParam);
-    const parsed = await res.json();
-    const raw = Array.isArray(parsed) ? parsed : (parsed.data || []);
-    rmTotal = parsed.total || rmTotal;
-    rmOffset = parsed.loaded || rmOffset;
-    allData = allData.concat(raw.map(normalisasiRow));
-    window._allPasienData = allData;
-    if (!silent) {
-      filterPasien(document.getElementById('rmSearch').value);
-      showToast(`Data lama berhasil dimuat (${rmOffset}/${rmTotal}) ✓`, 'success');
+function muatDataLagi(silent) {
+  return _muatDataBerurutan(async () => {
+    const btn = document.getElementById('btnMuatSemuaRiwayat');
+    if (btn && !silent) { btn.disabled = true; btn.textContent = '⏳ Memuat...'; }
+    try {
+      const fktpParam = (sesiFKTP && !sesiFKTP.admin) ? '&fktp=' + encodeURIComponent(sesiFKTP.nama) : '';
+      const res = await fetch(API_URL + '?action=getAll&offset=' + rmOffset + '&limit=' + RM_BATCH_SIZE + fktpParam);
+      const parsed = await res.json();
+      const raw = Array.isArray(parsed) ? parsed : (parsed.data || []);
+      rmTotal = parsed.total || rmTotal;
+      rmOffset = parsed.loaded || rmOffset;
+      allData = allData.concat(raw.map(normalisasiRow));
+      window._allPasienData = allData;
+      if (!silent) {
+        filterPasien(document.getElementById('rmSearch').value);
+        showToast(`Data lama berhasil dimuat (${rmOffset}/${rmTotal}) ✓`, 'success');
+      }
+    } catch(e) {
+      if (!silent) showToast('Gagal memuat data lama, coba lagi', 'error');
+      else throw e; // biar pemanggil silent (pastikanSemuaDataTermuat) tahu ada kegagalan
     }
-  } catch(e) {
-    if (!silent) showToast('Gagal memuat data lama, coba lagi', 'error');
-    else throw e; // biar pemanggil silent (pastikanSemuaDataTermuat) tahu ada kegagalan
-  }
-  if (!silent) perbaruiTombolMuatLagi();
+    if (!silent) perbaruiTombolMuatLagi();
+  });
 }
 
 // Muat SEMUA sisa data (dipakai saat pencarian butuh riwayat lengkap 1 pasien)
@@ -3098,6 +3120,11 @@ async function eksporRekapExcel() {
 
   // Update judul tanggal (baris A6)
   ws.getCell('A6').value = `BIDDOKKES POLDA NTB ${headerTanggal}`;
+
+  // Update tanggal tanda tangan (sel F25) — pakai tanggal AKHIR rentang yang diminta
+  // (dulu ini statis "28 Juli 2026" bawaan template, tidak pernah ikut berubah)
+  const namaBulanTitle = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  ws.getCell('F25').value = `Mataram, ${minggu.getDate()} ${namaBulanTitle[minggu.getMonth()]} ${minggu.getFullYear()}`;
 
   // Update data tiap FKTP (baris 10-22) sesuai urutan yang sama dengan template
   const imagePromises = [];
@@ -3913,6 +3940,14 @@ function stripSuffix2(val, sfx) {
   return v;
 }
 
+// Otomatis sisipkan garis miring pada Tensi saat mengetik, misal ketik "12080" jadi "120/80"
+// (3 digit pertama dianggap sistol, sisanya diastol — pola paling umum untuk tensi dewasa;
+// kalau sistolnya kebetulan cuma 2 digit, petugas tetap bisa perbaiki manual)
+function formatTensi(el) {
+  let digit = el.value.replace(/\D/g, '');
+  if (digit.length > 6) digit = digit.slice(0, 6);
+  el.value = digit.length > 3 ? digit.slice(0, 3) + '/' + digit.slice(3) : digit;
+}
 function autoSuffix(el) {
   const suffix = el.dataset.suffix || "";
   let val = el.value.trim();
