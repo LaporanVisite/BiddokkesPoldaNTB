@@ -2900,7 +2900,7 @@ ${spo2 && spo2 !== '-' ? p('SpO2   : ' + fv(spo2,'%')) : ''}
 ${r['Suhu'] ? p('Suhu    : ' + fv(r['Suhu'],'°C')) : ''}`;
 
       isi += `
-${p(nomorUrut + '. ' + ((jenis==='Home Visit'||jenis==='Telemedicine')?'<i>'+jenis+'</i>':jenis) + ' Kepada Anggota pada Hari/Tanggal : ' + hari + ', ' + tglP)}
+${p(nomorUrut + '. ' + ((jenis==='Home Visit'||jenis==='Telemedicine')?'<i>_'+jenis+'_</i>':jenis) + ' Kepada Anggota pada Hari/Tanggal : ' + hari + ', ' + tglP)}
 <br>
 ${p('Nama           : ' + nama)}
 ${p('Pangkat/NRP : ' + pangkat + '/' + nipnrp)}
@@ -2954,7 +2954,7 @@ ${(()=>{
 <p style="font-family:Arial;font-size:11pt;margin:2pt 0">7. KABIDPROPAM POLDA NTB</p>
 <p style="font-family:Arial;font-size:11pt;margin:2pt 0">8. KAPOLRES/TA JAJARAN POLDA NTB</p>
 <br>
-<p style="font-family:Arial;font-size:11pt;margin:2pt 0">Mohon izin <b>Jenderal,</b> melaporkan kegiatan Tim Reaksi Cepat penanganan kesehatan terhadap PNPP Polda NTB dan Urkes Jajaran dalam <i>Home Visite</i> / Pendampingan &amp; Monitoring&nbsp; Anggota Sakit Menahun dan Kronis Tanggal &nbsp;<b>${tglMulai} s.d. ${tglAkhir}.</b></p>
+<p style="font-family:Arial;font-size:11pt;margin:2pt 0">Mohon izin <b>Jenderal,</b> melaporkan kegiatan Tim Reaksi Cepat penanganan kesehatan terhadap PNPP Polda NTB dan Urkes Jajaran dalam <i>_Home Visit_</i> / Pendampingan &amp; Monitoring&nbsp; Anggota Sakit Menahun dan Kronis Tanggal &nbsp;<b>${tglMulai} s.d. ${tglAkhir}.</b></p>
 <br>
 `;
 })()}
@@ -3405,7 +3405,7 @@ function exportWordLengkap(g) {
 
   // Kegiatan: gabung jenis yang unik
   const jenisUnikList = [...new Set(kunjungan.map(k => k['JenisPelayanan']).filter(Boolean))];
-  const jenisFormatList = jenisUnikList.map(j => (j==='Home Visit'||j==='Telemedicine') ? `<i>${j}</i>` : j);
+  const jenisFormatList = jenisUnikList.map(j => (j==='Home Visit'||j==='Telemedicine') ? `<i>_${j}_</i>` : j);
   const kegiatanHtml = `<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;margin-left:1.25cm;line-height:100%;mso-line-height-rule:exactly;">d. Kegiatan yang dilaksanakan : ${jenisFormatList.join(' dan ')}</p>`;
 
   // V. Hasil per kunjungan
@@ -3416,7 +3416,7 @@ function exportWordLengkap(g) {
     const waktu = (k['Waktu']||'').substring(0,5);
     const jenis = k['JenisPelayanan'] || '-';
     const jenisItalic = (jenis==='Home Visit'||jenis==='Telemedicine');
-    const jenisFormat = jenisItalic ? `<i>${jenis}</i>` : jenis;
+    const jenisFormat = jenisItalic ? `<i>_${jenis}_</i>` : jenis;
     const isTelemedicine = jenis === 'Telemedicine';
 
     const keluhan = [k['Keluhan1'],k['Keluhan2'],k['Keluhan3'],k['Keluhan4']].filter(Boolean).map(kapW);
@@ -3615,7 +3615,7 @@ ${r['Suhu'] ? p(b, 'Suhu    : ' + fvW(r['Suhu'],'°C')) : ''}`;
 <body>
 ${p(b, '🔹 FKTP ' + fktp)}
 <br>
-${p(b, '1. ' + ((jenis==='Home Visit'||jenis==='Telemedicine')?'<i>'+jenis+'</i>':jenis) + ' Kepada Anggota pada Hari/Tanggal : ' + hari + ', ' + tanggalPanjang)}
+${p(b, '1. ' + ((jenis==='Home Visit'||jenis==='Telemedicine')?'<i>_'+jenis+'_</i>':jenis) + ' Kepada Anggota pada Hari/Tanggal : ' + hari + ', ' + tanggalPanjang)}
 <br>
 ${p(b, 'Nama           : ' + nama)}
 ${p(b, 'Pangkat/NRP : ' + pangkat + '/' + nipnrp)}
