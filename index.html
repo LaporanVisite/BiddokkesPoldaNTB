@@ -1894,6 +1894,17 @@ function tampilDropdown(data) {
   dd.style.display = 'block';
 }
 
+// Dipanggil dari kartu pasien di Rekam Medis — pindah ke Input Laporan dan langsung
+// isi otomatis data pasien (Nama/Pangkat/NIP-NRP/Jabatan/Kesatuan), tanggal direset ke
+// hari ini karena ini laporan BARU, bukan lihat riwayat lama.
+function tambahLaporanUntukPasien(info) {
+  document.getElementById('tab-rekam').style.display = 'block'; // biar tab Rekam Medis tetap terlihat setelah pindah
+  ganti('form');
+  muatData(info);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  showToast('Data ' + (info['Nama Pasien']||'pasien') + ' dimuat — lengkapi detail laporan baru', 'success');
+}
+
 function muatData(r) {
   // Data Pasien — Nama, Pangkat, Jabatan dirapikan otomatis (huruf awal tiap kata besar)
   [['NamaPasien','Nama Pasien'],['Pangkat','Pangkat'],['NIPNRP','NIPNRP'],['Jabatan','Jabatan']].forEach(([id,key]) => {
@@ -2615,10 +2626,16 @@ function tampilRekamMedis(data) {
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
           <span class="pasien-count">${jml} kunjungan</span>
-          <button onclick="event.stopPropagation();exportWordLengkap(${JSON.stringify(g).replace(/"/g,'&quot;')})" 
-            style="background:#2b579a;border:none;color:white;border-radius:8px;padding:5px 8px;font-size:11px;cursor:pointer;font-weight:600;white-space:nowrap">
-            📋 Laporan
-          </button>
+          <div style="display:flex;gap:4px">
+            <button onclick="event.stopPropagation();tambahLaporanUntukPasien(${JSON.stringify(info).replace(/"/g,'&quot;')})"
+              style="background:var(--green);border:none;color:white;border-radius:8px;padding:5px 8px;font-size:11px;cursor:pointer;font-weight:600;white-space:nowrap">
+              ➕ Laporan Baru
+            </button>
+            <button onclick="event.stopPropagation();exportWordLengkap(${JSON.stringify(g).replace(/"/g,'&quot;')})" 
+              style="background:#2b579a;border:none;color:white;border-radius:8px;padding:5px 8px;font-size:11px;cursor:pointer;font-weight:600;white-space:nowrap">
+              📋 Laporan
+            </button>
+          </div>
         </div>
       </div>
       <div class="kunjungan-list" id="kv-${idx}">
