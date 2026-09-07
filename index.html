@@ -2227,7 +2227,12 @@ function kompressFoto(file) {
   });
 }
 
-async function uploadKeImgBB(file, retry=true) {
+async function uploadKeImgBB(file, percobaan=1, onRetry=null) {
+  const MAKS_PERCOBAAN = 3;
+  // Timeout makin longgar tiap percobaan: 30 detik, lalu 40, lalu 50 —
+  // sinyal lemah butuh lebih banyak waktu, bukan diulang dengan batas waktu yang sama
+  const timeoutMs = 20000 + (percobaan * 10000);
+  let alasanGagal = 'Koneksi internet terputus/timeout';
   try {
     const blob = await kompressFoto(file);
     const formData = new FormData();
@@ -2235,7 +2240,7 @@ async function uploadKeImgBB(file, retry=true) {
     formData.append('upload_preset', 'biddokkes');
     formData.append('cloud_name', 'dyrhzsyp3');
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     const res = await fetch('https://api.cloudinary.com/v1_1/dyrhzsyp3/image/upload', {
       method: 'POST',
       body: formData,
@@ -2243,22 +2248,23 @@ async function uploadKeImgBB(file, retry=true) {
     });
     clearTimeout(timeoutId);
     const result = await res.json();
-    if (result.secure_url) return result.secure_url;
-    console.error('Cloudinary error:', result);
-    // Retry sekali jika gagal
-    if (retry) {
-      await new Promise(r => setTimeout(r, 1000));
-      return await uploadKeImgBB(file, false);
-    }
-    return '';
+    if (result.secure_url) return { url: result.secure_url, alasan: '' };
+    // Server Cloudinary MERESPON tapi menolak — ini BUKAN soal sinyal/koneksi,
+    // melainkan sesuatu di sisi Cloudinary (kuota, preset, format, dll)
+    alasanGagal = 'Ditolak server foto: ' + (result?.error?.message || JSON.stringify(result).slice(0,120));
+    console.error('Cloudinary menolak (percobaan ' + percobaan + '):', result);
   } catch(e) {
-    console.error('Upload gagal:', e);
-    if (retry) {
-      await new Promise(r => setTimeout(r, 1000));
-      return await uploadKeImgBB(file, false);
-    }
-    return '';
+    // Ini baru benar-benar soal koneksi/timeout — fetch tidak sampai dapat balasan sama sekali
+    alasanGagal = e.name === 'AbortError' ? 'Timeout — sinyal terlalu lambat' : 'Koneksi internet terputus (' + e.message + ')';
+    console.error('Upload gagal koneksi (percobaan ' + percobaan + '):', e);
   }
+  if (percobaan < MAKS_PERCOBAAN) {
+    if (onRetry) onRetry(percobaan + 1, MAKS_PERCOBAAN);
+    // Jeda makin lama tiap percobaan berikutnya: 1.5 detik, lalu 3 detik
+    await new Promise(r => setTimeout(r, percobaan * 1500));
+    return await uploadKeImgBB(file, percobaan + 1, onRetry);
+  }
+  return { url: '', alasan: alasanGagal };
 }
 
 // ── SIMPAN ──
@@ -2327,25 +2333,29 @@ async function simpanLaporan() {
     const f2 = document.getElementById('fileDoc2').files[0] || document.getElementById('fileDoc2g').files[0];
     if (f1) {
       document.getElementById('loadingText').textContent='Mengupload foto 1...';
-      const url1 = await uploadKeImgBB(f1);
-      if (!url1) {
-        showToast('Upload Foto 1 gagal! Cek koneksi internet dan coba lagi.','error');
+      const hasil1 = await uploadKeImgBB(f1, 1, (n, maks) => {
+        document.getElementById('loadingText').textContent = `Mengupload foto 1... (percobaan ${n}/${maks})`;
+      });
+      if (!hasil1.url) {
+        showToast('Upload Foto 1 gagal setelah 3x percobaan (' + hasil1.alasan + '). Data isian Anda masih tersimpan — coba lagi.','error',6500);
         document.getElementById('loadingOverlay').classList.remove('show');
         document.getElementById('btnSave').disabled = false;
         return;
       }
-      payload['Dokumentasi1'] = url1;
+      payload['Dokumentasi1'] = hasil1.url;
     }
     if (f2) {
       document.getElementById('loadingText').textContent='Mengupload foto 2...';
-      const url2 = await uploadKeImgBB(f2);
-      if (!url2) {
-        showToast('Upload Foto 2 gagal! Cek koneksi internet dan coba lagi.','error');
+      const hasil2 = await uploadKeImgBB(f2, 1, (n, maks) => {
+        document.getElementById('loadingText').textContent = `Mengupload foto 2... (percobaan ${n}/${maks})`;
+      });
+      if (!hasil2.url) {
+        showToast('Upload Foto 2 gagal setelah 3x percobaan (' + hasil2.alasan + '). Data isian Anda masih tersimpan — coba lagi.','error',6500);
         document.getElementById('loadingOverlay').classList.remove('show');
         document.getElementById('btnSave').disabled = false;
         return;
       }
-      payload['Dokumentasi2'] = url2;
+      payload['Dokumentasi2'] = hasil2.url;
     }
     document.getElementById('loadingText').textContent='Menyimpan & mengirim WA...';
     // Timeout 90 detik — Apps Script kadang butuh waktu lebih lama
@@ -3835,10 +3845,10 @@ async function hapusLangsung(rowIndex, namaPasien) {
 }
 
 // ── TOAST ──
-function showToast(msg, type) {
+function showToast(msg, type, durasi) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.className = 'toast '+type+' show';
-  setTimeout(() => t.classList.remove('show'), 3500);
+  setTimeout(() => t.classList.remove('show'), durasi || 3500);
 }
 
 // ── OVERLAY SUKSES DI TENGAH LAYAR ──
