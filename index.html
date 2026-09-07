@@ -459,6 +459,10 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
         <div style="font-weight:700;font-size:13.5px;color:#b45309">Ada pasien sakit menahun belum dikunjungi bulan ini</div>
         <div id="pengingatRingkasan" style="font-size:12px;color:var(--text2);margin-top:2px"></div>
       </div>
+      <button id="btnKirimPengingatSekarang" onclick="event.stopPropagation();kirimPengingatSekarangKlik()"
+        style="display:none;flex-shrink:0;background:#f59e0b;color:white;border:none;padding:8px 12px;border-radius:8px;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap">
+        📤 Kirim Sekarang
+      </button>
       <div style="font-size:18px;color:#b45309;flex-shrink:0">›</div>
     </div>
   </div>
@@ -2014,23 +2018,15 @@ async function bukaRekamPasienDariForm() {
   modalEl.style.display = 'block';
   document.body.style.overflow = 'hidden';
   document.getElementById('mrpTitle').textContent = '📋 Rekam Medis — ' + (window._loadedNamaPasien || '');
-  document.getElementById('mrpBody').innerHTML = '<div class="mrp-empty">⏳ Memuat data...</div>';
+  document.getElementById('mrpBody').innerHTML = '<div class="mrp-empty">⏳ Memuat seluruh riwayat...</div>';
 
-  // Jika allData belum terisi, muat dulu baru tampilkan
-  if (!allData || allData.length === 0) {
-    document.getElementById('mrpBody').innerHTML = '<div class="mrp-empty">⏳ Memuat data dari server...</div>';
-    await muatSemuaData();
-  }
+  // SELALU pastikan seluruh riwayat sudah termuat dulu sebelum ditampilkan — jangan cuma
+  // andalkan "kalau 0 hasil baru muat semua", karena kalau kunjungan terbaru pasien itu
+  // kebetulan ketemu di 60 data pertama, riwayat lamanya (di luar 60 itu) jadi tidak pernah
+  // ikut dimuat/ditampilkan meski sebenarnya masih ada.
+  await pastikanSemuaDataTermuat();
 
   let kunjungan = allData.filter(r => (r['Nama Pasien']||'').trim().toLowerCase() === nama);
-
-  // Kalau tidak ketemu di data yang dibatasi (60 terbaru), coba muat SELURUH riwayat
-  // sebelum menyimpulkan "tidak ada data" — supaya data lama tidak salah dikira terhapus
-  if (!kunjungan.length) {
-    document.getElementById('mrpBody').innerHTML = '<div class="mrp-empty">⏳ Memeriksa riwayat lengkap...</div>';
-    await muatSisaSemuaData();
-    kunjungan = allData.filter(r => (r['Nama Pasien']||'').trim().toLowerCase() === nama);
-  }
 
   kunjungan = kunjungan.sort((a,b) => {
       const tA = new Date((b['Tanggal']||'').split('/').reverse().join('-') + 'T' + (b['Waktu']||'00:00'));
@@ -4100,6 +4096,9 @@ async function cekPengingatKunjungan() {
       ? totalPasien + ' pasien di ' + daftarFKTP.length + ' FKTP — tap untuk lihat daftar'
       : totalPasien + ' pasien — tap untuk lihat daftar';
     banner.style.display = 'block';
+
+    const btnKirim = document.getElementById('btnKirimPengingatSekarang');
+    if (btnKirim) btnKirim.style.display = (sesiFKTP && sesiFKTP.admin) ? 'block' : 'none';
   } catch (e) {
     // gagal cek pengingat tidak boleh mengganggu alur login — diam saja
   }
@@ -4127,6 +4126,47 @@ function bukaModalPengingat() {
   html += `</div>`;
   document.getElementById('modalContent').innerHTML = html;
   document.getElementById('modalOverlay').classList.add('show');
+}
+
+// Tombol "📤 Kirim Sekarang" (khusus admin) — memicu WA pengingat SAAT ITU JUGA,
+// tidak perlu tunggu tanggal 16 atau buka Apps Script editor.
+async function kirimPengingatSekarangKlik() {
+  if (!_dataPengingat) return;
+  const daftarFKTP = Object.keys(_dataPengingat);
+  const totalPasien = daftarFKTP.reduce((sum, f) => sum + _dataPengingat[f].length, 0);
+
+  const yakin = confirm(
+    'Ini akan mengirim WA pengingat SEKARANG JUGA ke semua FKTP yang masih punya pasien belum dikunjungi bulan ini ' +
+    '(' + totalPasien + ' pasien di ' + daftarFKTP.length + ' FKTP), ke nomor petugas yang terdaftar.\n\n' +
+    'Lanjutkan kirim?'
+  );
+  if (!yakin) return;
+
+  const btn = document.getElementById('btnKirimPengingatSekarang');
+  const teksAsli = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Mengirim...'; }
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'kirimPengingatSekarang' })
+    });
+    const hasil = await res.json();
+    if (hasil.success) {
+      const r = hasil.ringkasan;
+      let pesan = `✅ WA terkirim ke ${r.fktpTerkirim} FKTP (${r.totalPesan} pesan)`;
+      if (r.fktpTanpaNomor && r.fktpTanpaNomor.length) {
+        pesan += `. Dilewati (belum ada nomor terdaftar): ${r.fktpTanpaNomor.join(', ')}`;
+      }
+      showToast(pesan, 'success', 7000);
+    } else {
+      showToast('Gagal mengirim pengingat. Coba lagi sebentar.', 'error');
+    }
+  } catch (e) {
+    showToast('Gagal terhubung ke server saat mengirim pengingat.', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = teksAsli || '📤 Kirim Sekarang'; }
+  }
 }
 </script>
 <script>
