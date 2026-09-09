@@ -3412,16 +3412,15 @@ function exportWordLengkap(g) {
   const kapW = (s) => s ? s.charAt(0).toUpperCase()+s.slice(1) : '';
   const fvW = (val,sfx) => { if(!val||val==='-') return '-'; const s=String(val).trim(); return s.endsWith(sfx)?s:s+sfx; };
 
-  const F = "font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;line-height:100%;mso-line-height-rule:exactly;text-align:justify;margin:0;";
+  const F = "font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;line-height:100%;mso-line-height-rule:exactly;text-align:left;margin:0;";
   const s = (txt, bold=false, indent=false, italic=false) => {
     let style = F;
     if (bold) style += 'font-weight:bold;';
-    if (indent) style += 'margin-left:1.25cm;';
     const content = italic ? `<i>${txt}</i>` : txt;
     return `<p style="${style}">${content}</p>`;
   };
   const p2 = (txt, bold=false, italic=false) => {
-    let style = F + 'margin-left:1.25cm;';
+    let style = F;
     if (bold) style += 'font-weight:bold;';
     const content = italic ? `<i>${txt}</i>` : txt;
     return `<p style="${style}">${content}</p>`;
@@ -3445,10 +3444,10 @@ function exportWordLengkap(g) {
   // Kegiatan: gabung jenis yang unik
   const jenisUnikList = [...new Set(kunjungan.map(k => k['JenisPelayanan']).filter(Boolean))];
   const jenisFormatList = jenisUnikList.map(j => (j==='Home Visit'||j==='Telemedicine') ? `<i>_${j}_</i>` : j);
-  const kegiatanHtml = `<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;margin-left:1.25cm;line-height:100%;mso-line-height-rule:exactly;">d. Kegiatan yang dilaksanakan : ${jenisFormatList.join(' dan ')}</p>`;
+  const kegiatanHtml = `<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;line-height:100%;mso-line-height-rule:exactly;">d. Kegiatan yang dilaksanakan : ${jenisFormatList.join(' dan ')}</p>`;
 
   // III. Hasil yang Dicapai — header identitas SEKALI, lalu tiap kunjungan format a/b/c terstruktur
-  const pIndent = (html) => `<p style="${F}margin-left:1.25cm;">${html}</p>`;
+  const pIndent = (html) => `<p style="${F}">${html}</p>`;
   let hasilHtml = s(`${(pangkat||'-').toUpperCase()} ${nama.toUpperCase()} NRP ${nipnrp} ${(kesatuan||'-').toUpperCase()}`, true);
   hasilHtml += br();
 
@@ -3509,9 +3508,9 @@ function exportWordLengkap(g) {
       xmlns='http://www.w3.org/TR/REC-html40'>
 <head><meta charset='utf-8'>
 <style>
-  @page { size: 21.59cm 33.02cm; margin: 2.5cm 2cm 2cm 3cm; }
-  body { font-family: 'Arial Narrow', Arial, sans-serif; font-size: 12pt; margin: 2.5cm 2cm 2cm 3cm; }
-  p { margin: 0; font-size: 12pt; text-align: justify; line-height: 100%; mso-line-height-rule: exactly; mso-margin-top-alt: 0; mso-margin-bottom-alt: 0; }
+  @page { size: 21cm 29.7cm; margin: 2.54cm 2.54cm 2.54cm 2.54cm; }
+  body { font-family: 'Arial Narrow', Arial, sans-serif; font-size: 12pt; margin: 2.54cm 2.54cm 2.54cm 2.54cm; }
+  p { margin: 0; font-size: 12pt; text-align: left; line-height: 100%; mso-line-height-rule: exactly; mso-margin-top-alt: 0; mso-margin-bottom-alt: 0; }
 </style>
 </head>
 <body>
@@ -3545,15 +3544,15 @@ ${br()}
 <br>
 ${s('I.  PENDAHULUAN', true)}
 ${s('1. Umum', false, true)}
-<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;margin-left:1.25cm;text-align:justify;line-height:100%;mso-line-height-rule:exactly;">Saat ini Polri sedang membenahi diri di berbagai bidang dan ini untuk melaksanakan reformasi birokrasi guna mewujudkan pelayanan publik yang prima. Sebagai salah satu fungsi Polri jajaran Dokkes harus memahami dan tanggap akan kebutuhan organisasi tersebut.</p>${br()}
-<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;margin-left:1.25cm;text-align:justify;line-height:100%;mso-line-height-rule:exactly;">Reformasi birokrasi Dokkes harus diterjemahkan pada kegiatan-kegiatan konkrit yang dilaksanakan secara terarah dan terjadwal dengan rinci dan dikendalikan dengan ketat menggunakan instrumen-instrumen manajemen, sehingga menghasilkan perubahan yang bersifat akseleratif dan segera dapat dirasakan oleh pengguna pelayanan Dokkes.</p>${br()}
-<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;margin-left:1.25cm;text-align:justify;line-height:100%;mso-line-height-rule:exactly;">Selama ini Biddokkes Polda NTB tetap berupaya mengedepankan peningkatan pelayanan kesehatan secara profesional kepada keluarga besar Polri dan masyarakat Polri di dalam setiap melaksanakan tugas. Pelayanan kesehatan Biddokkes Polda NTB bukan hanya ditujukan untuk anggota Polri yang mampu melaksanakan tugas melainkan anggota yang mengalami sakit kronis atau menahun yang tidak bisa melaksanakan tugas sebagaimana mestinya.</p>
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:left;line-height:100%;mso-line-height-rule:exactly;">Saat ini Polri sedang membenahi diri di berbagai bidang dan ini untuk melaksanakan reformasi birokrasi guna mewujudkan pelayanan publik yang prima. Sebagai salah satu fungsi Polri jajaran Dokkes harus memahami dan tanggap akan kebutuhan organisasi tersebut.</p>${br()}
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:left;line-height:100%;mso-line-height-rule:exactly;">Reformasi birokrasi Dokkes harus diterjemahkan pada kegiatan-kegiatan konkrit yang dilaksanakan secara terarah dan terjadwal dengan rinci dan dikendalikan dengan ketat menggunakan instrumen-instrumen manajemen, sehingga menghasilkan perubahan yang bersifat akseleratif dan segera dapat dirasakan oleh pengguna pelayanan Dokkes.</p>${br()}
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:left;line-height:100%;mso-line-height-rule:exactly;">Selama ini Biddokkes Polda NTB tetap berupaya mengedepankan peningkatan pelayanan kesehatan secara profesional kepada keluarga besar Polri dan masyarakat Polri di dalam setiap melaksanakan tugas. Pelayanan kesehatan Biddokkes Polda NTB bukan hanya ditujukan untuk anggota Polri yang mampu melaksanakan tugas melainkan anggota yang mengalami sakit kronis atau menahun yang tidak bisa melaksanakan tugas sebagaimana mestinya.</p>
 <br>
 ${s('2. Maksud dan Tujuan', false, true)}
 ${s('a. Maksud', false, true)}
-<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;margin-left:1.25cm;text-align:justify;line-height:100%;mso-line-height-rule:exactly;">Untuk memberikan laporan hasil kegiatan pelayanan kesehatan dan pendampingan kepada pimpinan yang dilaksanakan oleh Biddokkes Polda NTB.</p>${br()}
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:left;line-height:100%;mso-line-height-rule:exactly;">Untuk memberikan laporan hasil kegiatan pelayanan kesehatan dan pendampingan kepada pimpinan yang dilaksanakan oleh Biddokkes Polda NTB.</p>${br()}
 ${s('b. Tujuan', false, true)}
-<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;margin-left:1.25cm;text-align:justify;line-height:100%;mso-line-height-rule:exactly;">Agar setiap anggota Polri, PNS Polri dan keluarganya mendapat pelayanan kesehatan sehingga tercipta suatu optimalisasi derajat kesehatan bagi anggota Polri.</p>
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:left;line-height:100%;mso-line-height-rule:exactly;">Agar setiap anggota Polri, PNS Polri dan keluarganya mendapat pelayanan kesehatan sehingga tercipta suatu optimalisasi derajat kesehatan bagi anggota Polri.</p>
 <br>
 ${s('3. Dasar', false, true)}
 ${s('a.  Peraturan Kepala Kepolisian Negara Republik Indonesia Nomor 8 Tahun 2018 tentang Pelayanan Kesehatan Tertentu di lingkungan Kepolisian Negara Republik Indonesia.', false, true)}
@@ -3561,7 +3560,7 @@ ${br()}
 ${s('b.  Renja Biddokkes Polda NTB TA. 2026.', false, true)}
 <br>
 ${s('II. PELAKSANAAN KEGIATAN', true)}
-<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;margin-left:1.25cm;line-height:100%;mso-line-height-rule:exactly;">a. Waktu dan Tempat</p>
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;line-height:100%;mso-line-height-rule:exactly;">a. Waktu dan Tempat</p>
 ${waktuTempatHtml}
 ${tempatHtml}
 ${kegiatanHtml}
@@ -3575,21 +3574,21 @@ ${hasilHtml}
 <br>
 ${s('IV. ANALISA DAN EVALUASI', true)}
 ${s('a. Analisa', false, true)}
-<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;margin-left:1cm;text-align:justify;line-height:100%;mso-line-height-rule:exactly;">
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:left;line-height:100%;mso-line-height-rule:exactly;">
 Dari hasil pelaksanaan kegiatan pemeriksaan terhadap anggota yang bersangkutan perlu mendapatkan perhatian dan <i>support</i> / dukungan lebih terhadap penyakit yang dideritanya.
 </p>
 ${s('b. Evaluasi', false, true)}
-<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;margin-left:1cm;text-align:justify;line-height:100%;mso-line-height-rule:exactly;">
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:left;line-height:100%;mso-line-height-rule:exactly;">
 Kegiatan pelayanan kesehatan ini mendapat respon yang baik dari yang bersangkutan dan mengikuti semua prosedur tahap pemeriksaan yang diberikan sehingga memudahkan tim Biddokkes Polda NTB untuk melakukan pemeriksaan.
 </p>
 <br>
 ${s('V.  KESIMPULAN DAN SARAN', true)}
 ${s('a. Kesimpulan', false, true)}
-<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;margin-left:1cm;text-align:justify;line-height:100%;mso-line-height-rule:exactly;">
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:left;line-height:100%;mso-line-height-rule:exactly;">
 Untuk saat ini secara umum, kondisi fisik ${nama} masih memerlukan pemantauan dan pengobatan lanjutan guna mencapai perbaikan kondisi kesehatan yang optimal.
 </p>
 ${s('b. Saran', false, true)}
-<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;margin-left:1cm;text-align:justify;line-height:100%;mso-line-height-rule:exactly;">
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:left;line-height:100%;mso-line-height-rule:exactly;">
 Disarankan agar yang bersangkutan tetap menjalani kontrol rutin sesuai jadwal yang telah ditentukan serta mengonsumsi obat secara teratur sesuai anjuran dokter. Yang bersangkutan juga perlu menjaga pola hidup sehat dan mendapat dukungan dari keluarga serta lingkungan kerja agar kondisi kesehatannya dapat membaik.
 </p>
 <br>
