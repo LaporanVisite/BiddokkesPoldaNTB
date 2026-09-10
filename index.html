@@ -1979,8 +1979,10 @@ function muatData(r) {
   document.getElementById('dropdown').style.display = 'none';
   document.getElementById('loadedNama').textContent = r['Nama Pasien'] || '';
   document.getElementById('loadedBanner').style.display = 'flex';
-  // Simpan nama untuk lihat rekam medis
+  // Simpan nama DAN NIP/NRP untuk lihat rekam medis — supaya kalau ada 2 orang beda dengan
+  // nama sama (misal sama-sama "Hermansyah"), riwayatnya tidak tercampur jadi satu.
   window._loadedNamaPasien = r['Nama Pasien'] || '';
+  window._loadedNipNrp = r['NIPNRP'] || '';
   const btnRM = document.getElementById('btnLihatRekamPasien');
   if (btnRM) { btnRM.style.display = 'block'; }
   progRestoreAll();
@@ -2015,6 +2017,7 @@ function gantiPasienLain() {
   const btnRM = document.getElementById('btnLihatRekamPasien');
   if (btnRM) btnRM.style.display = 'none';
   window._loadedNamaPasien = '';
+  window._loadedNipNrp = '';
 
   if (namaEl) {
     namaEl.focus();
@@ -2025,6 +2028,7 @@ function gantiPasienLain() {
 
 async function bukaRekamPasienDariForm() {
   const nama = (window._loadedNamaPasien || '').trim().toLowerCase();
+  const nipnrp = (window._loadedNipNrp || '').trim();
   if (!nama) return;
   const modalEl = document.getElementById('modalRekamPasien');
   if (!modalEl) return;
@@ -2039,7 +2043,12 @@ async function bukaRekamPasienDariForm() {
   // ikut dimuat/ditampilkan meski sebenarnya masih ada.
   await pastikanSemuaDataTermuat();
 
-  let kunjungan = allData.filter(r => (r['Nama Pasien']||'').trim().toLowerCase() === nama);
+  // Cocokkan Nama DAN NIP/NRP — kalau ada 2 orang beda dengan nama sama (misal sama-sama
+  // "Hermansyah" tapi NRP beda), riwayatnya harus tetap terpisah, tidak boleh tercampur.
+  let kunjungan = allData.filter(r =>
+    (r['Nama Pasien']||'').trim().toLowerCase() === nama &&
+    (r['NIPNRP']||'').trim() === nipnrp
+  );
 
   kunjungan = kunjungan.sort((a,b) => {
       const tA = new Date((b['Tanggal']||'').split('/').reverse().join('-') + 'T' + (b['Waktu']||'00:00'));
@@ -2236,30 +2245,41 @@ function kompressFoto(file) {
   });
 }
 
-async function uploadKeImgBB(file, percobaan=1, onRetry=null, blobSiap=null) {
+// Sisipkan transformasi f_jpg,q_auto ke URL Cloudinary, supaya file apa pun formatnya
+// (termasuk HEIC/HEIF yang tidak terbaca di HP) otomatis disajikan sebagai JPG terkompresi
+// oleh server Cloudinary saat diakses — bukan HP petugas yang harus sanggup membacanya.
+function sisipkanKonversiJpg(url) {
+  if (!url || !url.includes('/upload/')) return url;
+  return url.replace('/upload/', '/upload/f_jpg,q_auto/');
+}
+
+async function uploadKeImgBB(file, percobaan=1, onRetry=null, infoSiap=null) {
   const MAKS_PERCOBAAN = 3;
-  // Timeout makin longgar tiap percobaan: 30 detik, lalu 40, lalu 50 —
-  // sinyal lemah butuh lebih banyak waktu, bukan diulang dengan batas waktu yang sama
-  const timeoutMs = 20000 + (percobaan * 10000);
   let alasanGagal = 'Koneksi internet terputus/timeout';
 
-  // Kompres HANYA sekali di percobaan pertama. Kalau foto memang tidak bisa diproses
-  // (format tidak didukung browser seperti HEIC, atau file rusak), itu akan GAGAL LAGI
-  // setiap kali diulang — jadi tidak perlu buang waktu retry 3x untuk masalah ini.
-  // Yang layak diulang cuma tahap KIRIM ke server (soal jaringan), bukan tahap baca fotonya.
-  let blob = blobSiap;
-  if (!blob) {
+  // "info" = { blob, viaServer }. viaServer=true artinya kompresi di HP GAGAL (kemungkinan
+  // format HEIC/HEIF yang tidak semua browser bisa baca) — kalau begitu, JANGAN langsung
+  // menyerah. Kirim file ASLINYA apa adanya ke Cloudinary, lalu minta URL hasil upload itu
+  // dikonversi jadi JPG+dikompres di SISI SERVER Cloudinary (mereka bisa baca HEIC/HEIF
+  // dengan baik, beda dengan browser HP). Dicoba/disiapkan SEKALI saja di percobaan pertama.
+  let info = infoSiap;
+  if (!info) {
     try {
-      blob = await kompressFoto(file);
+      const blob = await kompressFoto(file);
+      info = { blob, viaServer: false };
     } catch (e) {
-      console.error('Foto gagal diproses (bukan soal koneksi):', e);
-      return { url: '', alasan: 'Foto tidak bisa diproses (' + e.message + ') — kemungkinan format foto tidak didukung (misal HEIC di iPhone) atau file rusak. Coba pilih/ambil foto lain.' };
+      const ukuranMB = (file.size / (1024*1024)).toFixed(1);
+      console.warn('Kompresi di HP gagal (' + file.name + ', ' + ukuranMB + 'MB) — coba jalur cadangan lewat server:', e.message);
+      info = { blob: file, viaServer: true };
     }
   }
 
+  // File asli (belum dikompres) butuh waktu lebih longgar untuk terkirim, terutama di sinyal lemah.
+  const timeoutMs = (info.viaServer ? 35000 : 20000) + (percobaan * 10000);
+
   try {
     const formData = new FormData();
-    formData.append('file', blob, file.name);
+    formData.append('file', info.blob, file.name);
     formData.append('upload_preset', 'biddokkes');
     formData.append('cloud_name', 'dyrhzsyp3');
     const controller = new AbortController();
@@ -2271,7 +2291,12 @@ async function uploadKeImgBB(file, percobaan=1, onRetry=null, blobSiap=null) {
     });
     clearTimeout(timeoutId);
     const result = await res.json();
-    if (result.secure_url) return { url: result.secure_url, alasan: '' };
+    if (result.secure_url) {
+      // Jalur cadangan: selipkan transformasi f_jpg,q_auto ke URL-nya, supaya file APAPUN
+      // formatnya (HEIC/HEIF/dll) otomatis disajikan sebagai JPG terkompresi oleh Cloudinary.
+      const urlFinal = info.viaServer ? sisipkanKonversiJpg(result.secure_url) : result.secure_url;
+      return { url: urlFinal, alasan: '' };
+    }
     // Server Cloudinary MERESPON tapi menolak — ini BUKAN soal sinyal/koneksi,
     // melainkan sesuatu di sisi Cloudinary (kuota, preset, format, dll)
     alasanGagal = 'Ditolak server foto: ' + (result?.error?.message || JSON.stringify(result).slice(0,120));
@@ -2285,7 +2310,7 @@ async function uploadKeImgBB(file, percobaan=1, onRetry=null, blobSiap=null) {
     if (onRetry) onRetry(percobaan + 1, MAKS_PERCOBAAN);
     // Jeda makin lama tiap percobaan berikutnya: 1.5 detik, lalu 3 detik
     await new Promise(r => setTimeout(r, percobaan * 1500));
-    return await uploadKeImgBB(file, percobaan + 1, onRetry, blob);
+    return await uploadKeImgBB(file, percobaan + 1, onRetry, info);
   }
   return { url: '', alasan: alasanGagal };
 }
