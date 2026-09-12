@@ -1529,6 +1529,7 @@ async function eksporKunjunganExcel() {
     { width: 22 },  // G: TEMPAT
     { width: 28 },  // H: TANGGAL VISIT
     { width: 22 },  // I: DOKUMENTASI
+    { width: 20 },  // J: TTD
   ];
 
   const thinBorder = { style:'thin', color:{ argb:'FF000000' } };
@@ -1536,7 +1537,7 @@ async function eksporKunjunganExcel() {
   const centerWrap = { horizontal:'center', vertical:'middle', wrapText:true };
 
   // Row 1: Judul
-  ws.mergeCells('A1:I1');
+  ws.mergeCells('A1:J1');
   const j1 = ws.getCell('A1');
   j1.value = 'DATA KUNJUNGAN ANGGOTA SAKIT BIDDOKKES POLDA NTB';
   j1.font = { bold:true, size:14, name:'Calibri' };
@@ -1544,7 +1545,7 @@ async function eksporKunjunganExcel() {
   ws.getRow(1).height = 22;
 
   // Row 2: Sub judul tanggal
-  ws.mergeCells('A2:I2');
+  ws.mergeCells('A2:J2');
   const j2 = ws.getCell('A2');
   j2.value = 'Tanggal ' + tglJudul;
   j2.font = { bold:true, size:12, name:'Calibri' };
@@ -1555,7 +1556,7 @@ async function eksporKunjunganExcel() {
   ws.getRow(3).height = 8;
 
   // Row 4: Header kolom
-  const headers = ['NO','NAMA','PANGKAT/NRP','JABATAN/SATKER','HASIL PEMERIKSAAN','DIAGNOSA','TEMPAT','TANGGAL VISIT','DOKUMENTASI'];
+  const headers = ['NO','NAMA','PANGKAT/NRP','JABATAN/SATKER','HASIL PEMERIKSAAN','DIAGNOSA','TEMPAT','TANGGAL VISIT','DOKUMENTASI','TTD'];
   headers.forEach((h, i) => {
     const cell = ws.getCell(4, i+1);
     cell.value = h;
@@ -1567,7 +1568,7 @@ async function eksporKunjunganExcel() {
   ws.getRow(4).height = 20;
 
   // Row 5: Nomor kolom
-  for (let i = 1; i <= 9; i++) {
+  for (let i = 1; i <= 10; i++) {
     const cell = ws.getCell(5, i);
     cell.value = i;
     cell.font = { size:11, name:'Calibri' };
@@ -1592,16 +1593,17 @@ async function eksporKunjunganExcel() {
     row.getCell(7).value = r.tempat;
     row.getCell(8).value = r.tanggalVisit;
     row.getCell(9).value = '';
+    row.getCell(10).value = ''; // TTD — dikosongkan dulu
 
-    for (let c = 1; c <= 9; c++) {
+    for (let c = 1; c <= 10; c++) {
       const cell = row.getCell(c);
       cell.font = { size:11, name:'Calibri' };
       cell.border = allBorder;
       cell.alignment = (c === 2 || c === 4 || c === 5) ? { vertical:'middle', wrapText:true } : centerWrap;
     }
 
-    // Embed foto jika ada
-    if (r.foto) imgPromises.push(embedFoto(wb, ws, fixImgBBUrl(r.foto), rowIdx, 9));
+    // Embed foto jika ada — kolom ExcelJS 0-based, kolom I (ke-9 dari kiri) = index 8
+    if (r.foto) imgPromises.push(embedFoto(wb, ws, fixImgBBUrl(r.foto), rowIdx, 8));
     rowIdx++;
   }
 
