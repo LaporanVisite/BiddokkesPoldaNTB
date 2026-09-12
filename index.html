@@ -1382,6 +1382,13 @@ function getKunjunganData() {
 
   // Group per pasien (Nama+NIPNRP+Kesatuan)
   const pasienMap = {};
+  const bln = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const fmtTglPanjang = (tglStr) => {
+    const m = String(tglStr).match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    if (!m) return tglStr;
+    return parseInt(m[1]) + ' ' + bln[parseInt(m[2])-1] + ' ' + m[3];
+  };
+
   filtered.forEach(r => {
     const key = (r['Nama Pasien']||'').trim().toUpperCase() + '||' + (r['NIPNRP']||'');
     if (!pasienMap[key]) {
@@ -1412,7 +1419,7 @@ function getKunjunganData() {
     if (tgl >= pasienMap[key].lastTgl) {
       pasienMap[key].jabatan = r['Jabatan'] || pasienMap[key].jabatan;
       pasienMap[key].tempat = r['Tempat'] || pasienMap[key].tempat;
-      pasienMap[key].hasilPemeriksaan = buatHasilPemeriksaan(r);
+      pasienMap[key].hasilPemeriksaan = '(Kunjungan terakhir, ' + fmtTglPanjang(r['Tanggal']) + ') ' + buatHasilPemeriksaan(r);
       const foto = r['Dokumentasi1'] || r['Dokumentasi2'] || '';
       if (foto) pasienMap[key].lastFoto = foto;
       pasienMap[key].lastTgl = tgl;
@@ -1420,12 +1427,6 @@ function getKunjunganData() {
   });
 
   // Proses setiap pasien
-  const bln = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-  const fmtTglPanjang = (tglStr) => {
-    const m = String(tglStr).match(/(\d{2})\/(\d{2})\/(\d{4})/);
-    if (!m) return tglStr;
-    return parseInt(m[1]) + ' ' + bln[parseInt(m[2])-1] + ' ' + m[3];
-  };
 
   return Object.values(pasienMap).map((p, i) => {
     // Diagnosa terakhir (dari kunjungan terbaru)
@@ -1453,7 +1454,11 @@ function getKunjunganData() {
 
 async function previewRekapKunjungan() {
   document.getElementById('kunjunganPreview').innerHTML = '<div class="empty-state"><div class="es-icon">⏳</div><p>Memuat data...</p></div>';
-  await pastikanSemuaDataTermuat();
+  const berhasil = await pastikanSemuaDataTermuat();
+  if (!berhasil) {
+    document.getElementById('kunjunganPreview').innerHTML = '<div class="empty-state"><div class="es-icon">❌</div><p>Gagal memuat seluruh riwayat data. Coba tekan Tampilkan Data lagi.</p></div>';
+    return;
+  }
   if (!allData || allData.length === 0) {
     showToast('Gagal memuat data, coba lagi','error');
     return;
@@ -1495,7 +1500,8 @@ async function previewRekapKunjungan() {
 }
 
 async function eksporKunjunganExcel() {
-  await pastikanSemuaDataTermuat();
+  const berhasil = await pastikanSemuaDataTermuat();
+  if (!berhasil) { showToast('Dibatalkan — data belum lengkap termuat. Coba lagi.','error'); return; }
   if (!allData || allData.length === 0) { showToast('Data belum dimuat!','error'); return; }
   const rows = getKunjunganData();
   if (!rows || !rows.length) { showToast('Tidak ada data!','error'); return; }
@@ -2659,9 +2665,11 @@ async function pastikanSemuaDataTermuat() {
       await muatSisaSemuaData(true); // true = silent, tanpa toast per-batch
       perbaruiTombolMuatLagi();
     } catch(e) {
-      showToast('Gagal memuat sebagian riwayat data. Rekap mungkin belum lengkap — coba lagi.', 'error');
+      showToast('Gagal memuat sebagian riwayat data — proses dibatalkan supaya hasil tidak setengah-setengah. Coba lagi.', 'error');
+      return false; // gagal — pemanggil WAJIB berhenti, jangan lanjut tampil/download data yang belum lengkap
     }
   }
+  return true; // semua data (dalam rentang manapun) sudah pasti termuat lengkap
 }
 
 function perbaruiTombolMuatLagi() {
