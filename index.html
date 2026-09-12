@@ -971,7 +971,7 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button onclick="previewRekapKunjungan()" style="flex:1;padding:10px;background:var(--green);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">🔍 Tampilkan Data</button>
       <button onclick="eksporKunjunganExcel()" style="flex:1;padding:10px;background:#1d6f42;color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">📊 Download Excel</button>
-      <button onclick="eksporTargetVisiteExcel()" style="flex:1;padding:10px;background:#0f5c8a;color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">🎯 Rekap Target Visite</button>
+      <button onclick="eksporLaporanMingguanFormal()" style="flex:1;padding:10px;background:#0f5c8a;color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">📄 Download Word</button>
     </div>
   </div>
   <div id="kunjunganPreview" style="margin-top:12px"></div>
@@ -1788,6 +1788,185 @@ async function eksporTargetVisiteExcel() {
   const a = document.createElement('a');
   a.href = url; a.download = fname; a.click();
   showToastDownload('Excel', fname);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// ── LAPORAN MINGGUAN FORMAL (Word, per FKTP, tabel per kunjungan) ──
+async function eksporLaporanMingguanFormal() {
+  await pastikanSemuaDataTermuat();
+  if (!allData || allData.length === 0) { showToast('Data belum dimuat!','error'); return; }
+
+  const mulai = document.getElementById('kunjunganTglMulai').value;
+  const selesai = document.getElementById('kunjunganTglSelesai').value;
+  if (!mulai || !selesai) { showToast('Pilih tanggal mulai dan selesai!','error'); return; }
+  const tMulai = new Date(mulai); tMulai.setHours(0,0,0,0);
+  const tSelesai = new Date(selesai); tSelesai.setHours(23,59,59,999);
+  if (tMulai > tSelesai) { showToast('Tanggal mulai harus sebelum tanggal selesai!','error'); return; }
+
+  const fktpDipilih = (sesiFKTP && !sesiFKTP.admin) ? sesiFKTP.nama : ((document.getElementById('kunjunganFKTP') || {}).value || '');
+  if (!fktpDipilih) { showToast('Laporan ini wajib untuk 1 FKTP tertentu — pilih dulu FKTP-nya!','error'); return; }
+
+  // Setiap KUNJUNGAN jadi baris tersendiri (BEDA dari Rekap Kunjungan yang digabung per pasien) —
+  // kalau 1 pasien dikunjungi 2x minggu ini, dia muncul 2x di tabel, sesuai tanggal masing-masing.
+  const kunjunganList = allData.filter(r => {
+    const t = parseTglKunjungan(r['Tanggal']);
+    return t >= tMulai.getTime() && t <= tSelesai.getTime() && (r['FKTP'] || '') === fktpDipilih;
+  }).sort((a, b) => parseTglKunjungan(a['Tanggal']) - parseTglKunjungan(b['Tanggal']));
+
+  if (!kunjunganList.length) { showToast('Tidak ada kunjungan pada rentang & FKTP ini!','error'); return; }
+
+  const bln = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const romawi = ['I','II','III','IV','V','VI'];
+  const kataBilangan = ['satu','dua','tiga','empat','lima','enam'];
+  // "Minggu ke berapa" dihitung dari TANGGAL AWAL rentang (misal tgl 24 -> minggu ke-4)
+  const mingguKeIdx = Math.min(6, Math.ceil(tMulai.getDate() / 7)) - 1;
+  const mingguKe = romawi[mingguKeIdx];
+  const kataMingguKe = kataBilangan[mingguKeIdx];
+  const namaBulanAwal = bln[tMulai.getMonth()];
+  const tahunAwal = tMulai.getFullYear();
+  const hariList = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  const tglMulaiPanjang = tMulai.getDate() + ' ' + namaBulanAwal + ' ' + tahunAwal;
+  const tglSelesaiPanjang = tSelesai.getDate() + ' ' + bln[tSelesai.getMonth()] + ' ' + tSelesai.getFullYear();
+
+  const F = "font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;line-height:100%;mso-line-height-rule:exactly;text-align:left;margin:0;";
+  const s = (txt, bold=false, italic=false) => {
+    let style = F;
+    if (bold) style += 'font-weight:bold;';
+    return `<p style="${style}">${italic ? '<i>'+txt+'</i>' : txt}</p>`;
+  };
+  const br = () => '<p style="margin:0;line-height:50%;mso-line-height-rule:exactly;">&nbsp;</p>';
+  const judulBaris1 = 'LAPORAN TINDAK LANJUT RIKKES BERKALA KEPADA PNPP POLDA NTB';
+  const judulBaris2 = `MINGGU KE – ${mingguKe} BULAN ${namaBulanAwal.toUpperCase()} TAHUN ${tahunAwal}`;
+
+  const kopHtml = (ukuranLogo) => `
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;font-weight:bold;text-align:center;margin:0;line-height:1.5">KEPOLISIAN NEGARA REPUBLIK INDONESIA</p>
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;font-weight:bold;text-align:center;margin:0;line-height:1.5">DAERAH NUSA TENGGARA BARAT</p>
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;font-weight:bold;text-align:center;margin:0;line-height:1.5">BIDANG KEDOKTERAN DAN KESEHATAN</p>
+<p style="text-align:center;margin:0;line-height:1;mso-line-height-rule:exactly;">
+<v:shape style="width:${ukuranLogo}px;height:${ukuranLogo}px;mso-wrap-style:none;mso-position-horizontal:center;z-index:-1;" fillcolor="none" stroked="f">
+<v:imagedata src="data:image/png;base64,${LOGO_DOKKES_B64}" o:title="logo"/>
+<w10:wrap type="none"/>
+</v:shape></p>`;
+
+  // Tabel Hasil yang Dicapai — 1 baris = 1 kunjungan (bukan per pasien)
+  const kap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+  const tabelHtml = `<table style="width:100%;border-collapse:collapse;table-layout:fixed;" cellspacing="0" cellpadding="0">
+<colgroup><col style="width:5%"><col style="width:14%"><col style="width:20%"><col style="width:16%"><col style="width:25%"><col style="width:20%"></colgroup>
+<tr>
+  <td style="border:1px solid #000;padding:4px;font-weight:bold;text-align:center;width:5%">NO</td>
+  <td style="border:1px solid #000;padding:4px;font-weight:bold;text-align:center;width:14%">TANGGAL</td>
+  <td style="border:1px solid #000;padding:4px;font-weight:bold;text-align:center;width:20%">NAMA</td>
+  <td style="border:1px solid #000;padding:4px;font-weight:bold;text-align:center;width:16%">PANGKAT/NRP</td>
+  <td style="border:1px solid #000;padding:4px;font-weight:bold;text-align:center;width:25%">DIAGNOSA</td>
+  <td style="border:1px solid #000;padding:4px;font-weight:bold;text-align:center;width:20%">TEMPAT</td>
+</tr>
+${kunjunganList.map((r, i) => {
+  const diagnosaArr = [r['Diagnosa1'],r['Diagnosa2'],r['Diagnosa3'],r['Diagnosa4']].filter(Boolean).map(kap);
+  return `<tr>
+  <td style="border:1px solid #000;padding:4px;text-align:center;vertical-align:top">${i+1}</td>
+  <td style="border:1px solid #000;padding:4px;text-align:center;vertical-align:top">${r['Tanggal']||'-'}</td>
+  <td style="border:1px solid #000;padding:4px;vertical-align:top">${titleCase(r['Nama Pasien']||'-')}</td>
+  <td style="border:1px solid #000;padding:4px;text-align:center;vertical-align:top">${titleCase(r['Pangkat']||'-')}/${r['NIPNRP']||'-'}</td>
+  <td style="border:1px solid #000;padding:4px;vertical-align:top">${diagnosaArr.length ? diagnosaArr.join(', ') : '-'}</td>
+  <td style="border:1px solid #000;padding:4px;vertical-align:top;word-wrap:break-word;overflow-wrap:break-word">${titleCase(r['Tempat']||'-')}</td>
+</tr>`;
+}).join('')}
+</table>`;
+
+  const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office'
+      xmlns:w='urn:schemas-microsoft-com:office:word'
+      xmlns:v='urn:schemas-microsoft-com:vml'
+      xmlns:w10='urn:schemas-microsoft-com:office:word'
+      xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset='utf-8'>
+<style>
+  @page { size: 21cm 29.7cm; margin: 2.54cm 2.54cm 2.54cm 2.54cm; }
+  body { font-family: 'Arial Narrow', Arial, sans-serif; font-size: 12pt; margin: 2.54cm 2.54cm 2.54cm 2.54cm; }
+  p { margin: 0; font-size: 12pt; text-align: left; line-height: 100%; mso-line-height-rule: exactly; }
+</style>
+</head>
+<body>
+${kopHtml(220)}
+${br()}${br()}${br()}${br()}${br()}${br()}${br()}
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:14pt;font-weight:bold;text-align:center;margin:0">${judulBaris1}</p>
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:14pt;font-weight:bold;text-align:center;margin:0">${judulBaris2}</p>
+${br()}${br()}${br()}${br()}${br()}${br()}${br()}${br()}
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;text-align:center;margin:0;">Mataram, ${namaBulanAwal} ${tahunAwal}</p>
+<br clear=all style='mso-special-character:line-break;page-break-before:always'>
+${kopHtml(80)}
+${br()}
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;font-weight:bold;text-align:center;margin:0">${judulBaris1}</p>
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;font-weight:bold;text-align:center;margin:0">${judulBaris2}</p>
+<br>
+${s('I.  PENDAHULUAN', true)}
+${s('1. Umum', false)}
+<p style="${F}">Saat ini polri sedang membenahi diri di berbagai bidang dan ini untuk melaksanakan reformasi birokrasi guna mewujudkan pelayanan publik yang prima. Sebagai salah satu fungsi Polri jajaran Dokkes harus memahami dan tanggap akan kebutuhan organisasi tersebut.</p>${br()}
+<p style="${F}">Reformasi birokrasi Dokkes harus diterjemahkan pada kegiatan-kegiatan konkrit yang dilaksanakan secara terarah dan terjadwal dengan rinci dan dikendalikan dengan ketat menggunakan instrumen-instrumen manajemen, sehingga menghasilkan perubahan yang bersifat akseleratif dan segera dapat dirasakan oleh pengguna pelayanan Dokkes.</p>${br()}
+<p style="${F}">Selama ini Biddokkes Polda NTB tetap berupaya mengedepankan peningkatan pelayanan kesehatan secara profesional kepada keluarga besar Polri dan masyarakat Polri di dalam setiap melaksanakan tugas. Pelayanan kesehatan di Biddokkes Polda NTB bukan hanya ditujukan untuk anggota Polri yang mampu melaksanakan tugas melainkan anggota yang mengalami sakit kronis atau menahun yang tidak bisa melaksanakan tugas sebagaimana mestinya.</p>
+<br>
+${s('2. Maksud dan Tujuan', false)}
+${s('a. Maksud', false)}
+<p style="${F}">Untuk memberikan laporan hasil kegiatan pelayanan kesehatan <i>home visite</i> / pendampingan kepada pimpinan yang dilaksanakan oleh Biddokkes Polda NTB.</p>${br()}
+${s('b. Tujuan', false)}
+<p style="${F}">Agar setiap anggota Polri, PNS Polri dan keluarganya mendapat pelayanan kesehatan sehingga tercipta suatu optimalisasi derajat kesehatan bagi anggota Polri.</p>
+<br>
+${s('3. Dasar', false)}
+<p style="${F}">Rujukan:</p>
+${s('a. Peraturan Kepala Kepolisian Negara Republik Indonesia Nomor 8 Tahun 2018 tentang Pelayanan Kesehatan Tertentu di lingkungan Kepolisian Negara Republik Indonesia.', false)}
+${br()}
+${s('b. Surat Perintah Kabiddokkes Polda NTB Nomor : 281 / V / KES.3 / 2026 tanggal 29 Mei 2026 tentang Pelayanan Tindak lanjut Rikkes Berkala (Home Visit/Pendampingan/Monitoring terhadap PNPP).', false)}
+${br()}
+${s('c. Renja Biddokkes Polda NTB TA. 2026.', false)}
+<br>
+${s('II. PELAKSANAAN KEGIATAN', true)}
+${s('a. Waktu dan Tempat', false)}
+<p style="${F}">Kegiatan Home Visit/Pendampingan/Monitoring kesehatan dilaksanakan pada minggu ke-${kataMingguKe} ${namaBulanAwal} ${tahunAwal} hari Senin-Minggu (tanggal ${tglMulaiPanjang} s.d ${tglSelesaiPanjang}), bertempat di kediaman anggota dan/atau tempat perawatan anggota yang sedang mengalami sakit.</p>
+<br>
+${s('b. Kegiatan yang dilaksanakan:', false)}
+${s('- Melakukan pemantauan terhadap perkembangan kondisi kesehatan dan keluhan yang dirasakan anggota.', false)}
+${br()}
+${s('- Sebagai tindak lanjut hasil rikkes berkala, kami memberikan saran dan edukasi kesehatan sesuai dengan kondisi masing-masing anggota.', false)}
+${br()}
+${s('- Mengingatkan anggota untuk tetap menjalankan pengobatan dan kontrol kesehatan sesuai anjuran dokter.', false)}
+<br>
+${s('III. HASIL YANG DICAPAI', true)}
+<p style="${F}">Adapun hasil kegiatan pelayanan kesehatan <i>home visite</i> terhadap anggota yang sakit atau menahun personel Polri Polda Nusa Tenggara Barat, sebagai berikut :</p>
+<br>
+${tabelHtml}
+<br>
+<p style="${F}">Laporan lengkap ada pada lampiran surat ini.</p>
+<br>
+${s('IV. ANALISA DAN EVALUASI', true)}
+${s('a. Analisa', false)}
+<p style="${F}">Dari hasil pelaksanaan kegiatan pemeriksaan, home visit, pendampingan dan monitoring terhadap anggota yang bersangkutan, secara umum kondisi kesehatan dapat terpantau dengan baik. Anggota yang mengalami gangguan kesehatan masih memerlukan pemantauan dan pendampingan secara berkala serta dianjurkan untuk tetap menjalani pengobatan dan pemeriksaan kesehatan sesuai dengan kondisi masing-masing.</p>
+<br>
+${s('b. Evaluasi', false)}
+<p style="${F}">Kegiatan pelayanan kesehatan melalui home visit, pendampingan dan monitoring mendapat respons dan perhatian yang baik dari anggota maupun keluarga. Kegiatan ini memberikan manfaat dalam memantau perkembangan kondisi kesehatan anggota yang sedang mengalami sakit serta memberikan dukungan, motivasi dan rasa kepedulian dari kesatuan. Dengan adanya kegiatan tersebut, diharapkan kondisi kesehatan anggota dapat terus terpantau dan proses pemulihan dapat berjalan dengan baik sehingga dapat kembali melaksanakan aktivitas dan tugas kedinasan sesuai dengan kondisi kesehatannya.</p>
+<br>
+${s('V.  KESIMPULAN', true)}
+<p style="${F}">Berdasarkan hasil pelaksanaan kegiatan Home Visit, pendampingan dan monitoring kesehatan terhadap beberapa anggota yang mengalami sakit, telah dilakukan pemeriksaan serta pemantauan terhadap kondisi kesehatan masing-masing anggota sesuai dengan keluhan dan kondisi yang dialami. Secara umum, kondisi kesehatan anggota yang dikunjungi dapat terpantau dengan baik, dan masing-masing anggota telah diberikan arahan serta saran medis sesuai dengan hasil pemeriksaan.</p>
+<br>
+<p style="${F}">Kegiatan Home Visit, pendampingan dan monitoring ini merupakan bentuk perhatian dan kepedulian terhadap kesehatan anggota, khususnya bagi anggota yang sedang mengalami sakit atau memiliki keterbatasan dalam melaksanakan tugas. Diharapkan dengan adanya pemeriksaan dan pendampingan secara berkala, kondisi kesehatan anggota dapat terus terpantau, proses pemulihan dapat berjalan dengan baik, serta anggota dapat kembali melaksanakan aktivitas dan tugas kedinasan sesuai dengan kondisi kesehatannya.</p>
+<br>
+${s('VI. PENUTUP', true)}
+<p style="${F}">Demikian laporan kegiatan pelayanan kesehatan <i>home visite</i> / pendampingan terhadap anggota ${fktpDipilih} dan Jajaran ini dibuat, selanjutnya mohon petunjuk dari pimpinan.</p>
+<br>
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:right;">Mataram, ${namaBulanAwal} ${tahunAwal}</p>
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:right;">Yang Membuat Laporan</p>
+${br()}${br()}${br()}
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;font-weight:bold;margin:0;text-align:right;text-decoration:underline;">${PENANDA_TANGAN_LAPORAN.nama}</p>
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:right;">${PENANDA_TANGAN_LAPORAN.pangkat} NIP ${PENANDA_TANGAN_LAPORAN.nip}</p>
+</body></html>`;
+
+  const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Laporan_Mingguan_${fktpDipilih.replace(/ /g,'_')}_${mulai}_sd_${selesai}.doc`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showToastDownload('Word Laporan Mingguan', a.download);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
