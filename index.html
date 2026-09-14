@@ -516,8 +516,8 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
       </div>
     </div>
     <div class="grid2">
-      <div class="field"><label>Pangkat <span class="req">*</span></label><input type="text" id="Pangkat" placeholder="Misal: Brigadir" onblur="formatTitleCaseField(this)"></div>
-      <div class="field"><label>NIP / NRP <span class="req">*</span></label><input type="text" id="NIPNRP" placeholder="Nomor induk"></div>
+      <div class="field"><label>Pangkat <span class="req">*</span></label><input type="text" id="Pangkat" placeholder="Misal: Brigadir" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')" onblur="formatTitleCaseField(this)"></div>
+      <div class="field"><label>NIP / NRP <span class="req">*</span></label><input type="text" id="NIPNRP" placeholder="Nomor induk" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')"></div>
     </div>
     <div class="grid2">
       <div class="field"><label>Jabatan <span class="req">*</span></label><input type="text" id="Jabatan" placeholder="Jabatan pasien" onblur="formatTitleCaseField(this)"></div>
@@ -1077,11 +1077,11 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
       </div>
       <div>
         <label style="font-size:12px;font-weight:600;color:var(--text3)">Pangkat</label>
-        <input type="text" id="editPasienPangkat" style="width:100%">
+        <input type="text" id="editPasienPangkat" style="width:100%" oninput="this.value=this.value.replace(/[^a-zA-Z\s]/g,'')">
       </div>
       <div>
         <label style="font-size:12px;font-weight:600;color:var(--text3)">NIP / NRP</label>
-        <input type="text" id="editPasienNRP" style="width:100%">
+        <input type="text" id="editPasienNRP" style="width:100%" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')">
       </div>
       <div>
         <label style="font-size:12px;font-weight:600;color:var(--text3)">Jabatan</label>
