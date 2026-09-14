@@ -2108,6 +2108,7 @@ function updateTembusan() {
 
 // ── CARI PASIEN ──
 let cariTimer = null;
+let cariReqId = 0; // penanda urutan request — cegah hasil pencarian LAMA menimpa yang lebih BARU (race condition)
 
 // Auto cari saat ketik (dengan delay 350ms)
 function cariPasienAuto(val) {
@@ -2128,17 +2129,20 @@ function cariPasienManual() {
 
 // Fungsi utama pencarian
 async function cariPasienEksekusi(val) {
+  const reqId = ++cariReqId; // request ini jadi yang "terbaru saat ini"
   const icon = document.querySelector('.search-icon');
   if (icon) icon.textContent = '⏳';
   try {
     const fktpParam = (sesiFKTP && !sesiFKTP.admin) ? '&fktp=' + encodeURIComponent(sesiFKTP.nama) : '';
     const res = await fetch(API_URL + '?action=search&nama=' + encodeURIComponent(val) + fktpParam);
     const data = await res.json();
+    if (reqId !== cariReqId) return; // ada pencarian lain yang lebih baru sudah menyusul — abaikan hasil basi ini
     tampilDropdown(data);
   } catch(e) {
+    if (reqId !== cariReqId) return;
     tampilDropdown([]);
   } finally {
-    if (icon) icon.textContent = '🔍';
+    if (reqId === cariReqId && icon) icon.textContent = '🔍';
   }
 }
 
@@ -2801,12 +2805,24 @@ function normalisasiRow(r) {
 }
 
 // Muat halaman PERTAMA (60 data terbaru) — dipanggil saat pertama buka Rekam Medis
-function muatSemuaData() {
+// _isRetry=true dipakai internal saat percobaan otomatis ke-2 (lihat catatan di bawah)
+function muatSemuaData(_isRetry) {
   return _muatDataBerurutan(async () => {
     const rmList = document.getElementById('rmList');
-    if (rmList) rmList.innerHTML = '<div class="empty-state"><div class="es-icon">⏳</div><p>Memuat data terbaru...</p></div>';
+    if (rmList) rmList.innerHTML = '<div class="empty-state"><div class="es-icon">⏳</div><p>Memuat data terbaru' + (_isRetry ? ' (percobaan ke-2)' : '') + '...</p></div>';
     rmOffset = 0;
     allData = [];
+    // Kalau gagal (parse error / timeout / error jaringan) DAN ini baru percobaan pertama,
+    // coba ulang otomatis sekali sebelum menampilkan pesan error ke user — Apps Script
+    // kadang lambat/gagal di percobaan pertama (cold start), tapi normal lagi di percobaan ke-2.
+    const cobaLagiOtomatis = (msg) => {
+      if (!_isRetry) {
+        setTimeout(() => muatSemuaData(true), 1200);
+      } else {
+        console.error('muatSemuaData gagal setelah retry:', msg);
+        if (rmList) rmList.innerHTML = `<div class="empty-state"><div class="es-icon">❌</div><p>${msg}</p><button onclick="muatSemuaData()" style="margin-top:12px;background:#1a7a3c;color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px">🔄 Coba Lagi</button></div>`;
+      }
+    };
     try {
       const fktpParam = (sesiFKTP && !sesiFKTP.admin) ? '&fktp=' + encodeURIComponent(sesiFKTP.nama) : '';
       const fetchPromise = fetch(API_URL + '?action=getAll&offset=0&limit=' + RM_BATCH_SIZE + fktpParam);
@@ -2817,7 +2833,7 @@ function muatSemuaData() {
       try { parsed = JSON.parse(text); }
       catch(parseErr) {
         console.error('JSON parse error:', parseErr, 'Response:', text.substring(0,200));
-        if (rmList) rmList.innerHTML = '<div class="empty-state"><div class="es-icon">❌</div><p>Gagal memuat data (parse error)</p></div>';
+        cobaLagiOtomatis('Gagal memuat data (parse error)');
         return;
       }
       const raw = Array.isArray(parsed) ? parsed : (parsed.data || []);
@@ -2831,8 +2847,7 @@ function muatSemuaData() {
     } catch(e) {
       console.error('muatSemuaData error:', e);
       const msg = e.name === 'AbortError' ? 'Koneksi timeout, coba lagi' : 'Gagal memuat data';
-      if (rmList) rmList.innerHTML = `<div class="empty-state"><div class="es-icon">❌</div><p>${msg}</p><button onclick="muatSemuaData()" style="margin-top:12px;background:#1a7a3c;color:white;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px">🔄 Coba Lagi</button></div>`;
-      else showToast(msg, 'error');
+      cobaLagiOtomatis(msg);
     }
   });
 }
