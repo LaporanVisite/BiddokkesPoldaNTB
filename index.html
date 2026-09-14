@@ -1064,6 +1064,45 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
   </div>
 </div>
 
+<!-- MODAL EDIT DATA PASIEN (khusus admin) -->
+<div class="pw-modal" id="editPasienModal">
+  <div class="pw-box" style="max-width:360px">
+    <div class="pw-icon">✏️</div>
+    <h3>Edit Data Pasien</h3>
+    <p>Perbaiki kesalahan penulisan Nama/Pangkat/NRP/Jabatan untuk kunjungan ini</p>
+    <div style="text-align:left;display:flex;flex-direction:column;gap:10px;margin:10px 0">
+      <div>
+        <label style="font-size:12px;font-weight:600;color:var(--text3)">Nama Pasien</label>
+        <input type="text" id="editPasienNama" style="width:100%">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:var(--text3)">Pangkat</label>
+        <input type="text" id="editPasienPangkat" style="width:100%">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:var(--text3)">NIP / NRP</label>
+        <input type="text" id="editPasienNRP" style="width:100%">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:var(--text3)">Jabatan</label>
+        <input type="text" id="editPasienJabatan" style="width:100%">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:var(--text3)">Password Admin (konfirmasi)</label>
+        <div style="position:relative">
+          <input type="password" id="editPasienPassword" placeholder="••••••••••" style="padding-right:40px;width:100%" onkeydown="if(event.key==='Enter')submitEditPasien()">
+          <button type="button" onclick="toggleLihatPassword('editPasienPassword', this)"
+            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--text3);padding:4px">👁️</button>
+        </div>
+      </div>
+    </div>
+    <div class="pw-btn-row">
+      <button class="pw-btn cancel" onclick="tutupModalEditPasien()">Batal</button>
+      <button class="pw-btn confirm" id="btnSimpanEditPasien" onclick="submitEditPasien()">Simpan</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL DETAIL KUNJUNGAN -->
 <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)tutupModal()">
   <div class="modal" id="modalContent"></div>
@@ -2948,6 +2987,11 @@ function tampilRekamMedis(data) {
                   style="background:#1a7a3c;border:none;color:white;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap">
                   📄 Word
                 </button>
+                ${(sesiFKTP && sesiFKTP.admin) ? `
+                <button onclick="event.stopPropagation();bukaModalEditPasien(${kJson})"
+                  style="background:#fef3c7;border:none;color:#92400e;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap">
+                  ✏️
+                </button>` : ''}
                 <button onclick="event.stopPropagation();hapusLangsung(${k._rowIndex||0},'${String(k['Nama Pasien']||'').replace(/'/g,"")}')"
                   style="background:#fee2e2;border:none;color:#dc2626;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap">
                   🗑️
@@ -2964,6 +3008,70 @@ function tampilRekamMedis(data) {
 function toggleKunjungan(id) {
   const el = document.getElementById(id);
   el.classList.toggle('open');
+}
+
+// ── EDIT DATA PASIEN (khusus admin) ──
+// Hanya untuk memperbaiki salah tulis Nama/Pangkat/NRP/Jabatan pada kunjungan yang sudah terlanjur tersimpan.
+let _editPasienRowIndex = null;
+
+function bukaModalEditPasien(k) {
+  if (!sesiFKTP || !sesiFKTP.admin) return;
+  _editPasienRowIndex = k._rowIndex || 0;
+  if (!_editPasienRowIndex) { showToast('Data kunjungan ini tidak punya rowIndex, tidak bisa diedit.', 'error'); return; }
+  document.getElementById('editPasienNama').value = k['Nama Pasien'] || '';
+  document.getElementById('editPasienPangkat').value = k['Pangkat'] || '';
+  document.getElementById('editPasienNRP').value = k['NIPNRP'] || '';
+  document.getElementById('editPasienJabatan').value = k['Jabatan'] || '';
+  document.getElementById('editPasienPassword').value = '';
+  document.getElementById('editPasienModal').classList.add('show');
+}
+
+function tutupModalEditPasien() {
+  document.getElementById('editPasienModal').classList.remove('show');
+  _editPasienRowIndex = null;
+}
+
+async function submitEditPasien() {
+  const nama = document.getElementById('editPasienNama').value.trim();
+  const pangkat = document.getElementById('editPasienPangkat').value.trim();
+  const nrp = document.getElementById('editPasienNRP').value.trim();
+  const jabatan = document.getElementById('editPasienJabatan').value.trim();
+  const password = document.getElementById('editPasienPassword').value;
+
+  if (!nama || !pangkat || !nrp || !jabatan) { showToast('Semua field wajib diisi!', 'error'); return; }
+  if (!password) { showToast('Masukkan password admin untuk konfirmasi!', 'error'); return; }
+  if (!_editPasienRowIndex) { showToast('Data kunjungan tidak valid.', 'error'); return; }
+
+  const btn = document.getElementById('btnSimpanEditPasien');
+  const teksAsli = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Menyimpan...';
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'updateDataPasien',
+        rowIndex: _editPasienRowIndex,
+        password: password,
+        'Nama Pasien': nama,
+        'Pangkat': pangkat,
+        'NIPNRP': nrp,
+        'Jabatan': jabatan
+      })
+    });
+    const hasil = await res.json();
+    if (hasil.status === 'ok') {
+      showToast('Data pasien berhasil diperbarui.', 'success');
+      tutupModalEditPasien();
+      await muatSemuaData(true);
+    } else {
+      showToast(hasil.msg || 'Gagal menyimpan perubahan.', 'error');
+    }
+  } catch (e) {
+    showToast('Gagal terhubung ke server.', 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = teksAsli;
+  }
 }
 
 // ── REKAP MINGGUAN ──
