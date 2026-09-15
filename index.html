@@ -2137,7 +2137,9 @@ async function cariPasienEksekusi(val) {
     const fktpParam = (sesiFKTP && !sesiFKTP.admin) ? '&fktp=' + encodeURIComponent(sesiFKTP.nama) : '';
     const res = await fetch(API_URL + '?action=search&nama=' + encodeURIComponent(val) + fktpParam);
     const text = await res.text();
-    return JSON.parse(text); // sengaja bisa throw (parse error) — ditangani sama seperti error jaringan
+    const parsed = JSON.parse(text); // sengaja bisa throw (parse error) — ditangani sama seperti error jaringan
+    if (parsed && parsed.error === true) throw new Error(parsed.message || 'Server error'); // error terstruktur dari server — perlakukan sebagai kegagalan, bukan hasil kosong
+    return parsed;
   };
 
   try {
@@ -2865,6 +2867,11 @@ function muatSemuaData(_isRetry) {
         cobaLagiOtomatis('Gagal memuat data (parse error)');
         return;
       }
+      if (parsed && parsed.error === true) {
+        console.error('Server error:', parsed.message);
+        cobaLagiOtomatis('Gagal memuat data (server error)');
+        return;
+      }
       const raw = Array.isArray(parsed) ? parsed : (parsed.data || []);
       rmTotal = parsed.total || raw.length;
       rmOffset = parsed.loaded || raw.length;
@@ -2894,7 +2901,9 @@ function muatDataLagi(silent) {
       const fktpParam = (sesiFKTP && !sesiFKTP.admin) ? '&fktp=' + encodeURIComponent(sesiFKTP.nama) : '';
       const res = await fetch(API_URL + '?action=getAll&offset=' + rmOffset + '&limit=' + RM_BATCH_SIZE + fktpParam);
       const text = await res.text();
-      return JSON.parse(text); // sengaja bisa throw (parse error) — ditangani sama seperti error jaringan
+      const parsed = JSON.parse(text); // sengaja bisa throw (parse error) — ditangani sama seperti error jaringan
+      if (parsed && parsed.error === true) throw new Error(parsed.message || 'Server error');
+      return parsed;
     };
 
     let parsed;
@@ -4588,6 +4597,7 @@ async function cekPengingatKunjungan() {
     const fktpParam = (sesiFKTP && !sesiFKTP.admin) ? '&fktp=' + encodeURIComponent(sesiFKTP.nama) : '';
     const res = await fetch(API_URL + '?action=cekPengingat' + fktpParam);
     const data = await res.json(); // { "Nama FKTP": [ {nama,pangkat,nrp}, ... ], ... }
+    if (data && data.error === true) throw new Error(data.message || 'Server error');
     _dataPengingat = data;
 
     const daftarFKTP = Object.keys(data);
