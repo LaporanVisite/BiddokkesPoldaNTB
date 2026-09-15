@@ -2132,15 +2132,32 @@ async function cariPasienEksekusi(val) {
   const reqId = ++cariReqId; // request ini jadi yang "terbaru saat ini"
   const icon = document.querySelector('.search-icon');
   if (icon) icon.textContent = '⏳';
-  try {
+
+  const cobaCari = async () => {
     const fktpParam = (sesiFKTP && !sesiFKTP.admin) ? '&fktp=' + encodeURIComponent(sesiFKTP.nama) : '';
     const res = await fetch(API_URL + '?action=search&nama=' + encodeURIComponent(val) + fktpParam);
-    const data = await res.json();
+    const text = await res.text();
+    return JSON.parse(text); // sengaja bisa throw (parse error) — ditangani sama seperti error jaringan
+  };
+
+  try {
+    let data;
+    try {
+      data = await cobaCari();
+    } catch (e1) {
+      // Pencarian gagal (cold-start/hiccup sesaat) — coba ulang otomatis sekali dulu.
+      // PENTING: jangan langsung anggap "tidak ada data", karena bisa menyesatkan petugas
+      // sampai bikin input data pasien duplikat padahal sebenarnya sudah pernah tercatat.
+      await new Promise(r => setTimeout(r, 800));
+      data = await cobaCari();
+    }
     if (reqId !== cariReqId) return; // ada pencarian lain yang lebih baru sudah menyusul — abaikan hasil basi ini
     tampilDropdown(data);
   } catch(e) {
     if (reqId !== cariReqId) return;
-    tampilDropdown([]);
+    // Sudah dicoba ulang & tetap gagal — tampilkan pesan GAGAL, bukan "belum ada data",
+    // supaya petugas tidak salah kira pasiennya memang belum pernah tercatat.
+    tampilDropdownGagal();
   } finally {
     if (reqId === cariReqId && icon) icon.textContent = '🔍';
   }
@@ -2171,6 +2188,18 @@ function tampilDropdown(data) {
         <span class="d-badge">${r['_sumber']==='induk' ? '📋 sakit menahun' : '🕐 data lama'}</span>
       </div>`).join('');
   }
+  dd.style.display = 'block';
+}
+
+// Dipakai saat pencarian GAGAL total (bukan "tidak ada hasil") — pesannya sengaja beda
+// supaya petugas tidak salah kira pasiennya memang belum pernah tercatat, lalu input ulang
+// dari nol dan bikin data duplikat. Ada tombol coba lagi supaya jelas ini masalah koneksi.
+function tampilDropdownGagal() {
+  const dd = document.getElementById('dropdown');
+  dd.innerHTML = `<div class="no-result" style="color:#dc2626">
+    ⚠️ Gagal mencari data (bukan berarti pasien belum ada) — coba lagi
+    <button onclick="event.stopPropagation();cariPasienManual()" style="display:block;margin:8px auto 0;background:#dc2626;color:white;border:none;padding:6px 16px;border-radius:8px;cursor:pointer;font-size:12px">🔄 Coba Lagi</button>
+  </div>`;
   dd.style.display = 'block';
 }
 
