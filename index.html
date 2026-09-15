@@ -2857,24 +2857,45 @@ function muatDataLagi(silent) {
   return _muatDataBerurutan(async () => {
     const btn = document.getElementById('btnMuatSemuaRiwayat');
     if (btn && !silent) { btn.disabled = true; btn.textContent = '⏳ Memuat...'; }
-    try {
+
+    // Satu percobaan fetch+parse. Dipanggil sampai 2x di bawah (retry inline) —
+    // SENGAJA tidak lewat _muatDataBerurutan lagi supaya tidak membentuk antrian
+    // yang menunggu dirinya sendiri (deadlock).
+    const cobaFetch = async () => {
       const fktpParam = (sesiFKTP && !sesiFKTP.admin) ? '&fktp=' + encodeURIComponent(sesiFKTP.nama) : '';
       const res = await fetch(API_URL + '?action=getAll&offset=' + rmOffset + '&limit=' + RM_BATCH_SIZE + fktpParam);
-      const parsed = await res.json();
-      const raw = Array.isArray(parsed) ? parsed : (parsed.data || []);
-      rmTotal = parsed.total || rmTotal;
-      rmOffset = parsed.loaded || rmOffset;
-      allData = allData.concat(raw.map(normalisasiRow));
-      window._allPasienData = allData;
-      if (!silent) {
-        filterPasien(document.getElementById('rmSearch').value);
-        showToast(`Data lama berhasil dimuat (${rmOffset}/${rmTotal}) ✓`, 'success');
+      const text = await res.text();
+      return JSON.parse(text); // sengaja bisa throw (parse error) — ditangani sama seperti error jaringan
+    };
+
+    let parsed;
+    try {
+      parsed = await cobaFetch();
+    } catch (e1) {
+      // Satu batch gagal (cold-start/hiccup sesaat) BUKAN langsung dianggap gagal total —
+      // coba ulang otomatis sekali dulu sebelum menyerah, supaya proses "muat semua riwayat"
+      // (dipakai Rekap Kunjungan/Rekap Mingguan) tidak batal cuma gara-gara 1 dari beberapa
+      // batch sempat lambat.
+      try {
+        await new Promise(r => setTimeout(r, 1000));
+        parsed = await cobaFetch();
+      } catch (e2) {
+        if (!silent) { showToast('Gagal memuat data lama, coba lagi', 'error'); perbaruiTombolMuatLagi(); }
+        else throw e2; // sudah dicoba ulang & tetap gagal — baru pemanggil silent (pastikanSemuaDataTermuat) tahu ada kegagalan
+        return;
       }
-    } catch(e) {
-      if (!silent) showToast('Gagal memuat data lama, coba lagi', 'error');
-      else throw e; // biar pemanggil silent (pastikanSemuaDataTermuat) tahu ada kegagalan
     }
-    if (!silent) perbaruiTombolMuatLagi();
+
+    const raw = Array.isArray(parsed) ? parsed : (parsed.data || []);
+    rmTotal = parsed.total || rmTotal;
+    rmOffset = parsed.loaded || rmOffset;
+    allData = allData.concat(raw.map(normalisasiRow));
+    window._allPasienData = allData;
+    if (!silent) {
+      filterPasien(document.getElementById('rmSearch').value);
+      showToast(`Data lama berhasil dimuat (${rmOffset}/${rmTotal}) ✓`, 'success');
+      perbaruiTombolMuatLagi();
+    }
   });
 }
 
