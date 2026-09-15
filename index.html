@@ -2739,7 +2739,7 @@ function resetForm() {
 // ── REKAM MEDIS ──
 let rmOffset = 0;    // jumlah data yang sudah dimuat (dari yang terbaru)
 let rmTotal = 0;     // total seluruh data di spreadsheet
-const RM_BATCH_SIZE = 60;
+const RM_BATCH_SIZE = 50;
 
 // Antrian (mutex) supaya muatSemuaData()/muatDataLagi() tidak pernah jalan tumpang tindih.
 // Tanpa ini, dua proses yang kebetulan minta data di waktu bersamaan (misal buka Rekam Medis
@@ -3615,9 +3615,28 @@ async function eksporRekapExcel() {
 }
 
 // Fetch foto dari Cloudinary dan embed ke cell Excel
+// Timeout 8 detik per percobaan + 1x retry — supaya 1 foto yang macet/lambat tidak
+// membuat SELURUH proses download menggantung tanpa batas waktu (Promise.all menunggu
+// yang paling lambat). Kegagalan tetap tidak membatalkan export, foto itu cuma dilewati.
+async function ambilFotoDenganTimeout(url, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function embedFoto(wb, ws, url, rowIdx, colIdx) {
   try {
-    const res = await fetch(url);
+    let res;
+    try {
+      res = await ambilFotoDenganTimeout(url, 8000);
+    } catch (e1) {
+      res = await ambilFotoDenganTimeout(url, 10000); // 1x retry, timeout sedikit lebih longgar
+    }
     if (!res.ok) return;
     const blob = await res.blob();
     const arrayBuffer = await blob.arrayBuffer();
