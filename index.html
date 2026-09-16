@@ -1446,6 +1446,7 @@ function getKunjunganData() {
         satker: r['Kesatuan'] || '',
         jabatan: r['Jabatan'] || '',
         tempat: r['Tempat'] || '',
+        lastJenis: '',
         hasilPemeriksaan: '',
         kunjungan: [],
         allDiagnosa: [],
@@ -1466,6 +1467,7 @@ function getKunjunganData() {
     if (tgl >= pasienMap[key].lastTgl) {
       pasienMap[key].jabatan = r['Jabatan'] || pasienMap[key].jabatan;
       pasienMap[key].tempat = r['Tempat'] || pasienMap[key].tempat;
+      pasienMap[key].lastJenis = r['JenisPelayanan'] || pasienMap[key].lastJenis;
       pasienMap[key].hasilPemeriksaan = '(Kunjungan terakhir, ' + fmtTglPanjang(r['Tanggal']) + ') ' + buatHasilPemeriksaan(r);
       const foto = r['Dokumentasi1'] || r['Dokumentasi2'] || '';
       if (foto) pasienMap[key].lastFoto = foto;
@@ -1492,7 +1494,7 @@ function getKunjunganData() {
       jabatanSatker: [p.jabatan, p.satker].filter(Boolean).join(' ') || '-',
       hasilPemeriksaan: p.hasilPemeriksaan || '-',
       diagnosa,
-      tempat: titleCase(p.tempat || '-'),
+      tempat: p.tempat ? titleCase(p.tempat) : (p.lastJenis === 'Telemedicine' ? 'Telemedicine' : '-'),
       tanggalVisit: tglList.join(', '),
       foto: p.lastFoto,
     };
