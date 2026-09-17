@@ -857,23 +857,6 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
     </div>
   </div>
 
-  <!-- TANDA TANGAN PASIEN -->
-  <div class="card" id="cardTTD">
-    <div class="card-title"><div class="ct-icon">✍️</div> Tanda Tangan Pasien</div>
-    <div class="field">
-      <label>Tanda tangan pasien di kotak bawah ini (opsional)</label>
-      <div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden;touch-action:none">
-        <canvas id="canvasTTD" style="display:block;width:100%;height:160px;background:white;cursor:crosshair"></canvas>
-      </div>
-      <div style="display:flex;justify-content:flex-end;margin-top:8px">
-        <button type="button" onclick="clearSignatureTTD()"
-          style="background:var(--green3);color:var(--green);border:1.5px solid var(--green4);border-radius:8px;padding:7px 14px;font-size:13px;cursor:pointer;font-weight:600">
-          🔄 Ulangi
-        </button>
-      </div>
-    </div>
-  </div>
-
   <div class="btn-row">
     <button class="btn btn-reset" onclick="resetForm()">↺ Reset</button>
     <button class="btn btn-save" id="btnSave" onclick="simpanLaporan()">💾 Simpan & Kirim WA</button>
@@ -1286,11 +1269,18 @@ function masukKeApp() {
 
   tampilkanGreeting();
   cekPengingatKunjungan();
-  setTimeout(initCanvasTTD, 100); // canvas butuh layout siap dulu supaya ukurannya pas
 
   // Muat data di background SETELAH login — filter FKTP sudah pasti benar di titik ini
   setTimeout(() => { if (!allData || allData.length === 0) muatSemuaData(); }, 800);
 }
+
+// ── PEMANASAN SERVER DIAM-DIAM ──
+// Ditembak sesegera mungkin saat halaman dibuka (sebelum login pun selesai diisi),
+// murni untuk membantu "membangunkan" Apps Script lebih awal kalau kebetulan sedang
+// idle. Fire-and-forget: TIDAK ditunggu hasilnya, TIDAK memblokir apapun, dan kalau
+// gagal (mis. internet belum konek) TIDAK ada dampak apapun ke aplikasi — cuma usaha
+// tambahan di latar belakang, bukan bagian penting dari alur kerja manapun.
+try { fetch(API_URL + '?action=ping').catch(() => {}); } catch(e) {}
 
 // ── CEK SESI TERSIMPAN SAAT HALAMAN DIBUKA ──
 (function cekSesiTersimpan() {
@@ -1461,7 +1451,6 @@ function getKunjunganData() {
         kunjungan: [],
         allDiagnosa: [],
         lastFoto: '',
-        lastFotoTTD: '',
         lastTgl: 0,
       };
     }
@@ -1482,7 +1471,6 @@ function getKunjunganData() {
       pasienMap[key].hasilPemeriksaan = '(Kunjungan terakhir, ' + fmtTglPanjang(r['Tanggal']) + ') ' + buatHasilPemeriksaan(r);
       const foto = r['Dokumentasi1'] || r['Dokumentasi2'] || '';
       if (foto) pasienMap[key].lastFoto = foto;
-      if (r['DokumentasiTTD']) pasienMap[key].lastFotoTTD = r['DokumentasiTTD'];
       pasienMap[key].lastTgl = tgl;
     }
   });
@@ -1509,8 +1497,6 @@ function getKunjunganData() {
       tempat: p.tempat ? titleCase(p.tempat) : (p.lastJenis === 'Telemedicine' ? 'Telemedicine' : '-'),
       tanggalVisit: tglList.join(', '),
       foto: p.lastFoto,
-      fotoTTD: p.lastFotoTTD || '',
-      ttdText: (!p.lastFotoTTD && p.lastJenis === 'Telemedicine') ? 'Konfirmasi via Video Call' : '',
     };
   });
 }
@@ -1662,7 +1648,7 @@ async function eksporKunjunganExcel() {
     row.getCell(7).value = r.tempat;
     row.getCell(8).value = r.tanggalVisit;
     row.getCell(9).value = '';
-    row.getCell(10).value = r.ttdText || ''; // TTD — teks "Konfirmasi via Video Call" utk Telemedicine, sisanya diisi foto (di bawah) atau kosong
+    row.getCell(10).value = ''; // TTD — dikosongkan dulu
 
     for (let c = 1; c <= 10; c++) {
       const cell = row.getCell(c);
@@ -1673,7 +1659,6 @@ async function eksporKunjunganExcel() {
 
     // Embed foto jika ada — kolom ExcelJS 0-based, kolom I (ke-9 dari kiri) = index 8
     if (r.foto) imgPromises.push(embedFoto(wb, ws, fixImgBBUrl(r.foto), rowIdx, 8));
-    if (r.fotoTTD) imgPromises.push(embedFoto(wb, ws, fixImgBBUrl(r.fotoTTD), rowIdx, 9));
     rowIdx++;
   }
 
@@ -2085,11 +2070,6 @@ function terapkanTampilanJenis(jenis) {
   }
   const fieldTempat = document.getElementById('fieldTempat');
   const vitalsGrid = document.getElementById('vitalsGrid');
-  const cardTTD = document.getElementById('cardTTD');
-  if (cardTTD) {
-    cardTTD.style.display = isTelemedicine ? 'none' : 'block';
-    if (isTelemedicine) clearSignatureTTD();
-  }
   if (fieldTempat) {
     fieldTempat.style.display = isTelemedicine ? 'none' : 'block';
     if (isTelemedicine) document.getElementById('Tempat').value = '';
@@ -2639,63 +2619,7 @@ async function uploadKeImgBB(file, percobaan=1, onRetry=null, infoSiap=null) {
   return { url: '', alasan: alasanGagal };
 }
 
-// ── TANDA TANGAN PASIEN (canvas) ──
-let _ttdCtx = null;
-let _ttdMenggambar = false;
-let _ttdAdaGambar = false;
-
-function initCanvasTTD() {
-  const canvas = document.getElementById('canvasTTD');
-  if (!canvas) return;
-  // Resolusi kanvas mengikuti ukuran tampilnya di layar (dikali 2 biar tidak buram)
-  const rect = canvas.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-  ctx.lineWidth = 2.2;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  ctx.strokeStyle = '#1a1a1a';
-  _ttdCtx = ctx;
-  _ttdAdaGambar = false;
-
-  const posisi = (e) => {
-    const r = canvas.getBoundingClientRect();
-    const titik = e.touches ? e.touches[0] : e;
-    return { x: titik.clientX - r.left, y: titik.clientY - r.top };
-  };
-  const mulai = (e) => { e.preventDefault(); _ttdMenggambar = true; const p = posisi(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); };
-  const gambar = (e) => {
-    if (!_ttdMenggambar) return;
-    e.preventDefault();
-    const p = posisi(e);
-    ctx.lineTo(p.x, p.y); ctx.stroke();
-    _ttdAdaGambar = true;
-  };
-  const selesai = () => { _ttdMenggambar = false; };
-
-  canvas.onmousedown = mulai; canvas.onmousemove = gambar; canvas.onmouseup = selesai; canvas.onmouseleave = selesai;
-  canvas.ontouchstart = mulai; canvas.ontouchmove = gambar; canvas.ontouchend = selesai;
-}
-
-function clearSignatureTTD() {
-  const canvas = document.getElementById('canvasTTD');
-  if (!canvas || !_ttdCtx) return;
-  _ttdCtx.clearRect(0, 0, canvas.width, canvas.height);
-  _ttdAdaGambar = false;
-}
-
-function ambilBlobTTD() {
-  return new Promise((resolve) => {
-    const canvas = document.getElementById('canvasTTD');
-    if (!canvas || !_ttdAdaGambar) { resolve(null); return; }
-    canvas.toBlob((blob) => resolve(blob), 'image/png');
-  });
-}
-
-
+// ── SIMPAN ──
 // ── RAPIKAN NAMA PASIEN SAAT SIMPAN ──
 // Nama selalu dirapikan dengan title case (huruf awal tiap kata besar),
 // supaya penulisan konsisten dan tidak tercipta 2 data pasien berbeda hanya karena beda huruf besar/kecil.
@@ -2785,21 +2709,6 @@ async function simpanLaporan() {
       }
       payload['Dokumentasi2'] = hasil2.url;
     }
-
-    // Upload tanda tangan pasien — OPSIONAL, tidak wajib. Kalau kosong (pasien tidak
-    // sempat tanda tangan, atau jenis pelayanan Telemedicine), lewati saja tanpa error.
-    const blobTTD = await ambilBlobTTD();
-    if (blobTTD) {
-      document.getElementById('loadingText').textContent = 'Mengupload tanda tangan...';
-      const fileTTD = new File([blobTTD], 'ttd_' + Date.now() + '.png', { type: 'image/png' });
-      const hasilTTD = await uploadKeImgBB(fileTTD, 1, (n, maks) => {
-        document.getElementById('loadingText').textContent = `Mengupload tanda tangan... (percobaan ${n}/${maks})`;
-      });
-      // Kalau upload tanda tangan gagal, TIDAK membatalkan simpan laporan (beda dari Foto 1/2
-      // yang wajib) — laporan tetap tersimpan, cuma tanpa tanda tangan.
-      if (hasilTTD.url) payload['DokumentasiTTD'] = hasilTTD.url;
-      else console.warn('Upload tanda tangan gagal (laporan tetap disimpan):', hasilTTD.alasan);
-    }
     document.getElementById('loadingText').textContent='Menyimpan & mengirim WA...';
     // Timeout 90 detik — Apps Script kadang butuh waktu lebih lama
     const saveController = new AbortController();
@@ -2836,7 +2745,6 @@ function resetForm() {
   document.getElementById('fileDoc2').value = '';
   document.getElementById('fileDoc1g').value = '';
   document.getElementById('fileDoc2g').value = '';
-  clearSignatureTTD();
   document.getElementById('cardDPJP').style.display = 'none';
   // Buka kembali kunci Nama & NIP/NRP untuk input pasien baru
   const namaEl = document.getElementById('NamaPasien');
@@ -2931,7 +2839,6 @@ function normalisasiRow(r) {
     'FKTP':           str(r['FKTP Yang Melaksanakan']||r['FKTP']||''),
     'Dokumentasi1':   str(r['Dokumentasi 1']||r['Dokumentasi1']||''),
     'Dokumentasi2':   str(r['Dokumentasi 2']||r['Dokumentasi2']||''),
-    'DokumentasiTTD': str(r['Dokumentasi TTD']||r['DokumentasiTTD']||''),
     'JenisPelayanan': str(r['Jenis Pelayanan']||r['JenisPelayanan']||''),
     '_rowIndex':      r._rowIndex || 0,
   };
