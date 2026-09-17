@@ -1292,14 +1292,6 @@ function masukKeApp() {
   setTimeout(() => { if (!allData || allData.length === 0) muatSemuaData(); }, 800);
 }
 
-// ── PEMANASAN SERVER DIAM-DIAM ──
-// Ditembak sesegera mungkin saat halaman dibuka (sebelum login pun selesai diisi),
-// murni untuk membantu "membangunkan" Apps Script lebih awal kalau kebetulan sedang
-// idle. Fire-and-forget: TIDAK ditunggu hasilnya, TIDAK memblokir apapun, dan kalau
-// gagal (mis. internet belum konek) TIDAK ada dampak apapun ke aplikasi — cuma usaha
-// tambahan di latar belakang, bukan bagian penting dari alur kerja manapun.
-try { fetch(API_URL + '?action=ping').catch(() => {}); } catch(e) {}
-
 // ── CEK SESI TERSIMPAN SAAT HALAMAN DIBUKA ──
 (function cekSesiTersimpan() {
   try {
