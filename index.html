@@ -2619,6 +2619,7 @@ async function uploadKeImgBB(file, percobaan=1, onRetry=null, infoSiap=null) {
   return { url: '', alasan: alasanGagal };
 }
 
+// ── SIMPAN ──
 // ── RAPIKAN NAMA PASIEN SAAT SIMPAN ──
 // Nama selalu dirapikan dengan title case (huruf awal tiap kata besar),
 // supaya penulisan konsisten dan tidak tercipta 2 data pasien berbeda hanya karena beda huruf besar/kecil.
@@ -2708,7 +2709,6 @@ async function simpanLaporan() {
       }
       payload['Dokumentasi2'] = hasil2.url;
     }
-
     document.getElementById('loadingText').textContent='Menyimpan & mengirim WA...';
     // Timeout 90 detik — Apps Script kadang butuh waktu lebih lama
     const saveController = new AbortController();
@@ -3885,7 +3885,7 @@ function exportWordLengkap(g) {
   const kapW = (s) => s ? s.charAt(0).toUpperCase()+s.slice(1) : '';
   const fvW = (val,sfx) => { if(!val||val==='-') return '-'; const s=String(val).trim(); return s.endsWith(sfx)?s:s+sfx; };
 
-  const F = "font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;line-height:1.5;mso-line-height-rule:exactly;text-align:justify;margin:0;";
+  const F = "font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;line-height:100%;mso-line-height-rule:exactly;text-align:left;margin:0;";
   const s = (txt, bold=false, indent=false, italic=false) => {
     let style = F;
     if (bold) style += 'font-weight:bold;';
@@ -3968,13 +3968,10 @@ function exportWordLengkap(g) {
     if (i < kunjungan.length - 1) hasilHtml += br();
   });
 
-  // Foto DIRATAKAN jadi 1 entri per foto (bukan digrup per kunjungan) — sesuai dokumen asli
-  // yang setiap barisnya cuma 1 label tanggal + 1 foto, bukan ditumpuk beberapa foto per tanggal.
-  const dokumentasiList = [];
-  kunjungan.forEach(k => {
-    const tgl = fmtTglPanjang(k['Tanggal']);
-    [k['Dokumentasi1'], k['Dokumentasi2']].filter(Boolean).forEach(f => dokumentasiList.push({ tanggal: tgl, foto: f }));
-  });
+  // Foto dikelompokkan PER KUNJUNGAN, diberi caption tanggal — bukan ditumpuk rata tanpa keterangan
+  const dokumentasiList = kunjungan
+    .map(k => ({ tanggal: fmtTglPanjang(k['Tanggal']), foto: [k['Dokumentasi1'], k['Dokumentasi2']].filter(Boolean) }))
+    .filter(d => d.foto.length);
 
   const html = `<!DOCTYPE html>
 <html xmlns:o='urn:schemas-microsoft-com:office:office'
@@ -3984,8 +3981,8 @@ function exportWordLengkap(g) {
       xmlns='http://www.w3.org/TR/REC-html40'>
 <head><meta charset='utf-8'>
 <style>
-  @page { size: 21cm 29.7cm; margin: 1.429cm 1.905cm 1.752cm 1.905cm; }
-  body { font-family: 'Arial Narrow', Arial, sans-serif; font-size: 12pt; margin: 1.429cm 1.905cm 1.752cm 1.905cm; }
+  @page { size: 21cm 29.7cm; margin: 2.54cm 2.54cm 2.54cm 2.54cm; }
+  body { font-family: 'Arial Narrow', Arial, sans-serif; font-size: 12pt; margin: 2.54cm 2.54cm 2.54cm 2.54cm; }
   p { margin: 0; font-size: 12pt; text-align: left; line-height: 100%; mso-line-height-rule: exactly; mso-margin-top-alt: 0; mso-margin-bottom-alt: 0; }
 </style>
 </head>
@@ -3995,7 +3992,7 @@ function exportWordLengkap(g) {
 <p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;font-weight:bold;text-align:center;margin:0;line-height:1.5">BIDANG KEDOKTERAN DAN KESEHATAN</p>
 ${br()}${br()}${br()}
 ${`<p style="text-align:center;margin:0;line-height:1;mso-line-height-rule:exactly;">
-<v:shape style="width:2.53cm;height:2.32cm;mso-wrap-style:none;mso-position-horizontal:center;z-index:-1;" fillcolor="none" stroked="f">
+<v:shape style="width:220px;height:220px;mso-wrap-style:none;mso-position-horizontal:center;z-index:-1;" fillcolor="none" stroked="f">
 <v:imagedata src="data:image/png;base64,${LOGO_DOKKES_B64}" o:title="logo"/>
 <w10:wrap type="none"/>
 </v:shape></p>`}
@@ -4010,7 +4007,7 @@ ${br()}${br()}${br()}${br()}${br()}${br()}${br()}${br()}
 <p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;font-weight:bold;text-align:center;margin:0;line-height:1.5">BIDANG KEDOKTERAN DAN KESEHATAN</p>
 ${br()}
 ${`<p style="text-align:center;margin:0;line-height:1;mso-line-height-rule:exactly;">
-<v:shape style="width:2.53cm;height:2.32cm;mso-wrap-style:none;mso-position-horizontal:center;z-index:-1;" fillcolor="none" stroked="f">
+<v:shape style="width:80px;height:80px;mso-wrap-style:none;mso-position-horizontal:center;z-index:-1;" fillcolor="none" stroked="f">
 <v:imagedata src="data:image/png;base64,${LOGO_DOKKES_B64}" o:title="logo"/>
 <w10:wrap type="none"/>
 </v:shape></p>`}
@@ -4020,15 +4017,15 @@ ${br()}
 <br>
 ${s('I.  PENDAHULUAN', true)}
 ${s('1. Umum', false, true)}
-<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:justify;line-height:1.5;mso-line-height-rule:exactly;">Saat ini Polri sedang membenahi diri di berbagai bidang dan ini untuk melaksanakan reformasi birokrasi guna mewujudkan pelayanan publik yang prima. Sebagai salah satu fungsi Polri jajaran Dokkes harus memahami dan tanggap akan kebutuhan organisasi tersebut.</p>${br()}
-<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:justify;line-height:1.5;mso-line-height-rule:exactly;">Reformasi birokrasi Dokkes harus diterjemahkan pada kegiatan-kegiatan konkrit yang dilaksanakan secara terarah dan terjadwal dengan rinci dan dikendalikan dengan ketat menggunakan instrumen-instrumen manajemen, sehingga menghasilkan perubahan yang bersifat akseleratif dan segera dapat dirasakan oleh pengguna pelayanan Dokkes.</p>${br()}
-<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:justify;line-height:1.5;mso-line-height-rule:exactly;">Selama ini Biddokkes Polda NTB tetap berupaya mengedepankan peningkatan pelayanan kesehatan secara profesional kepada keluarga besar Polri dan masyarakat Polri di dalam setiap melaksanakan tugas. Pelayanan kesehatan Biddokkes Polda NTB bukan hanya ditujukan untuk anggota Polri yang mampu melaksanakan tugas melainkan anggota yang mengalami sakit kronis atau menahun yang tidak bisa melaksanakan tugas sebagaimana mestinya.</p>
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:left;line-height:100%;mso-line-height-rule:exactly;">Saat ini Polri sedang membenahi diri di berbagai bidang dan ini untuk melaksanakan reformasi birokrasi guna mewujudkan pelayanan publik yang prima. Sebagai salah satu fungsi Polri jajaran Dokkes harus memahami dan tanggap akan kebutuhan organisasi tersebut.</p>${br()}
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:left;line-height:100%;mso-line-height-rule:exactly;">Reformasi birokrasi Dokkes harus diterjemahkan pada kegiatan-kegiatan konkrit yang dilaksanakan secara terarah dan terjadwal dengan rinci dan dikendalikan dengan ketat menggunakan instrumen-instrumen manajemen, sehingga menghasilkan perubahan yang bersifat akseleratif dan segera dapat dirasakan oleh pengguna pelayanan Dokkes.</p>${br()}
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:left;line-height:100%;mso-line-height-rule:exactly;">Selama ini Biddokkes Polda NTB tetap berupaya mengedepankan peningkatan pelayanan kesehatan secara profesional kepada keluarga besar Polri dan masyarakat Polri di dalam setiap melaksanakan tugas. Pelayanan kesehatan Biddokkes Polda NTB bukan hanya ditujukan untuk anggota Polri yang mampu melaksanakan tugas melainkan anggota yang mengalami sakit kronis atau menahun yang tidak bisa melaksanakan tugas sebagaimana mestinya.</p>
 <br>
 ${s('2. Maksud dan Tujuan', false, true)}
 ${s('a. Maksud', false, true)}
-<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:justify;line-height:1.5;mso-line-height-rule:exactly;">Untuk memberikan laporan hasil kegiatan pelayanan kesehatan dan pendampingan kepada pimpinan yang dilaksanakan oleh Biddokkes Polda NTB.</p>${br()}
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:left;line-height:100%;mso-line-height-rule:exactly;">Untuk memberikan laporan hasil kegiatan pelayanan kesehatan dan pendampingan kepada pimpinan yang dilaksanakan oleh Biddokkes Polda NTB.</p>${br()}
 ${s('b. Tujuan', false, true)}
-<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:justify;line-height:1.5;mso-line-height-rule:exactly;">Agar setiap anggota Polri, PNS Polri dan keluarganya mendapat pelayanan kesehatan sehingga tercipta suatu optimalisasi derajat kesehatan bagi anggota Polri.</p>
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:left;line-height:100%;mso-line-height-rule:exactly;">Agar setiap anggota Polri, PNS Polri dan keluarganya mendapat pelayanan kesehatan sehingga tercipta suatu optimalisasi derajat kesehatan bagi anggota Polri.</p>
 <br>
 ${s('3. Dasar', false, true)}
 ${s('a.  Peraturan Kepala Kepolisian Negara Republik Indonesia Nomor 8 Tahun 2018 tentang Pelayanan Kesehatan Tertentu di lingkungan Kepolisian Negara Republik Indonesia.', false, true)}
@@ -4050,21 +4047,21 @@ ${hasilHtml}
 <br>
 ${s('IV. ANALISA DAN EVALUASI', true)}
 ${s('a. Analisa', false, true)}
-<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:justify;line-height:1.5;mso-line-height-rule:exactly;">
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:left;line-height:100%;mso-line-height-rule:exactly;">
 Dari hasil pelaksanaan kegiatan pemeriksaan terhadap anggota yang bersangkutan perlu mendapatkan perhatian dan <i>support</i> / dukungan lebih terhadap penyakit yang dideritanya.
 </p>
 ${s('b. Evaluasi', false, true)}
-<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:justify;line-height:1.5;mso-line-height-rule:exactly;">
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:left;line-height:100%;mso-line-height-rule:exactly;">
 Kegiatan pelayanan kesehatan ini mendapat respon yang baik dari yang bersangkutan dan mengikuti semua prosedur tahap pemeriksaan yang diberikan sehingga memudahkan tim Biddokkes Polda NTB untuk melakukan pemeriksaan.
 </p>
 <br>
 ${s('V.  KESIMPULAN DAN SARAN', true)}
 ${s('a. Kesimpulan', false, true)}
-<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:justify;line-height:1.5;mso-line-height-rule:exactly;">
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:left;line-height:100%;mso-line-height-rule:exactly;">
 Untuk saat ini secara umum, kondisi fisik ${nama} masih memerlukan pemantauan dan pengobatan lanjutan guna mencapai perbaikan kondisi kesehatan yang optimal.
 </p>
 ${s('b. Saran', false, true)}
-<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:justify;line-height:1.5;mso-line-height-rule:exactly;">
+<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;margin:0;text-align:left;line-height:100%;mso-line-height-rule:exactly;">
 Disarankan agar yang bersangkutan tetap menjalani kontrol rutin sesuai jadwal yang telah ditentukan serta mengonsumsi obat secara teratur sesuai anjuran dokter. Yang bersangkutan juga perlu menjaga pola hidup sehat dan mendapat dukungan dari keluarga serta lingkungan kerja agar kondisi kesehatannya dapat membaik.
 </p>
 <br>
@@ -4085,22 +4082,24 @@ ${(() => {
 <p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;font-weight:bold;text-align:center;margin:0;line-height:100%;mso-line-height-rule:exactly;text-decoration:underline;">OLEH BIDDOKKES POLDA NTB</p>
 ${br()}`;
 
-  // Setiap baris tabel = 1 label tanggal + 1 foto, TABEL 1 KOLOM PENUH — persis struktur dokumen
-  // asli (bukan tabel 2 kolom seperti sebelumnya). Foto TIDAK memakai posisi relatif-ke-halaman
-  // supaya tetap tertahan di dalam sel tabelnya, bukan melompat ke posisi tetap di halaman.
-  const sel = (d) => `<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:12pt;font-weight:bold;text-align:center;margin:0 0 6pt 0;line-height:100%;mso-line-height-rule:exactly;">${d.tanggal}</p>
-<p style="margin:0;line-height:1;mso-line-height-rule:exactly;text-align:center;">
-<v:shape style="width:17.17cm;height:9.75cm;mso-wrap-style:none;z-index:-1;" fillcolor="none" stroked="f">
-<v:imagedata src="${fixImgBBUrl(d.foto)}" o:title="foto"/>
+  // Setiap sel tabel = 1 kunjungan (tanggal + fotonya). Foto TIDAK memakai posisi relatif-ke-halaman
+  // (beda dari sebelumnya) supaya tetap tertahan di dalam sel tabelnya, bukan melompat ke posisi tetap di halaman.
+  const sel = (d) => `<p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:11pt;font-weight:bold;text-align:center;margin:0 0 6pt 0;line-height:100%;mso-line-height-rule:exactly;">${d.tanggal}</p>
+${d.foto.map(f => `<p style="margin:0 0 6pt 0;line-height:1;mso-line-height-rule:exactly;text-align:center;">
+<v:shape style="width:7.3cm;height:5.3cm;mso-wrap-style:none;z-index:-1;" fillcolor="none" stroked="f">
+<v:imagedata src="${fixImgBBUrl(f)}" o:title="foto"/>
 <w10:wrap type="none"/>
-</v:shape></p>`;
+</v:shape></p>`).join('')}`;
 
   let baris = '';
-  dokumentasiList.forEach(d => {
+  for (let i = 0; i < dokumentasiList.length; i += 2) {
+    const kiri = dokumentasiList[i];
+    const kanan = dokumentasiList[i+1];
     baris += `<tr>
-      <td style="width:100%;border:1px solid #000000;padding:8px;vertical-align:top;">${sel(d)}</td>
+      <td style="width:50%;border:1px solid #000000;padding:8px;vertical-align:top;">${sel(kiri)}</td>
+      <td style="width:50%;border:1px solid #000000;padding:8px;vertical-align:top;">${kanan ? sel(kanan) : '&nbsp;'}</td>
     </tr>`;
-  });
+  }
 
   return judul + `<table style="width:100%;border-collapse:collapse;" cellspacing="0" cellpadding="0"><tbody>${baris}</tbody></table>`;
 })()}
