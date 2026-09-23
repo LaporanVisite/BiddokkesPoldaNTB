@@ -3034,7 +3034,7 @@ function tampilRekamMedis(data) {
               style="background:var(--green);border:none;color:white;border-radius:8px;padding:5px 8px;font-size:11px;cursor:pointer;font-weight:600;white-space:nowrap">
               ➕ Laporan Baru
             </button>
-            <button onclick="event.stopPropagation();exportPdfLengkap(${JSON.stringify(g).replace(/"/g,'&quot;')})" 
+            <button onclick="event.stopPropagation();pilihFormatLaporan(${JSON.stringify(g).replace(/"/g,'&quot;')})" 
               style="background:#2b579a;border:none;color:white;border-radius:8px;padding:5px 8px;font-size:11px;cursor:pointer;font-weight:600;white-space:nowrap">
               📋 Laporan
             </button>
@@ -3857,16 +3857,21 @@ function formatTitleCaseField(el) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// LAPORAN PER-PASIEN — PDF (tombol "📋 Laporan" di kartu Rekam Medis)
-// Susunan mengikuti contoh resmi LAPORAN_HV_MARIA_ROSALINA.pdf.
-// Library pdfmake + font Roboto Condensed (mirip Arial Narrow) dimuat SAAT tombol diklik
-// (tidak memperberat pembukaan halaman). Fungsi Word lama (exportWordLengkap) tetap ada di kode.
+// LAPORAN PER-PASIEN — PDF & WORD (tombol "📋 Laporan" di kartu Rekam Medis)
+// Susunan mengikuti contoh resmi LAPORAN_HV_MARIA_ROSALINA + halaman sampul (tes.doc).
+// Isi laporan disusun SEKALI (_susunLaporan) lalu dirender ke PDF (pdfmake) atau Word (.docx, library docx)
+// → isi & urutan kedua format dijamin sama. Library dimuat SAAT dibutuhkan saja.
+// Fungsi Word lama (exportWordLengkap, .doc HTML) tetap ada di kode tapi tidak dipakai tombol.
 // ═══════════════════════════════════════════════════════════════════════
 window.SIHATI_PDF_CFG = window.SIHATI_PDF_CFG || {
   lib: 'https://cdn.jsdelivr.net/npm/pdfmake@0.2.20/build/pdfmake.min.js',
   vfs: 'https://cdn.jsdelivr.net/npm/pdfmake@0.2.20/build/vfs_fonts.js',
-  font: 'https://cdn.jsdelivr.net/npm/@fontsource/roboto-condensed@5/files/roboto-condensed-latin-'
+  font: 'https://cdn.jsdelivr.net/npm/@fontsource/roboto-condensed@5/files/roboto-condensed-latin-',
+  docx: 'https://cdn.jsdelivr.net/npm/docx@9.6.1/dist/index.iife.js'
 };
+
+// Saran medis umum (sama untuk semua pasien, tidak tergantung diagnosa) — ubah kalimatnya di sini saja
+const SARAN_MEDIS_UMUM = 'Personel yang bersangkutan disarankan untuk mengonsumsi obat secara rutin sesuai anjuran dokter, istirahat yang cukup, menjaga pola makan dan pola hidup sehat, serta tetap melakukan kontrol dan pemeriksaan lanjutan sesuai jadwal yang telah ditentukan.';
 
 function _muatScript(src) {
   return new Promise((resolve, reject) => {
@@ -3879,26 +3884,31 @@ function _muatScript(src) {
   });
 }
 
-// Ambil foto (Cloudinary/ImgBB) → perkecil → dataURL JPEG, supaya bisa ditanam di PDF.
-// Gagal (CORS/jaringan) → null, nanti di PDF diganti keterangan "foto tidak dapat dimuat".
+// Ambil foto (Cloudinary/ImgBB) → perkecil → JPEG. Gagal (CORS/jaringan) → null.
 async function _fotoKeDataURL(url, maxSisi = 1600) {
   try {
     const res = await fetch(url, { mode: 'cors', cache: 'force-cache' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    const blob = await res.blob();
-    const bmp = await createImageBitmap(blob);
+    const bmp = await createImageBitmap(await res.blob());
     const sk = Math.min(1, maxSisi / Math.max(bmp.width, bmp.height));
     const c = document.createElement('canvas');
     c.width = Math.round(bmp.width * sk); c.height = Math.round(bmp.height * sk);
     c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
     return { data: c.toDataURL('image/jpeg', 0.85), w: c.width, h: c.height };
   } catch (e) {
-    console.warn('Foto gagal dimuat untuk PDF:', url, e);
+    console.warn('Foto gagal dimuat untuk laporan:', url, e);
     return null;
   }
 }
 
-// Font laporan diunduh sekali lalu disimpan di memori (pdfmake butuh dalam bentuk base64/vfs)
+function _b64KeBytes(b64) {
+  const bin = atob(String(b64).replace(/^data:[^,]*,/, ''));
+  const u = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  return u;
+}
+
+// Font PDF diunduh sekali lalu disimpan di memori (pdfmake butuh dalam bentuk base64/vfs)
 async function _muatFontLaporan() {
   if (window._sihatiFontVfs) return window._sihatiFontVfs;
   try {
@@ -3917,250 +3927,429 @@ async function _muatFontLaporan() {
   }
 }
 
-// Saran medis umum (sama untuk semua pasien, tidak tergantung diagnosa) — ubah kalimatnya di sini saja
-const SARAN_MEDIS_UMUM = 'Personel yang bersangkutan disarankan untuk mengonsumsi obat secara rutin sesuai anjuran dokter, istirahat yang cukup, menjaga pola makan dan pola hidup sehat, serta tetap melakukan kontrol dan pemeriksaan lanjutan sesuai jadwal yang telah ditentukan.';
+// ── ukuran halaman (pt) — dipakai bersama PDF & Word
+const _LP = { ML: 70, MR: 52, MT: 56, MB: 56, CW: 595.28 - 70 - 52 };
 
-async function exportPdfLengkap(g) {
+// ═══════════ 1) SUSUN ISI LAPORAN (format-netral) ═══════════
+// Blok: kop | img | center | rule | item | para | ornamen | pagebreak | ttd | dok
+// Teks (runs): array string / {text, bold, italics, noWrap}
+function _susunLaporan(g, kunjungan, dokList) {
+  const info = g.info || kunjungan[0];
+  const nama = titleCase((info['Nama Pasien'] || '-').trim());
+  const pangkat = titleCase(info['Pangkat'] || '-');
+  const nipnrp = info['NIPNRP'] || info['NIP/NRP'] || '-';
+  const kesatuan = info['Kesatuan'] || '-';
+
+  const bln = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const fmtTgl = (s) => { const m = String(s || '').match(/(\d{2})\/(\d{2})\/(\d{4})/); return m ? m[1] + ' ' + bln[parseInt(m[2]) - 1] + ' ' + m[3] : (s || '-'); };
+  const kapW = (s) => s ? String(s).charAt(0).toUpperCase() + String(s).slice(1) : '';
+  const fvW = (val, sfx) => { if (!val || val === '-') return '-'; const s = String(val).trim(); return s.endsWith(sfx.trim()) ? s : s + sfx; };
+  const miring = (j) => j === 'Home Visit' || j === 'Telemedicine';
+  const R = (x) => Array.isArray(x) ? x : [x];
+
+  const jenisUnik = [...new Set(kunjungan.map(k => k['JenisPelayanan']).filter(Boolean))];
+  const judulJenis = jenisUnik.join(' dan ');
+  // Judul laporan BAKU (sama untuk semua pasien, apa pun jenis kunjungannya) — ubah di sini saja
+  const JENIS_UP = 'HOME VISIT / MONITORING/ PENDAMPINGAN / TELEMEDICINE';
+  const it = (str) => String(str).split(/(Home Visit|Telemedicine|\S+\/\S+)/).filter(Boolean)
+    .map(t => miring(t) ? { text: t, italics: true } : (/\S\/\S/.test(t) ? { text: t, noWrap: true } : t));
+  const jenisRich = (sep) => jenisUnik.flatMap((j, i) => [...(i ? [sep] : []), miring(j) ? { text: j, italics: true } : j]);
+  // Tempat hanya untuk kunjungan tatap muka — Telemedicine memang tidak punya isian tempat
+  const tempatDari = (k) => {
+    if (k['JenisPelayanan'] === 'Telemedicine') return '';
+    const t = String(k['Tempat'] || '').trim();
+    return t && t !== '-' ? titleCase(t) : '';
+  };
+
+  const item = (mark, isi, left, mw, o = {}) => ({ t: 'item', mark, runs: R(isi), left, mw, markBold: !!o.markBold, bold: !!o.bold,
+    align: o.align || 'justify', before: o.before || 0, after: o.after !== undefined ? o.after : 2, keep: !!o.keep });
+  const para = (isi, left, o = {}) => ({ t: 'para', runs: R(isi), left, first: o.first || 0, align: o.align || 'justify',
+    before: o.before || 0, after: o.after !== undefined ? o.after : 2, keep: !!o.keep, bold: !!o.bold });
+  const sesi = (romawi, judul, before = 12) => item(romawi, judul, 0, 20, { before, after: 4, align: 'left', keep: true });
+  const judulGaris = (baris, after = 16) => [
+    ...baris.map(b => ({ t: 'center', runs: [b], bold: true })),
+    { t: 'rule', w: 383, before: 1, after },
+  ];
+
+  // III. hasil per kunjungan
+  const hasil = [];
+  kunjungan.forEach((k, i) => {
+    const jenis = k['JenisPelayanan'] || '-';
+    const ambil = (pre) => [1, 2, 3, 4].map(n => k[pre + n]).filter(Boolean);
+    const keluhan = ambil('Keluhan').map(kapW), diagnosa = ambil('Diagnosa').map(kapW);
+    const tindakan = ambil('Tindakan').map(kapW), rencana = ambil('Rencana').map(kapW), dpjp = ambil('DokterDPJP');
+    const ket = [k['Keterangan'], k['Keterangan2'], k['Keterangan3'], k['Keterangan4']].filter(Boolean).map(kapW);
+    const spo2 = fixSpO2(k['SpO2']);
+    const riwayat = [];
+    if (keluhan.length) riwayat.push(`keluhan ${keluhan.join(', ')}`);
+    if (diagnosa.length) riwayat.push(`dengan diagnosa : ${diagnosa.join(', ')}`);
+    if (ket.length) riwayat.push(ket.join(', '));
+    const tl = [];
+    if (jenis !== 'Telemedicine') {
+      let v = `Tekanan Darah : ${fvW(k['Tensi'], 'mmHg')}, N : ${fvW(k['Nadi'], 'x/menit')}, temperatur suhu ${fvW(k['Suhu'], ' °C')}, RR : ${fvW(k['RR'], 'x/menit')}`;
+      if (spo2 && spo2 !== '-') v += `, SpO2 : ${fvW(spo2, '%')}`;
+      tl.push(`Ditemukan pemeriksaan ${v}`);
+    }
+    if (tindakan.length) tl.push(tindakan.join(', '));
+    if (rencana.length) tl.push(`rencana ${rencana.join(', ')}`);
+    if (dpjp.length) tl.push(`Dokter DPJP : ${dpjp.join(', ')}`);
+    const tmp = tempatDari(k);
+    hasil.push(item(`${i + 1}.`, [miring(jenis) ? { text: jenis, italics: true } : jenis, `, ${fmtTgl(k['Tanggal'])}${tmp ? ' di ' + tmp : ''}`],
+      16, 39, { bold: true, markBold: true, before: i ? 10 : 0, after: 3, align: 'left', keep: true }));
+    hasil.push(item('a.', [{ text: 'RIWAYAT PENYAKIT : ', bold: true }, ...it(riwayat.length ? 'Pasien dengan ' + riwayat.join(' ') : '-')], 43, 13));
+    hasil.push(item('b.', [{ text: 'TINDAK LANJUT : ', bold: true }, ...it(tl.length ? tl.join(', ') : '-')], 43, 13));
+    hasil.push(item('c.', [{ text: 'SARAN MEDIS : ', bold: true }, SARAN_MEDIS_UMUM], 43, 13));
+  });
+
+  const waktuList = kunjungan.map(k => `${(k['Waktu'] || '').substring(0, 5)} Wita, ${k['Hari'] || ''} ${fmtTgl(k['Tanggal'])}`.replace(/\s+/g, ' ').trim());
+  const tempatUnik = [...new Set(kunjungan.map(tempatDari).filter(Boolean))];
+  const now = new Date();
+  const bulanIni = `${bln[now.getMonth()]} ${now.getFullYear()}`;
+
+  const blocks = [
+    // ── HALAMAN SAMPUL
+    { t: 'kop' },
+    { t: 'img', src: 'dokkes', w: 150, before: 52, after: 0 },
+    { t: 'center', runs: [`LAPORAN HASIL KEGIATAN ${JENIS_UP} KE ANGGOTA YANG SAKIT OLEH BIDDOKKES POLDA NTB a.n ${(pangkat || '-').toUpperCase()} ${nama.toUpperCase()}`],
+      bold: true, before: 54, side: 8, lh: 1.2 },
+    { t: 'ornamen', before: 62 },
+    { t: 'center', runs: [`Mataram,        ${bulanIni}`], before: 96 },
+    { t: 'pagebreak' },
+
+    // ── HALAMAN ISI
+    { t: 'kop' },
+    { t: 'img', src: 'tribrata', w: 74, before: 16, after: 12 },
+    ...judulGaris([`LAPORAN HASIL KEGIATAN ${JENIS_UP}`, 'KE ANGGOTA YANG SAKIT OLEH BIDDOKKES POLDA NTB'], 22),
+
+    sesi('I.', 'PENDAHULUAN', 0),
+    item('1.', 'Umum', 16, 13, { markBold: true, align: 'left', keep: true }),
+    para('Saat ini Polri sedang membenahi diri di berbagai bidang dan ini untuk melaksanakan reformasi birokrasi guna mewujudkan pelayanan publik yang prima. Sebagai salah satu fungsi Polri jajaran Dokkes harus memahami dan tanggap akan kebutuhan organisasi tersebut.', 26, { first: 29, before: 2, after: 12 }),
+    para('Reformasi birokrasi Dokkes harus diterjemahkan pada kegiatan-kegiatan konkrit yang dilaksanakan secara terarah dan terjadwal dengan rinci dan dikendalikan dengan ketat menggunakan instrumen-instrumen manajemen, sehingga menghasilkan perubahan yang bersifat akseleratif dan segera dapat dirasakan oleh pengguna pelayanan Dokkes.', 26, { first: 29, after: 12 }),
+    para('Selama ini Biddokkes Polda NTB tetap berupaya mengedepankan peningkatan pelayanan kesehatan secara profesional kepada keluarga besar Polri dan masyarakat Polri di dalam setiap melaksanakan tugas. Pelayanan kesehatan Biddokkes Polda NTB bukan hanya ditujukan untuk anggota Polri yang mampu melaksanakan tugas melainkan anggota yang mengalami sakit kronis atau menahun yang tidak bisa melaksanakan tugas sebagaimana mestinya.', 26, { first: 29, after: 8 }),
+    item('2.', 'MAKSUD DAN TUJUAN', 16, 13, { markBold: true, align: 'left', before: 4, keep: true }),
+    item('a.', 'Maksud', 29, 14, { align: 'left', keep: true }),
+    para(['Untuk memberikan laporan hasil kegiatan pelayanan kesehatan ', ...jenisRich(' dan '), ' kepada pimpinan yang dilaksanakan oleh Biddokkes Polda NTB.'], 43),
+    item('b.', 'Tujuan', 29, 14, { align: 'left', keep: true }),
+    para('Agar setiap anggota Polri, PNS Polri dan keluarganya mendapat pelayanan kesehatan sehingga tercipta suatu optimalisasi derajat kesehatan bagi anggota Polri.', 43),
+    item('3.', 'DASAR', 16, 13, { markBold: true, align: 'left', before: 10, keep: true }),
+    para('Rujukan:', 29, { align: 'left', keep: true }),
+    item('a.', 'Peraturan Kepala Kepolisian Negara Republik Indonesia Nomor 8 Tahun 2018 tentang Pelayanan Kesehatan Tertentu di lingkungan Kepolisian Negara Republik Indonesia.', 29, 14),
+    item('b.', 'Renja Biddokkes Polda NTB TA. 2026.', 29, 14),
+
+    sesi('II.', 'PELAKSANAAN KEGIATAN'),
+    ...(tempatUnik.length ? [
+      item('a.', 'Waktu dan Tempat', 16, 13, { align: 'left', keep: true }),
+      item('1)', `Waktu : ${waktuList.join(', dan ')}`, 29, 16),
+      item('2)', `Tempat : ${tempatUnik.join(', dan ')}`, 29, 16),
+    ] : [
+      // semua kunjungan Telemedicine → tanpa baris Tempat
+      item('a.', `Waktu : ${waktuList.join(', dan ')}`, 16, 13, { align: 'left' }),
+    ]),
+    item('b.', ['Kegiatan yang dilaksanakan : ', ...jenisRich(' dan ')], 16, 13, { align: 'left', keep: true }),
+    item('1)', 'Melakukan pemeriksaan kesehatan kepada anggota Polri yang sakit dan tidak dapat menjalankan tugas.', 29, 16),
+    item('2)', 'Memberikan saran medis kepada anggota yang menderita sakit dan tidak dapat menjalankan tugas.', 29, 16),
+    item('3)', 'Memantau dan memonitoring perkembangan kondisi kesehatan anggota secara berkala guna memastikan proses pengobatan dan pemulihan berjalan dengan baik.', 29, 16),
+
+    sesi('III.', 'HASIL YANG DICAPAI'),
+    para(['Adapun hasil kegiatan pelayanan kesehatan ', ...jenisRich(' dan '), ' terhadap anggota yang sakit atau menahun personel Polri Polda Nusa Tenggara Barat, sebagai berikut :'], 16),
+    para(`${(pangkat || '-').toUpperCase()} ${nama.toUpperCase()} NRP ${nipnrp} ${(kesatuan || '-').toUpperCase()}`, 10, { bold: true, align: 'left', before: 2, after: 12, keep: true }),
+    ...hasil,
+
+    sesi('IV.', 'ANALISA DAN EVALUASI', 16),
+    item('a.', 'Analisa', 16, 13, { align: 'left', keep: true }),
+    para(['Dari hasil pelaksanaan kegiatan pemeriksaan terhadap anggota yang bersangkutan perlu mendapatkan perhatian dan ', { text: 'support', italics: true }, ' / dukungan lebih terhadap penyakit yang dideritanya.'], 29, { after: 4 }),
+    item('b.', 'Evaluasi', 16, 13, { align: 'left', keep: true }),
+    para('Kegiatan pelayanan kesehatan ini mendapat respon yang baik dari yang bersangkutan dan mengikuti semua prosedur tahap pemeriksaan yang diberikan sehingga memudahkan tim Biddokkes Polda NTB untuk melakukan pemeriksaan.', 29),
+
+    sesi('V.', 'KESIMPULAN DAN SARAN'),
+    item('a.', 'Kesimpulan', 16, 13, { align: 'left', keep: true }),
+    para(`Untuk saat ini secara umum, kondisi fisik ${nama} masih memerlukan pemantauan dan pengobatan lanjutan guna mencapai perbaikan kondisi kesehatan yang optimal.`, 29, { first: 14, after: 4 }),
+    item('b.', 'Saran', 16, 13, { align: 'left', keep: true }),
+    para('Disarankan agar yang bersangkutan tetap menjalani kontrol rutin sesuai jadwal yang telah ditentukan serta mengonsumsi obat secara teratur sesuai anjuran dokter. Yang bersangkutan juga perlu menjaga pola hidup sehat dan mendapat dukungan dari keluarga serta lingkungan kerja agar kondisi kesehatannya dapat membaik.', 29, { first: 14 }),
+
+    // Penutup + tanda tangan selalu satu halaman
+    { ...sesi('VI.', 'PENUTUP'), grup: 'ttd' },
+    { ...para(`Demikian laporan kegiatan pelayanan kesehatan terhadap anggota ${kesatuan} ini dibuat, selanjutnya mohon petunjuk dari pimpinan.`, 16), grup: 'ttd' },
+    { t: 'ttd', before: 20, left: 232, w: 180, grup: 'ttd',
+      baris1: `Mataram,          ${bulanIni}`, baris2: 'Yang Membuat Laporan',
+      nama: PENANDA_TANGAN_LAPORAN.nama, nip: `${PENANDA_TANGAN_LAPORAN.pangkat} NIP ${PENANDA_TANGAN_LAPORAN.nip}` },
+  ];
+
+  if (dokList.length) {
+    blocks.push({ t: 'pagebreak' },
+      ...judulGaris([`DOKUMENTASI KEGIATAN ${JENIS_UP}`, 'KE ANGGOTA YANG SAKIT OLEH BIDDOKKES POLDA NTB'], 14),
+      { t: 'dok', list: dokList });
+  }
+  const dasarNama = `Laporan_${judulJenis.replace(/ /g, '_')}_${nama.replace(/[^\w]+/g, '_')}`;
+  return { blocks, dasarNama, judul: `Laporan ${judulJenis} ${nama}` };
+}
+
+// ═══════════ 2a) RENDER → PDF (pdfmake) ═══════════
+async function _renderPdf(M) {
+  await _muatScript(SIHATI_PDF_CFG.lib);
+  const { ML, MR, MT, MB, CW } = _LP;
+  const runs = (rs) => rs.map(r => typeof r === 'string' ? r : { ...r });
+  const garis = (w, x, before = 0, after = 0) => ({ canvas: [{ type: 'line', x1: 0, y1: 0, x2: w, y2: 0, lineWidth: 0.8 }], margin: [x, before, 0, after] });
+  // dibuat BARU setiap dipakai — pdfmake mengubah objek saat layout, objek yang sama tidak boleh dipakai 2x
+  const kop = () => ({ columns: [{ width: 237, lineHeight: 1.15, stack: [
+      { text: 'KEPOLISIAN NEGARA REPUBLIK INDONESIA', alignment: 'center' },
+      { text: 'DAERAH NUSA TENGGARA BARAT', alignment: 'center' },
+      { text: 'BIDANG KEDOKTERAN DAN KESEHATAN', alignment: 'center' },
+      garis(237, 0, 1) ] }, { width: '*', text: '' }], margin: [7, 0, 0, 0] });
+
+  const conv = (b) => {
+    switch (b.t) {
+      case 'kop': return kop();
+      case 'img': return b.src === 'dokkes'
+        ? { image: 'data:image/png;base64,' + LOGO_DOKKES_B64, width: b.w, alignment: 'center', margin: [0, b.before, 0, b.after] }
+        : { image: 'data:image/jpeg;base64,' + LOGO_TRIBRATA_B64, width: b.w, alignment: 'center', margin: [0, b.before, 0, b.after] };
+      case 'center': return { text: runs(b.runs), bold: !!b.bold, alignment: 'center', lineHeight: b.lh || undefined,
+        margin: [b.side || 0, b.before || 0, b.side || 0, b.after || 0] };
+      case 'rule': return garis(b.w, (CW - b.w) / 2, b.before, b.after);
+      case 'item': return { columns: [{ width: b.mw, text: b.mark, bold: b.markBold }, { width: '*', text: runs(b.runs), alignment: b.align, bold: b.bold }],
+        columnGap: 0, margin: [b.left, b.before, 0, b.after] };
+      case 'para': return { text: runs(b.runs), alignment: b.align, leadingIndent: b.first, bold: b.bold, margin: [b.left, b.before, 0, b.after] };
+      case 'ornamen': { const cx = CW / 2; return { canvas: [
+        { type: 'line', x1: cx - 35, y1: 25, x2: cx - 35, y2: 130, lineWidth: 1 },
+        { type: 'line', x1: cx, y1: 0, x2: cx, y2: 162, lineWidth: 1 },
+        { type: 'line', x1: cx + 35, y1: 25, x2: cx + 35, y2: 130, lineWidth: 1 } ], margin: [0, b.before, 0, 0] }; }
+      case 'pagebreak': return { text: '', pageBreak: 'after' };
+      case 'ttd': return { margin: [0, b.before, 0, 0], columns: [{ width: b.left, text: '' }, { width: b.w, stack: [
+          { text: b.baris1, alignment: 'center' },
+          { text: b.baris2, alignment: 'center', margin: [0, 0, 0, 44] },
+          { text: b.nama, alignment: 'center' },
+          garis(b.w, 0),
+          { text: b.nip, alignment: 'center' } ] }] };
+      case 'dok': {
+        const selFoto = (f) => f
+          ? { image: f.data, fit: [CW + 12, 290], alignment: 'center', margin: [0, 2, 0, 2] }
+          : { text: '(foto tidak dapat dimuat — periksa koneksi internet lalu unduh ulang)', italics: true, color: '#888888', alignment: 'center', margin: [0, 30, 0, 30] };
+        const body = [];
+        b.list.forEach(d => d.foto.forEach((f, i) => body.push([i === 0 ? { stack: [{ text: d.tanggal, bold: true }, selFoto(f)] } : selFoto(f)])));
+        return { table: { widths: ['*'], body, dontBreakRows: true }, margin: [-22, 0, -4, 0],
+          layout: { hLineWidth: () => 0.8, vLineWidth: () => 0.8, paddingLeft: () => 4, paddingRight: () => 4, paddingTop: () => 1, paddingBottom: () => 1 } };
+      }
+    }
+  };
+  // gabungkan: blok "keep" ikut blok sesudahnya; blok "grup" satu kesatuan → tidak terpotong di pergantian halaman
+  const content = [];
+  const B = M.blocks;
+  for (let i = 0; i < B.length; i++) {
+    if (B[i].t === 'pagebreak') {
+      const prev = content[content.length - 1];
+      if (prev) prev.pageBreak = 'after';
+      continue;
+    }
+    if (B[i].grup) {
+      const g = B[i].grup, st = [];
+      while (i < B.length && B[i].grup === g) st.push(conv(B[i++]));
+      i--; content.push({ stack: st, unbreakable: true }); continue;
+    }
+    if (B[i].keep) {
+      const st = [];
+      while (i < B.length && B[i].keep) st.push(conv(B[i++]));
+      if (i < B.length && B[i].t !== 'pagebreak' && !B[i].grup) st.push(conv(B[i])); else i--;
+      content.push({ stack: st, unbreakable: true }); continue;
+    }
+    content.push(conv(B[i]));
+  }
+
+  const dd = {
+    pageSize: 'A4', pageMargins: [ML, MT, MR, MB], content,
+    defaultStyle: { font: 'SIHATI', fontSize: 12, lineHeight: 1.47 },
+    info: { title: M.judul, author: 'SIHATI Biddokkes Polda NTB' },
+  };
+  let vfs = await _muatFontLaporan(), fonts;
+  if (vfs) {
+    fonts = { SIHATI: { normal: 'rc-400-normal.woff', bold: 'rc-700-normal.woff', italics: 'rc-400-italic.woff', bolditalics: 'rc-700-italic.woff' } };
+  } else {
+    await _muatScript(SIHATI_PDF_CFG.vfs);   // cadangan: font bawaan pdfmake (Roboto)
+    dd.defaultStyle.font = 'Roboto'; vfs = undefined; fonts = undefined;
+  }
+  const namaFile = M.dasarNama + '.pdf';
+  await new Promise((resolve, reject) => {
+    const batas = setTimeout(() => reject(new Error('waktu habis saat membuat PDF')), 90000);
+    try { pdfMake.createPdf(dd, null, fonts, vfs).download(namaFile, () => { clearTimeout(batas); resolve(); }); }
+    catch (e) { clearTimeout(batas); reject(e); }
+  });
+  return namaFile;
+}
+
+// ═══════════ 2b) RENDER → WORD (.docx asli, bisa diedit) ═══════════
+async function _renderDocx(M) {
+  await _muatScript(SIHATI_PDF_CFG.docx);
+  const D = window.docx;
+  const { ML, MR, MT, MB, CW } = _LP;
+  const TW = (pt) => Math.round(pt * 20);          // pt → twip
+  const PX = (pt) => Math.round(pt * 96 / 72);     // pt → px (satuan gambar di library docx)
+  const FONT = 'Arial Narrow', SZ = 24, LINE = 412; // 12pt, jarak baris pasti 20,6pt (= PDF), tidak tergantung font
+  const AL = { justify: D.AlignmentType.JUSTIFIED, left: D.AlignmentType.LEFT, center: D.AlignmentType.CENTER };
+  const garisBawah = { bottom: { style: D.BorderStyle.SINGLE, size: 6, color: '000000', space: 1 } };
+
+  const tr = (r, base = {}) => {
+    const o = typeof r === 'string' ? { text: r } : r;
+    return new D.TextRun({ text: o.text, bold: !!(o.bold || base.bold), italics: !!(o.italics || base.italics),
+      color: o.color ? o.color.replace('#', '') : undefined, font: FONT, size: SZ });
+  };
+  const P = (opt) => new D.Paragraph({ ...opt, spacing: { line: LINE, lineRule: 'exact', before: 0, after: 0, ...(opt.spacing || {}) } });
+  const GAMBAR = { line: 240, lineRule: 'auto' };   // paragraf berisi gambar: tinggi baris ikut gambar
+  // paragraf selebar "w" pt, digeser "x" pt dari margin kiri
+  const indentBox = (x, w) => ({ left: TW(x), right: TW(Math.max(0, CW - x - w)) });
+
+  const kop = (pb) => ['KEPOLISIAN NEGARA REPUBLIK INDONESIA', 'DAERAH NUSA TENGGARA BARAT', 'BIDANG KEDOKTERAN DAN KESEHATAN']
+    .map((t, i) => P({ alignment: D.AlignmentType.CENTER, indent: indentBox(7, 237), spacing: { line: 322 }, pageBreakBefore: i === 0 && pb,
+      border: i === 2 ? garisBawah : undefined, keepNext: true, children: [tr(t)] }));
+
+  // ornamen 3 garis tegak digambar ke kanvas → gambar PNG
+  const ornamenPng = () => {
+    const s = 4, w = 90, h = 162, c = document.createElement('canvas');
+    c.width = w * s; c.height = h * s;
+    const x = c.getContext('2d'); x.scale(s, s); x.strokeStyle = '#000'; x.lineWidth = 1;
+    [[w / 2 - 35, 25, 130], [w / 2, 0, 162], [w / 2 + 35, 25, 130]].forEach(([xx, y1, y2]) => { x.beginPath(); x.moveTo(xx, y1); x.lineTo(xx, y2); x.stroke(); });
+    return { data: _b64KeBytes(c.toDataURL('image/png')), w, h };
+  };
+
+  let breakNext = false;
+  const out = [];
+  const conv = (b, keepNext) => {
+    const pb = breakNext; breakNext = false;
+    const common = { pageBreakBefore: pb, keepNext: !!keepNext, keepLines: true };
+    switch (b.t) {
+      case 'kop': return kop(pb);
+      case 'img': {
+        const logo = b.src === 'dokkes'
+          ? { data: _b64KeBytes(LOGO_DOKKES_B64), type: 'png', w: b.w, h: b.w }
+          : { data: _b64KeBytes(LOGO_TRIBRATA_B64), type: 'jpg', w: b.w, h: b.w * 115 / 181 };
+        return [P({ ...common, alignment: D.AlignmentType.CENTER, spacing: { ...GAMBAR, before: TW(b.before), after: TW(b.after) },
+          children: [new D.ImageRun({ type: logo.type, data: logo.data, transformation: { width: PX(logo.w), height: PX(logo.h) } })] })];
+      }
+      case 'center': return [P({ ...common, alignment: D.AlignmentType.CENTER, indent: b.side ? { left: TW(b.side), right: TW(b.side) } : undefined,
+        spacing: { line: b.lh ? Math.round(12 * 1.17 * b.lh * 20) : LINE, before: TW(b.before || 0), after: TW(b.after || 0) },
+        children: b.runs.map(r => tr(r, { bold: b.bold })) })];
+      case 'rule': return [P({ ...common, indent: indentBox((CW - b.w) / 2, b.w), border: garisBawah,
+        spacing: { line: 40, before: 0, after: TW(b.after) },
+        children: [new D.TextRun({ text: '', size: 2 })] })];
+      case 'item': return [P({ ...common, alignment: AL[b.align],
+        indent: { left: TW(b.left + b.mw), hanging: TW(b.mw) },
+        tabStops: [{ type: D.TabStopType.LEFT, position: TW(b.left + b.mw) }],
+        spacing: { line: LINE, before: TW(b.before), after: TW(b.after) },
+        children: [tr({ text: b.mark, bold: b.markBold }), new D.TextRun({ text: '\t', font: FONT, size: SZ }), ...b.runs.map(r => tr(r, { bold: b.bold }))] })];
+      case 'para': return [P({ ...common, alignment: AL[b.align], indent: { left: TW(b.left), firstLine: b.first ? TW(b.first) : undefined },
+        spacing: { line: LINE, before: TW(b.before), after: TW(b.after) },
+        children: b.runs.map(r => tr(r, { bold: b.bold })) })];
+      case 'ornamen': { const o = ornamenPng(); return [P({ ...common, alignment: D.AlignmentType.CENTER, spacing: { ...GAMBAR, before: TW(b.before) },
+        children: [new D.ImageRun({ type: 'png', data: o.data, transformation: { width: PX(o.w), height: PX(o.h) } })] })]; }
+      case 'pagebreak': breakNext = true; return [];
+      case 'ttd': {
+        const ib = indentBox(b.left, b.w);
+        const c = (t, o = {}) => P({ keepNext: o.last ? false : true, keepLines: true, alignment: D.AlignmentType.CENTER, indent: ib, border: o.border,
+          spacing: { line: LINE, before: TW(o.before || 0), after: 0 }, children: [tr(t)] });
+        return [c(b.baris1, { before: b.before }), c(b.baris2), c(b.nama, { before: 44, border: garisBawah }), c(b.nip, { last: true })];
+      }
+      case 'dok': {
+        const lebar = CW + 26;
+        const selFoto = (f) => {
+          if (!f) return P({ alignment: D.AlignmentType.CENTER, spacing: { line: LINE, before: 400, after: 400 },
+            children: [tr({ text: '(foto tidak dapat dimuat — periksa koneksi internet lalu unduh ulang)', italics: true, color: '#888888' })] });
+          const sk = Math.min((CW + 12) / f.w, 290 / f.h);
+          return P({ alignment: D.AlignmentType.CENTER, spacing: { ...GAMBAR, before: 40, after: 40 },
+            children: [new D.ImageRun({ type: 'jpg', data: _b64KeBytes(f.data), transformation: { width: PX(f.w * sk), height: PX(f.h * sk) } })] });
+        };
+        const rows = [];
+        b.list.forEach(d => d.foto.forEach((f, i) => rows.push(new D.TableRow({ cantSplit: true, children: [new D.TableCell({
+          width: { size: TW(lebar), type: D.WidthType.DXA }, margins: { top: 20, bottom: 20, left: 80, right: 80 },
+          children: i === 0 ? [P({ keepNext: true, children: [tr({ text: d.tanggal, bold: true })] }), selFoto(f)] : [selFoto(f)],
+        })] }))));
+        const bd = { style: D.BorderStyle.SINGLE, size: 6, color: '000000' };
+        return [new D.Table({ width: { size: TW(lebar), type: D.WidthType.DXA }, columnWidths: [TW(lebar)], indent: { size: -TW(22), type: D.WidthType.DXA },
+          borders: { top: bd, bottom: bd, left: bd, right: bd, insideHorizontal: bd, insideVertical: bd }, rows })];
+      }
+    }
+    return [];
+  };
+  const B = M.blocks;
+  for (let i = 0; i < B.length; i++) {
+    const keepNext = B[i].keep || (B[i].grup && B[i + 1] && B[i + 1].grup === B[i].grup);
+    out.push(...conv(B[i], keepNext));
+  }
+
+  const doc = new D.Document({
+    creator: 'SIHATI Biddokkes Polda NTB', title: M.judul,
+    styles: { default: { document: { run: { font: FONT, size: SZ } } } },
+    sections: [{ properties: { page: { size: { width: 11906, height: 16838 },
+      margin: { top: TW(MT), bottom: TW(MB), left: TW(ML), right: TW(MR), header: 709, footer: 709 } } }, children: out }],
+  });
+  const blob = await D.Packer.toBlob(doc);
+  const namaFile = M.dasarNama + '.docx';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = namaFile;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  return namaFile;
+}
+
+// ═══════════ 3) ALUR UTAMA ═══════════
+async function exportLaporanPasien(g, format) {
   const kunjungan = (g.kunjungan || []).slice().sort((a, b) => {
     const p = (s) => { const m = String(s || '').match(/(\d{2})\/(\d{2})\/(\d{4})/); return m ? new Date(m[3], m[2] - 1, m[1]).getTime() : 0; };
     return p(a['Tanggal']) - p(b['Tanggal']);
   });
   if (!kunjungan.length) return;
-
+  const label = format === 'docx' ? 'Word' : 'PDF';
   const ov = document.getElementById('loadingOverlay');
   const lt = document.getElementById('loadingText');
   const lamaText = lt ? lt.textContent : '';
   const setLoad = (t) => { if (lt) lt.textContent = t; if (ov) ov.classList.add('show'); };
   const tutupLoad = () => { if (ov) ov.classList.remove('show'); if (lt) lt.textContent = lamaText; };
-
   try {
-    setLoad('Menyiapkan laporan PDF...');
-    await _muatScript(SIHATI_PDF_CFG.lib);
-
-    const info = g.info || kunjungan[0];
-    const nama = titleCase((info['Nama Pasien'] || '-').trim());
-    const pangkat = titleCase(info['Pangkat'] || '-');
-    const nipnrp = info['NIPNRP'] || info['NIP/NRP'] || '-';
-    const kesatuan = info['Kesatuan'] || '-';
-
+    setLoad(`Menyiapkan laporan ${label}...`);
     const bln = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     const fmtTgl = (s) => { const m = String(s || '').match(/(\d{2})\/(\d{2})\/(\d{4})/); return m ? m[1] + ' ' + bln[parseInt(m[2]) - 1] + ' ' + m[3] : (s || '-'); };
-    const kapW = (s) => s ? String(s).charAt(0).toUpperCase() + String(s).slice(1) : '';
-    const fvW = (val, sfx) => { if (!val || val === '-') return '-'; const s = String(val).trim(); return s.endsWith(sfx.trim()) ? s : s + sfx; };
-    const miring = (j) => j === 'Home Visit' || j === 'Telemedicine';
-
-    const jenisUnik = [...new Set(kunjungan.map(k => k['JenisPelayanan']).filter(Boolean))];
-    const judulJenis = jenisUnik.join(' dan ');
-    // teks + "Home Visit"/"Telemedicine" otomatis miring
-    const it = (str) => String(str).split(/(Home Visit|Telemedicine|\S+\/\S+)/).filter(Boolean)
-      .map(t => miring(t) ? { text: t, italics: true } : (/\S\/\S/.test(t) ? { text: t, noWrap: true } : t));
-    const jenisRich = (sep) => jenisUnik.flatMap((j, i) => [...(i ? [sep] : []), miring(j) ? { text: j, italics: true } : j]);
-
-    // ── foto dokumentasi (dimuat paralel)
     const dokList = kunjungan.map(k => ({ tanggal: fmtTgl(k['Tanggal']), url: [k['Dokumentasi1'], k['Dokumentasi2']].filter(Boolean).map(fixImgBBUrl) }))
       .filter(d => d.url.length);
     const totalFoto = dokList.reduce((n, d) => n + d.url.length, 0);
     if (totalFoto) setLoad(`Memuat ${totalFoto} foto dokumentasi...`);
     for (const d of dokList) d.foto = await Promise.all(d.url.map(u => _fotoKeDataURL(u)));
 
-    // ── ukuran & helper tata letak (satuan pt, A4 = 595 x 842)
-    const ML = 70, MR = 52, CW = 595.28 - ML - MR;
-    const FS = 12, LH = 1.47;
-    const item = (mark, isi, kiri, lebarMark, o = {}) => ({
-      columns: [{ width: lebarMark, text: mark, bold: !!o.markBold }, { width: '*', text: isi, alignment: o.align || 'justify', bold: !!o.bold }],
-      columnGap: 0, margin: [kiri, o.before || 0, 0, o.after !== undefined ? o.after : 2],
-    });
-    const para = (isi, kiri, o = {}) => ({ text: isi, alignment: o.align || 'justify', leadingIndent: o.first || 0,
-      margin: [kiri, o.before || 0, 0, o.after !== undefined ? o.after : 2] });
-    const garis = (lebar, x = 0, o = {}) => ({ canvas: [{ type: 'line', x1: 0, y1: 0, x2: lebar, y2: 0, lineWidth: 0.8 }], margin: [x, o.before || 0, 0, o.after || 0] });
-    const judulGaris = (baris, after = 16) => [
-      ...baris.map(b => ({ text: b, bold: true, alignment: 'center' })),
-      garis(383, (CW - 383) / 2, { before: 1, after }),
-    ];
-    const sesi = (romawi, judul, before = 12) => ({ ...item(romawi, judul, 0, 20, { before, after: 4, align: 'left' }), _ikut: true });
-
-    // ── III. hasil per kunjungan
-    const hasil = [];
-    kunjungan.forEach((k, i) => {
-      const jenis = k['JenisPelayanan'] || '-';
-      const ambil = (pre) => [1, 2, 3, 4].map(n => k[pre + n]).filter(Boolean);
-      const keluhan = ambil('Keluhan').map(kapW), diagnosa = ambil('Diagnosa').map(kapW);
-      const tindakan = ambil('Tindakan').map(kapW), rencana = ambil('Rencana').map(kapW), dpjp = ambil('DokterDPJP');
-      const ket = [k['Keterangan'], k['Keterangan2'], k['Keterangan3'], k['Keterangan4']].filter(Boolean).map(kapW);
-      const spo2 = fixSpO2(k['SpO2']);
-
-      const riwayat = [];
-      if (keluhan.length) riwayat.push(`keluhan ${keluhan.join(', ')}`);
-      if (diagnosa.length) riwayat.push(`dengan diagnosa : ${diagnosa.join(', ')}`);
-      if (ket.length) riwayat.push(ket.join(', '));
-      const tl = [];
-      if (jenis !== 'Telemedicine') {
-        let v = `Tekanan Darah : ${fvW(k['Tensi'], 'mmHg')}, N : ${fvW(k['Nadi'], 'x/menit')}, temperatur suhu ${fvW(k['Suhu'], ' °C')}, RR : ${fvW(k['RR'], 'x/menit')}`;
-        if (spo2 && spo2 !== '-') v += `, SpO2 : ${fvW(spo2, '%')}`;
-        tl.push(`Ditemukan pemeriksaan ${v}`);
-      }
-      if (tindakan.length) tl.push(tindakan.join(', '));
-      if (rencana.length) tl.push(`rencana ${rencana.join(', ')}`);
-      if (dpjp.length) tl.push(`Dokter DPJP : ${dpjp.join(', ')}`);
-
-      hasil.push({ _ikut: true, ...item(`${i + 1}.`, [miring(jenis) ? { text: jenis, italics: true } : jenis, `, ${fmtTgl(k['Tanggal'])} di ${titleCase(k['Tempat'] || '-')}`],
-        16, 39, { bold: true, markBold: true, before: i ? 10 : 0, after: 3, align: 'left' }) });
-      hasil.push(item('a.', [{ text: 'RIWAYAT PENYAKIT : ', bold: true }, ...it(riwayat.length ? 'Pasien dengan ' + riwayat.join(' ') : '-')], 43, 13));
-      hasil.push(item('b.', [{ text: 'TINDAK LANJUT : ', bold: true }, ...it(tl.length ? tl.join(', ') : '-')], 43, 13));
-      hasil.push(item('c.', [{ text: 'SARAN MEDIS : ', bold: true }, SARAN_MEDIS_UMUM], 43, 13));
-    });
-
-    const waktuList = kunjungan.map(k => `${(k['Waktu'] || '').substring(0, 5)} Wita, ${k['Hari'] || ''} ${fmtTgl(k['Tanggal'])}`.replace(/\s+/g, ' ').trim());
-    const tempatUnik = [...new Set(kunjungan.map(k => titleCase((k['Tempat'] || '-').trim())))];
-    const now = new Date();
-    const bulanIni = `${bln[now.getMonth()]} ${now.getFullYear()}`;
-
-    // ── isi dokumen
-    const kop = () => ({ columns: [{ width: 237, stack: [
-        { text: 'KEPOLISIAN NEGARA REPUBLIK INDONESIA', alignment: 'center' },
-        { text: 'DAERAH NUSA TENGGARA BARAT', alignment: 'center' },
-        { text: 'BIDANG KEDOKTERAN DAN KESEHATAN', alignment: 'center' },
-        garis(237, 0, { before: 1 }) ], lineHeight: 1.15 }, { width: '*', text: '' }], margin: [7, 0, 0, 0] });
-    // ornamen 3 garis tegak di halaman sampul (tengah panjang, kiri-kanan pendek)
-    const cx = CW / 2;
-    const ornamen = { canvas: [
-        { type: 'line', x1: cx - 35, y1: 25, x2: cx - 35, y2: 130, lineWidth: 1 },
-        { type: 'line', x1: cx, y1: 0, x2: cx, y2: 162, lineWidth: 1 },
-        { type: 'line', x1: cx + 35, y1: 25, x2: cx + 35, y2: 130, lineWidth: 1 } ], margin: [0, 62, 0, 0] };
-
-    const content = [
-      // ── HALAMAN SAMPUL
-      kop(),
-      { image: 'data:image/png;base64,' + LOGO_DOKKES_B64, width: 150, alignment: 'center', margin: [0, 52, 0, 0] },
-      { text: `LAPORAN HASIL KEGIATAN ${jenisUnik.join(' / ').toUpperCase()} ANGGOTA YANG SAKIT OLEH BIDDOKKES POLDA NTB a.n ${(pangkat || '-').toUpperCase()} ${nama.toUpperCase()}`,
-        bold: true, alignment: 'center', lineHeight: 1.2, margin: [8, 54, 8, 0] },
-      ornamen,
-      { text: `Mataram,        ${bulanIni}`, alignment: 'center', margin: [0, 96, 0, 0], pageBreak: 'after' },
-
-      // ── HALAMAN ISI
-      kop(),
-      { image: 'data:image/jpeg;base64,' + LOGO_TRIBRATA_B64, width: 74, alignment: 'center', margin: [0, 16, 0, 12] },
-      ...judulGaris([`LAPORAN HASIL KEGIATAN ${jenisUnik.join(' / ').toUpperCase()} KE ANGGOTA YANG SAKIT`, 'OLEH BIDDOKKES POLDA NTB'], 22),
-
-      sesi('I.', 'PENDAHULUAN', 0),
-      { ...item('1.', 'Umum', 16, 13, { markBold: true, align: 'left' }), _ikut: true },
-      para('Saat ini Polri sedang membenahi diri di berbagai bidang dan ini untuk melaksanakan reformasi birokrasi guna mewujudkan pelayanan publik yang prima. Sebagai salah satu fungsi Polri jajaran Dokkes harus memahami dan tanggap akan kebutuhan organisasi tersebut.', 26, { first: 29, before: 2, after: 12 }),
-      para('Reformasi birokrasi Dokkes harus diterjemahkan pada kegiatan-kegiatan konkrit yang dilaksanakan secara terarah dan terjadwal dengan rinci dan dikendalikan dengan ketat menggunakan instrumen-instrumen manajemen, sehingga menghasilkan perubahan yang bersifat akseleratif dan segera dapat dirasakan oleh pengguna pelayanan Dokkes.', 26, { first: 29, after: 12 }),
-      para('Selama ini Biddokkes Polda NTB tetap berupaya mengedepankan peningkatan pelayanan kesehatan secara profesional kepada keluarga besar Polri dan masyarakat Polri di dalam setiap melaksanakan tugas. Pelayanan kesehatan Biddokkes Polda NTB bukan hanya ditujukan untuk anggota Polri yang mampu melaksanakan tugas melainkan anggota yang mengalami sakit kronis atau menahun yang tidak bisa melaksanakan tugas sebagaimana mestinya.', 26, { first: 29, after: 8 }),
-      { ...item('2.', 'MAKSUD DAN TUJUAN', 16, 13, { markBold: true, align: 'left', before: 4 }), _ikut: true },
-      { ...item('a.', 'Maksud', 29, 14, { align: 'left' }), _ikut: true },
-      para(['Untuk memberikan laporan hasil kegiatan pelayanan kesehatan ', ...jenisRich(' dan '), ' kepada pimpinan yang dilaksanakan oleh Biddokkes Polda NTB.'], 43),
-      { ...item('b.', 'Tujuan', 29, 14, { align: 'left' }), _ikut: true },
-      para('Agar setiap anggota Polri, PNS Polri dan keluarganya mendapat pelayanan kesehatan sehingga tercipta suatu optimalisasi derajat kesehatan bagi anggota Polri.', 43),
-      { ...item('3.', 'DASAR', 16, 13, { markBold: true, align: 'left', before: 10 }), _ikut: true },
-      { ...para('Rujukan:', 29, { align: 'left' }), _ikut: true },
-      item('a.', 'Peraturan Kepala Kepolisian Negara Republik Indonesia Nomor 8 Tahun 2018 tentang Pelayanan Kesehatan Tertentu di lingkungan Kepolisian Negara Republik Indonesia.', 29, 14),
-      item('b.', 'Renja Biddokkes Polda NTB TA. 2026.', 29, 14),
-
-      sesi('II.', 'PELAKSANAAN KEGIATAN'),
-      { ...item('a.', 'Waktu dan Tempat', 16, 13, { align: 'left' }), _ikut: true },
-      item('1)', `Waktu : ${waktuList.join(', dan ')}`, 29, 16),
-      item('2)', `Tempat : ${tempatUnik.join(', dan ')}`, 29, 16),
-      item('b.', ['Kegiatan yang dilaksanakan : ', ...jenisRich(' dan ')], 16, 13, { align: 'left' }),
-      item('1)', 'Melakukan pemeriksaan kesehatan kepada anggota Polri yang sakit dan tidak dapat menjalankan tugas.', 29, 16),
-      item('2)', 'Memberikan saran medis kepada anggota yang menderita sakit dan tidak dapat menjalankan tugas.', 29, 16),
-
-      sesi('III.', 'HASIL YANG DICAPAI'),
-      para(['Adapun hasil kegiatan pelayanan kesehatan ', ...jenisRich(' dan '), ' terhadap anggota yang sakit atau menahun personel Polri Polda Nusa Tenggara Barat, sebagai berikut :'], 16),
-      { text: `${(pangkat || '-').toUpperCase()} ${nama.toUpperCase()} NRP ${nipnrp} ${(kesatuan || '-').toUpperCase()}`, bold: true, margin: [10, 2, 0, 12], _ikut: true },
-      ...hasil,
-
-      sesi('IV.', 'ANALISA DAN EVALUASI', 16),
-      { ...item('a.', 'Analisa', 16, 13, { align: 'left' }), _ikut: true },
-      para(['Dari hasil pelaksanaan kegiatan pemeriksaan terhadap anggota yang bersangkutan perlu mendapatkan perhatian dan ', { text: 'support', italics: true }, ' / dukungan lebih terhadap penyakit yang dideritanya.'], 29, { after: 4 }),
-      { ...item('b.', 'Evaluasi', 16, 13, { align: 'left' }), _ikut: true },
-      para('Kegiatan pelayanan kesehatan ini mendapat respon yang baik dari yang bersangkutan dan mengikuti semua prosedur tahap pemeriksaan yang diberikan sehingga memudahkan tim Biddokkes Polda NTB untuk melakukan pemeriksaan.', 29),
-
-      sesi('V.', 'KESIMPULAN DAN SARAN'),
-      { ...item('a.', 'Kesimpulan', 16, 13, { align: 'left' }), _ikut: true },
-      para(`Untuk saat ini secara umum, kondisi fisik ${nama} masih memerlukan pemantauan dan pengobatan lanjutan guna mencapai perbaikan kondisi kesehatan yang optimal.`, 29, { first: 14, after: 4 }),
-      { ...item('b.', 'Saran', 16, 13, { align: 'left' }), _ikut: true },
-      para('Disarankan agar yang bersangkutan tetap menjalani kontrol rutin sesuai jadwal yang telah ditentukan serta mengonsumsi obat secara teratur sesuai anjuran dokter. Yang bersangkutan juga perlu menjaga pola hidup sehat dan mendapat dukungan dari keluarga serta lingkungan kerja agar kondisi kesehatannya dapat membaik.', 29, { first: 14 }),
-
-      { unbreakable: true, stack: [
-        sesi('VI.', 'PENUTUP'),
-        para(`Demikian laporan kegiatan pelayanan kesehatan terhadap anggota ${kesatuan} ini dibuat, selanjutnya mohon petunjuk dari pimpinan.`, 16),
-        // tanda tangan
-        { margin: [0, 20, 0, 0], columns: [{ width: 232, text: '' }, { width: 180, stack: [
-            { text: `Mataram,          ${bulanIni}`, alignment: 'center' },
-            { text: 'Yang Membuat Laporan', alignment: 'center', margin: [0, 0, 0, 44] },
-            { text: PENANDA_TANGAN_LAPORAN.nama, alignment: 'center' },
-            garis(180, 0, { before: 0 }),
-            { text: `${PENANDA_TANGAN_LAPORAN.pangkat} NIP ${PENANDA_TANGAN_LAPORAN.nip}`, alignment: 'center' },
-          ] }] },
-      ] },
-    ];
-
-    // ── halaman dokumentasi
-    if (dokList.length) {
-      const body = [];
-      const selFoto = (f) => f
-        ? { image: f.data, fit: [CW + 12, 290], alignment: 'center', margin: [0, 2, 0, 2] }
-        : { text: '(foto tidak dapat dimuat — periksa koneksi internet lalu unduh ulang)', italics: true, color: '#888888', alignment: 'center', margin: [0, 30, 0, 30] };
-      dokList.forEach(d => {
-        // tanggal digabung dengan foto pertama dalam 1 sel → tidak pernah terpisah di pergantian halaman
-        d.foto.forEach((f, i) => body.push([i === 0 ? { stack: [{ text: d.tanggal, bold: true }, selFoto(f)] } : selFoto(f)]));
-      });
-      content.push(
-        { text: '', pageBreak: 'before' },
-        ...judulGaris([`DOKUMENTASI KEGIATAN ${jenisUnik.join(' / ').toUpperCase()} KE ANGGOTA YANG SAKIT`, 'OLEH BIDDOKKES POLDA NTB'], 14),
-        { table: { widths: ['*'], body, dontBreakRows: true }, margin: [-22, 0, -4, 0],
-          layout: { hLineWidth: () => 0.8, vLineWidth: () => 0.8, paddingLeft: () => 4, paddingRight: () => 4, paddingTop: () => 1, paddingBottom: () => 1 } });
-    }
-
-    // judul/sub-judul (_ikut) digabung dengan elemen sesudahnya supaya tidak tertinggal sendirian di bawah halaman
-    const rapikan = (arr) => {
-      const out = [];
-      for (let i = 0; i < arr.length; i++) {
-        if (arr[i] && arr[i]._ikut) {
-          const grup = [];
-          while (i < arr.length && arr[i]._ikut) { const { _ikut, ...el } = arr[i]; grup.push(el); i++; }
-          if (i < arr.length) grup.push(arr[i]);
-          out.push({ stack: grup, unbreakable: true });
-        } else out.push(arr[i]);
-      }
-      return out;
-    };
-    const kontenRapi = rapikan(content);
-
-    const dd = {
-      pageSize: 'A4', pageMargins: [ML, 56, MR, 56], content: kontenRapi,
-      defaultStyle: { font: 'SIHATI', fontSize: FS, lineHeight: LH },
-      info: { title: `Laporan ${judulJenis} ${nama}`, author: 'SIHATI Biddokkes Polda NTB' },
-    };
-    const namaFile = `Laporan_${judulJenis.replace(/ /g, '_')}_${nama.replace(/[^\w]+/g, '_')}.pdf`;
-
-    setLoad('Membuat file PDF...');
-    let vfs = await _muatFontLaporan();
-    let fonts;
-    if (vfs) {
-      fonts = { SIHATI: { normal: 'rc-400-normal.woff', bold: 'rc-700-normal.woff', italics: 'rc-400-italic.woff', bolditalics: 'rc-700-italic.woff' } };
-    } else {
-      // font Roboto Condensed gagal dimuat → pakai font bawaan pdfmake (Roboto) supaya tetap bisa unduh
-      await _muatScript(SIHATI_PDF_CFG.vfs);
-      dd.defaultStyle.font = 'Roboto';
-      vfs = undefined; fonts = undefined;
-    }
-    await new Promise((resolve, reject) => {
-      const batas = setTimeout(() => reject(new Error('waktu habis saat membuat PDF')), 90000);
-      try { pdfMake.createPdf(dd, null, fonts, vfs).download(namaFile, () => { clearTimeout(batas); resolve(); }); }
-      catch (e) { clearTimeout(batas); reject(e); }
-    });
+    const M = _susunLaporan(g, kunjungan, dokList);
+    setLoad(`Membuat file ${label}...`);
+    const namaFile = format === 'docx' ? await _renderDocx(M) : await _renderPdf(M);
     tutupLoad();
-    showToastDownload('Laporan PDF', namaFile);
+    showToastDownload('Laporan ' + label, namaFile);
     const gagal = dokList.reduce((n, d) => n + d.foto.filter(f => !f).length, 0);
-    if (gagal && typeof showToast === 'function') showToast(`${gagal} foto tidak dapat dimuat ke PDF`, 'error');
+    if (gagal && typeof showToast === 'function') showToast(`${gagal} foto tidak dapat dimuat ke laporan`, 'error');
   } catch (e) {
     tutupLoad();
     console.error(e);
-    if (typeof showToast === 'function') showToast('Gagal membuat PDF: ' + (e.message || e), 'error');
-    else alert('Gagal membuat PDF: ' + (e.message || e));
+    if (typeof showToast === 'function') showToast(`Gagal membuat ${label}: ` + (e.message || e), 'error');
+    else alert(`Gagal membuat ${label}: ` + (e.message || e));
   }
+}
+function exportPdfLengkap(g) { return exportLaporanPasien(g, 'pdf'); }
+function exportDocxLengkap(g) { return exportLaporanPasien(g, 'docx'); }
+
+// Pilihan format saat tombol "📋 Laporan" diklik
+function pilihFormatLaporan(g) {
+  const lama = document.getElementById('pilihFormatLaporan');
+  if (lama) lama.remove();
+  const gelap = document.body.classList.contains('dark-mode');
+  const w = document.createElement('div');
+  w.id = 'pilihFormatLaporan';
+  w.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9998;display:flex;align-items:center;justify-content:center;padding:20px';
+  w.innerHTML = `
+    <div style="background:${gelap ? '#1e1e1e' : '#fff'};color:${gelap ? '#e0e0e0' : '#1a2e22'};border-radius:18px;padding:22px 20px 18px;max-width:320px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.25);font-family:'Segoe UI',system-ui,sans-serif;text-align:center">
+      <div style="font-size:16px;font-weight:700;margin-bottom:4px">Unduh Laporan</div>
+      <div style="font-size:12px;opacity:.75;margin-bottom:16px">Pilih format file laporan</div>
+      <button data-f="pdf" style="width:100%;padding:12px;margin-bottom:10px;border:none;border-radius:12px;background:#c0392b;color:#fff;font-size:14px;font-weight:700;cursor:pointer">📄 PDF <span style="font-weight:400;font-size:11px;opacity:.9">— siap cetak/kirim</span></button>
+      <button data-f="docx" style="width:100%;padding:12px;margin-bottom:12px;border:none;border-radius:12px;background:#2b579a;color:#fff;font-size:14px;font-weight:700;cursor:pointer">📝 Word <span style="font-weight:400;font-size:11px;opacity:.9">— bisa diedit</span></button>
+      <button data-f="" style="background:none;border:none;color:inherit;opacity:.7;font-size:13px;cursor:pointer;padding:4px 10px">Batal</button>
+    </div>`;
+  w.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (e.target === w || (btn && btn.dataset.f === '')) { w.remove(); return; }
+    if (btn && btn.dataset.f) { w.remove(); exportLaporanPasien(g, btn.dataset.f); }
+  });
+  document.body.appendChild(w);
 }
 
 // Export ke Word (.doc) — format sesuai template resmi
