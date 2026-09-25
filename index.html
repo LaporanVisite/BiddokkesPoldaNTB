@@ -976,7 +976,7 @@ input[list].tl-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button onclick="previewRekapKunjungan()" style="flex:1;padding:10px;background:var(--green);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">🔍 Tampilkan Data</button>
       <button onclick="eksporKunjunganExcel()" style="flex:1;padding:10px;background:#1d6f42;color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">📊 Download Excel</button>
-      <button onclick="eksporLaporanMingguanFormal()" style="flex:1;padding:10px;background:#0f5c8a;color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">📄 Download Word</button>
+      <button onclick="pilihFormatLaporanMingguan()" style="flex:1;padding:10px;background:#0f5c8a;color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">📄 Download Laporan</button>
     </div>
   </div>
   <div id="kunjunganPreview" style="margin-top:12px"></div>
@@ -4125,6 +4125,13 @@ async function _renderPdf(M) {
           { text: b.nama, alignment: 'center' },
           garis(b.w, 0),
           { text: b.nip, alignment: 'center' } ] }] };
+      case 'tabel': {
+        const body = [b.header.map(h => ({ text: h, alignment: 'left' })),
+          ...b.rows.map(r => r.map((c, j) => ({ text: String(c), alignment: (b.align && b.align[j]) || 'justify' })))];
+        return { table: { headerRows: 1, dontBreakRows: true, widths: b.widths.map(w => w * (CW + 22)), body },
+          margin: [-22, b.before || 0, 0, b.after || 0], lineHeight: 1.3,
+          layout: { hLineWidth: () => 0.8, vLineWidth: () => 0.8, paddingLeft: () => 4, paddingRight: () => 4, paddingTop: () => 2, paddingBottom: () => 2 } };
+      }
       case 'dok': {
         const selFoto = (f) => f
           ? { image: f.data, fit: [CW + 12, 290], alignment: 'center', margin: [0, 2, 0, 2] }
@@ -4251,6 +4258,17 @@ async function _renderDocx(M) {
           spacing: { line: LINE, before: TW(o.before || 0), after: 0 }, children: [tr(t)] });
         return [c(b.baris1, { before: b.before }), c(b.baris2), c(b.nama, { before: 44, border: garisBawah }), c(b.nip, { last: true })];
       }
+      case 'tabel': {
+        const lebar = CW + 22, bd = { style: D.BorderStyle.SINGLE, size: 6, color: '000000' };
+        const sel = (t, j, w) => new D.TableCell({ width: { size: TW(w), type: D.WidthType.DXA }, margins: { top: 40, bottom: 40, left: 80, right: 80 },
+          children: [P({ alignment: AL[(b.align && b.align[j]) || 'justify'], spacing: { line: 320 }, children: [tr(String(t))] })] });
+        const lebarKol = b.widths.map(w => w * lebar);
+        const baris = (arr, head) => new D.TableRow({ cantSplit: true, tableHeader: !!head, children: arr.map((t, j) => sel(t, head ? -1 : j, lebarKol[j])) });
+        return [new D.Table({ width: { size: TW(lebar), type: D.WidthType.DXA }, columnWidths: lebarKol.map(TW), indent: { size: -TW(22), type: D.WidthType.DXA },
+          borders: { top: bd, bottom: bd, left: bd, right: bd, insideHorizontal: bd, insideVertical: bd },
+          rows: [baris(b.header, true), ...b.rows.map(r => baris(r))] }),
+          P({ spacing: { line: 240, before: 0, after: TW(b.after || 0) }, children: [] })];
+      }
       case 'dok': {
         const lebar = CW + 26;
         const selFoto = (f) => {
@@ -4333,8 +4351,8 @@ async function exportLaporanPasien(g, format) {
 function exportPdfLengkap(g) { return exportLaporanPasien(g, 'pdf'); }
 function exportDocxLengkap(g) { return exportLaporanPasien(g, 'docx'); }
 
-// Pilihan format saat tombol "📋 Laporan" diklik
-function pilihFormatLaporan(g) {
+// Jendela pilihan format (PDF / Word) — dipakai tombol "📋 Laporan" (per pasien) & "📄 Download Laporan" (mingguan)
+function _tampilPilihFormat(judul, onPilih) {
   const lama = document.getElementById('pilihFormatLaporan');
   if (lama) lama.remove();
   const gelap = document.body.classList.contains('dark-mode');
@@ -4343,7 +4361,7 @@ function pilihFormatLaporan(g) {
   w.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9998;display:flex;align-items:center;justify-content:center;padding:20px';
   w.innerHTML = `
     <div style="background:${gelap ? '#1e1e1e' : '#fff'};color:${gelap ? '#e0e0e0' : '#1a2e22'};border-radius:18px;padding:22px 20px 18px;max-width:320px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.25);font-family:'Segoe UI',system-ui,sans-serif;text-align:center">
-      <div style="font-size:16px;font-weight:700;margin-bottom:4px">Unduh Laporan</div>
+      <div style="font-size:16px;font-weight:700;margin-bottom:4px">${judul}</div>
       <div style="font-size:12px;opacity:.75;margin-bottom:16px">Pilih format file laporan</div>
       <button data-f="pdf" style="width:100%;padding:12px;margin-bottom:10px;border:none;border-radius:12px;background:#c0392b;color:#fff;font-size:14px;font-weight:700;cursor:pointer">📄 PDF <span style="font-weight:400;font-size:11px;opacity:.9">— siap cetak/kirim</span></button>
       <button data-f="docx" style="width:100%;padding:12px;margin-bottom:12px;border:none;border-radius:12px;background:#2b579a;color:#fff;font-size:14px;font-weight:700;cursor:pointer">📝 Word <span style="font-weight:400;font-size:11px;opacity:.9">— bisa diedit</span></button>
@@ -4352,9 +4370,162 @@ function pilihFormatLaporan(g) {
   w.addEventListener('click', (e) => {
     const btn = e.target.closest('button');
     if (e.target === w || (btn && btn.dataset.f === '')) { w.remove(); return; }
-    if (btn && btn.dataset.f) { w.remove(); exportLaporanPasien(g, btn.dataset.f); }
+    if (btn && btn.dataset.f) { w.remove(); onPilih(btn.dataset.f); }
   });
   document.body.appendChild(w);
+}
+function pilihFormatLaporan(g) { _tampilPilihFormat('Unduh Laporan', (f) => exportLaporanPasien(g, f)); }
+
+// ═══════════════════════════════════════════════════════════════════════
+// LAPORAN MINGGUAN FORMAL (tombol "📄 Download Laporan" di tab Rekap Kunjungan)
+// Susunan mengikuti contoh resmi LAPORAN_HV_minggu_1_juni_2026. Wajib 1 FKTP, tabel per KUNJUNGAN
+// (1 pasien dikunjungi 2x = 2 baris), "minggu ke-" dihitung dari tanggal awal rentang.
+// ═══════════════════════════════════════════════════════════════════════
+function _susunLaporanMingguan(c) {
+  const R = (x) => Array.isArray(x) ? x : [x];
+  const item = (mark, isi, left, mw, o = {}) => ({ t: 'item', mark, runs: R(isi), left, mw, markBold: !!o.markBold, bold: !!o.bold,
+    align: o.align || 'justify', before: o.before || 0, after: o.after !== undefined ? o.after : 2, keep: !!o.keep });
+  const para = (isi, left, o = {}) => ({ t: 'para', runs: R(isi), left, first: o.first || 0, align: o.align || 'justify',
+    before: o.before || 0, after: o.after !== undefined ? o.after : 2, keep: !!o.keep, bold: !!o.bold });
+  const sesi = (romawi, judul, before = 12) => item(romawi, judul, 0, 20, { before, after: 4, align: 'left', keep: true });
+  const HV = { text: 'home visite', italics: true };
+  const judul1 = 'LAPORAN TINDAK LANJUT RIKKES BERKALA KEPADA PNPP POLDA NTB';
+  const judul2 = `MINGGU KE – ${c.mingguKe} BULAN ${c.bulan.toUpperCase()} TAHUN ${c.tahun}`;
+
+  const blocks = [
+    // ── HALAMAN SAMPUL
+    { t: 'kop' },
+    { t: 'img', src: 'dokkes', w: 150, before: 52, after: 0 },
+    { t: 'center', runs: [judul1], bold: true, before: 40, lh: 1.2 },
+    { t: 'center', runs: [judul2], bold: true, lh: 1.2 },
+    { t: 'ornamen', before: 62 },
+    { t: 'center', runs: [`Mataram,        ${c.bulan} ${c.tahun}`], before: 110 },
+    { t: 'pagebreak' },
+
+    // ── HALAMAN ISI
+    { t: 'kop' },
+    { t: 'img', src: 'tribrata', w: 74, before: 16, after: 12 },
+    { t: 'center', runs: [judul1], bold: true },
+    { t: 'center', runs: [judul2], bold: true },
+    { t: 'rule', w: 383, before: 1, after: 22 },
+
+    sesi('I.', 'PENDAHULUAN', 0),
+    item('1.', 'Umum', 16, 13, { markBold: true, align: 'left', keep: true }),
+    para('Saat ini Polri sedang membenahi diri di berbagai bidang dan ini untuk melaksanakan reformasi birokrasi guna mewujudkan pelayanan publik yang prima. Sebagai salah satu fungsi Polri jajaran Dokkes harus memahami dan tanggap akan kebutuhan organisasi tersebut.', 26, { first: 29, before: 2, after: 12 }),
+    para('Reformasi birokrasi Dokkes harus diterjemahkan pada kegiatan-kegiatan konkrit yang dilaksanakan secara terarah dan terjadwal dengan rinci dan dikendalikan dengan ketat menggunakan instrumen-instrumen manajemen, sehingga menghasilkan perubahan yang bersifat akseleratif dan segera dapat dirasakan oleh pengguna pelayanan Dokkes.', 26, { first: 29, after: 12 }),
+    para('Selama ini Biddokkes Polda NTB tetap berupaya mengedepankan peningkatan pelayanan kesehatan secara profesional kepada keluarga besar Polri dan masyarakat Polri di dalam setiap melaksanakan tugas. Pelayanan kesehatan di Biddokkes Polda NTB bukan hanya ditujukan untuk anggota Polri yang mampu melaksanakan tugas melainkan anggota yang mengalami sakit kronis atau menahun yang tidak bisa melaksanakan tugas sebagaimana mestinya.', 26, { first: 29, after: 8 }),
+    item('2.', 'MAKSUD DAN TUJUAN', 16, 13, { markBold: true, align: 'left', before: 4, keep: true }),
+    item('a.', 'Maksud', 29, 14, { align: 'left', keep: true }),
+    para(['Untuk memberikan laporan hasil kegiatan pelayanan kesehatan ', HV, ' / pendampingan kepada pimpinan yang dilaksanakan oleh Biddokkes Polda NTB.'], 43),
+    item('b.', 'Tujuan', 29, 14, { align: 'left', keep: true }),
+    para('Agar setiap anggota Polri, PNS Polri dan keluarganya mendapat pelayanan kesehatan sehingga tercipta suatu optimalisasi derajat kesehatan bagi anggota Polri.', 43),
+    item('3.', 'DASAR', 16, 13, { markBold: true, align: 'left', before: 10, keep: true }),
+    para('Rujukan:', 29, { align: 'left', keep: true }),
+    item('a.', 'Peraturan Kepala Kepolisian Negara Republik Indonesia Nomor 8 Tahun 2018 tentang Pelayanan Kesehatan Tertentu di lingkungan Kepolisian Negara Republik Indonesia.', 29, 14),
+    item('b.', 'Surat Perintah Kabiddokkes Polda NTB Nomor : 281 / V / KES.3 / 2026 tanggal 29 Mei 2026 tentang Pelayanan Tindak lanjut Rikkes Berkala (Home Visit/Pendampingan/Monitoring terhadap PNPP).', 29, 14),
+    item('c.', 'Renja Biddokkes Polda NTB TA. 2026.', 29, 14),
+
+    sesi('II.', 'PELAKSANAAN KEGIATAN'),
+    item('a.', 'Waktu dan Tempat', 16, 13, { align: 'left', keep: true }),
+    para(`Kegiatan Home Visit/Pendampingan/Monitoring/Telemedicine kesehatan dilaksanakan pada minggu ${c.kataMinggu} bulan ${c.bulan} ${c.tahun} hari Senin-Minggu (tanggal ${c.rentang}), bertempat di kediaman anggota dan/atau tempat perawatan anggota yang sedang mengalami sakit.`, 29),
+    item('b.', 'Kegiatan yang dilaksanakan:', 16, 13, { align: 'left', keep: true, before: 2 }),
+    item('o', 'Melakukan pemantauan terhadap perkembangan kondisi kesehatan dan keluhan yang dirasakan anggota.', 8, 21),
+    item('o', 'Sebagai tindak lanjut hasil rikkes berkala, kami memberikan saran dan edukasi kesehatan sesuai dengan kondisi masing-masing anggota.', 8, 21),
+    item('o', 'Mengingatkan anggota untuk tetap menjalankan pengobatan dan kontrol kesehatan sesuai anjuran dokter.', 8, 21),
+
+    sesi('III.', 'HASIL YANG DICAPAI'),
+    para(['Adapun hasil kegiatan pelayanan kesehatan ', HV, ' terhadap anggota yang sakit atau menahun personel Polri Polda Nusa Tenggara Barat, sebagai berikut :'], 16, { after: 10 }),
+    { t: 'tabel', header: ['NO', 'TANGGAL', 'NAMA', 'PANGKAT/NRP', 'DIAGNOSA', 'TEMPAT'],
+      widths: [0.05, 0.12, 0.19, 0.21, 0.21, 0.22], align: ['left', 'left', 'justify', 'left', 'justify', 'justify'],
+      rows: c.baris, after: 10 },
+    para('Laporan lengkap ada pada lampiran surat ini.', 16),
+
+    sesi('IV.', 'ANALISA DAN EVALUASI', 16),
+    item('a.', 'Analisa', 16, 13, { align: 'left', keep: true }),
+    para('Dari hasil pelaksanaan kegiatan pemeriksaan, home visit, pendampingan dan monitoring terhadap anggota yang bersangkutan, secara umum kondisi kesehatan dapat terpantau dengan baik. Anggota yang mengalami gangguan kesehatan masih memerlukan pemantauan dan pendampingan secara berkala serta dianjurkan untuk tetap menjalani pengobatan dan pemeriksaan kesehatan sesuai dengan kondisi masing-masing.', 29, { first: 8, after: 4 }),
+    item('b.', 'Evaluasi', 16, 13, { align: 'left', keep: true }),
+    para('Kegiatan pelayanan kesehatan melalui home visit, pendampingan dan monitoring mendapat respons dan perhatian yang baik dari anggota maupun keluarga. Kegiatan ini memberikan manfaat dalam memantau perkembangan kondisi kesehatan anggota yang sedang mengalami sakit serta memberikan dukungan, motivasi dan rasa kepedulian dari kesatuan. Dengan adanya kegiatan tersebut, diharapkan kondisi kesehatan anggota dapat terus terpantau dan proses pemulihan dapat berjalan dengan baik sehingga dapat kembali melaksanakan aktivitas dan tugas kedinasan sesuai dengan kondisi kesehatannya.', 29, { first: 8 }),
+
+    sesi('V.', 'KESIMPULAN'),
+    para('Berdasarkan hasil pelaksanaan kegiatan Home Visit, pendampingan dan monitoring kesehatan terhadap beberapa anggota yang mengalami sakit, telah dilakukan pemeriksaan serta pemantauan terhadap kondisi kesehatan masing-masing anggota sesuai dengan keluhan dan kondisi yang dialami. Secara umum, kondisi kesehatan anggota yang dikunjungi dapat terpantau dengan baik, dan masing-masing anggota telah diberikan arahan serta saran medis sesuai dengan hasil pemeriksaan.', 26, { first: 20, after: 12 }),
+    para('Kegiatan Home Visit, pendampingan dan monitoring ini merupakan bentuk perhatian dan kepedulian terhadap kesehatan anggota, khususnya bagi anggota yang sedang mengalami sakit atau memiliki keterbatasan dalam melaksanakan tugas. Diharapkan dengan adanya pemeriksaan dan pendampingan secara berkala, kondisi kesehatan anggota dapat terus terpantau, proses pemulihan dapat berjalan dengan baik, serta anggota dapat kembali melaksanakan aktivitas dan tugas kedinasan sesuai dengan kondisi kesehatannya.', 26, { first: 20 }),
+
+    // Penutup + tanda tangan selalu satu halaman
+    { ...sesi('VI.', 'PENUTUP'), grup: 'ttd' },
+    { ...para(['Demikian laporan kegiatan pelayanan kesehatan ', HV, ' / monitoring / pendampingan / ', { text: 'Telemedicine', italics: true },
+        ` terhadap anggota ${c.fktp} dan Jajaran ini dibuat, selanjutnya mohon petunjuk dari pimpinan.`], 16, { first: 29 }), grup: 'ttd' },
+    { t: 'ttd', before: 30, left: 232, w: 180, grup: 'ttd',
+      baris1: `Mataram,          ${c.bulan} ${c.tahun}`, baris2: 'Yang Membuat Laporan',
+      nama: PENANDA_TANGAN_LAPORAN.nama, nip: `${PENANDA_TANGAN_LAPORAN.pangkat} NIP ${PENANDA_TANGAN_LAPORAN.nip}` },
+  ];
+  return { blocks, dasarNama: `Laporan_Mingguan_${c.fktp.replace(/ /g, '_')}_${c.mulai}_sd_${c.selesai}`, judul: `${judul1} ${judul2}` };
+}
+
+// Kumpulkan & periksa data dari form Rekap Kunjungan. Mengembalikan null (dengan pesan) kalau belum lengkap.
+async function _siapkanLaporanMingguan() {
+  const ok = await pastikanSemuaDataTermuat();
+  if (ok === false) return null;
+  if (!allData || allData.length === 0) { showToast('Data belum dimuat!', 'error'); return null; }
+  const mulai = document.getElementById('kunjunganTglMulai').value;
+  const selesai = document.getElementById('kunjunganTglSelesai').value;
+  if (!mulai || !selesai) { showToast('Pilih tanggal mulai dan selesai!', 'error'); return null; }
+  const tMulai = new Date(mulai); tMulai.setHours(0, 0, 0, 0);
+  const tSelesai = new Date(selesai); tSelesai.setHours(23, 59, 59, 999);
+  if (tMulai > tSelesai) { showToast('Tanggal mulai harus sebelum tanggal selesai!', 'error'); return null; }
+  const fktp = (sesiFKTP && !sesiFKTP.admin) ? sesiFKTP.nama : ((document.getElementById('kunjunganFKTP') || {}).value || '');
+  if (!fktp) { showToast('Laporan ini wajib untuk 1 FKTP tertentu — pilih dulu FKTP-nya!', 'error'); return null; }
+
+  // 1 KUNJUNGAN = 1 baris tabel (pasien yang dikunjungi 2x minggu ini muncul 2x)
+  const list = allData.filter(r => {
+    const t = parseTglKunjungan(r['Tanggal']);
+    return t >= tMulai.getTime() && t <= tSelesai.getTime() && (r['FKTP'] || '') === fktp;
+  }).sort((a, b) => parseTglKunjungan(a['Tanggal']) - parseTglKunjungan(b['Tanggal']));
+  if (!list.length) { showToast('Tidak ada kunjungan pada rentang & FKTP ini!', 'error'); return null; }
+
+  const bln = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const romawi = ['I', 'II', 'III', 'IV', 'V'];
+  const kata = ['pertama', 'kedua', 'ketiga', 'keempat', 'kelima'];
+  const idx = Math.min(5, Math.ceil(tMulai.getDate() / 7)) - 1;   // minggu ke- dari tanggal awal rentang
+  const bulan = bln[tMulai.getMonth()], tahun = tMulai.getFullYear();
+  const samaBulan = tMulai.getMonth() === tSelesai.getMonth() && tahun === tSelesai.getFullYear();
+  const rentang = samaBulan
+    ? `${tMulai.getDate()} s.d ${tSelesai.getDate()} ${bulan} ${tahun}`
+    : `${tMulai.getDate()} ${bulan}${tahun !== tSelesai.getFullYear() ? ' ' + tahun : ''} s.d ${tSelesai.getDate()} ${bln[tSelesai.getMonth()]} ${tSelesai.getFullYear()}`;
+  const kap = (s) => s ? String(s).charAt(0).toUpperCase() + String(s).slice(1) : '';
+  const baris = list.map((r, i) => {
+    const diag = [r['Diagnosa1'], r['Diagnosa2'], r['Diagnosa3'], r['Diagnosa4']].filter(Boolean).map(kap);
+    const tempat = r['JenisPelayanan'] === 'Telemedicine' ? 'Telemedicine'
+      : (String(r['Tempat'] || '').trim() && String(r['Tempat']).trim() !== '-' ? String(r['Tempat']).trim() : '-');
+    return [i + 1, r['Tanggal'] || '-', String(r['Nama Pasien'] || '-').trim(),
+      `${String(r['Pangkat'] || '-').toUpperCase()}/${r['NIPNRP'] || '-'}`, diag.length ? diag.join(', ') : '-', tempat];
+  });
+  return { fktp, mulai, selesai, mingguKe: romawi[idx], kataMinggu: kata[idx], bulan, tahun, rentang, baris };
+}
+
+async function eksporLaporanMingguanFormat(format, ctx) {
+  const label = format === 'docx' ? 'Word' : 'PDF';
+  const ov = document.getElementById('loadingOverlay');
+  const lt = document.getElementById('loadingText');
+  const lamaText = lt ? lt.textContent : '';
+  try {
+    if (lt) lt.textContent = `Membuat laporan mingguan ${label}...`;
+    if (ov) ov.classList.add('show');
+    const M = _susunLaporanMingguan(ctx);
+    const namaFile = format === 'docx' ? await _renderDocx(M) : await _renderPdf(M);
+    if (ov) ov.classList.remove('show'); if (lt) lt.textContent = lamaText;
+    showToastDownload('Laporan Mingguan ' + label, namaFile);
+  } catch (e) {
+    if (ov) ov.classList.remove('show'); if (lt) lt.textContent = lamaText;
+    console.error(e);
+    showToast(`Gagal membuat ${label}: ` + (e.message || e), 'error');
+  }
+}
+
+// Tombol "📄 Download Laporan" di tab Rekap Kunjungan → cek data dulu, lalu tampilkan pilihan PDF / Word
+async function pilihFormatLaporanMingguan() {
+  const ctx = await _siapkanLaporanMingguan();
+  if (!ctx) return;
+  _tampilPilihFormat('Unduh Laporan Mingguan', (f) => eksporLaporanMingguanFormat(f, ctx));
 }
 
 // Export ke Word (.doc) — format sesuai template resmi
